@@ -1,0 +1,60 @@
+# main에 푸시하면 두 책을 검사·빌드(PDF, 웹판)해 GitHub Pages에 올린다.
+# 저장소 Settings > Pages > Build and deployment > Source를 "GitHub Actions"로 둔다.
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2 # bun.lock을 만든 버전
+
+      - run: bun install --frozen-lockfile
+
+      # PDF는 playwright-core가 channel 'chrome'으로 찾는 Google Chrome으로 인쇄한다(ubuntu 러너에 기본 설치).
+      # 원고의 ▾ ▸ ⇄는 Pretendard·D2Coding에 없어 시스템 글꼴로 그려지므로 그 글꼴이 있는지도 본다.
+      - name: Check Chrome and fallback fonts
+        run: |
+          /opt/google/chrome/chrome --version
+          for c in 25be 25b8 21c4; do
+            f=$(fc-list ":charset=$c" family | head -n 1)
+            if [ -n "$f" ]; then echo "U+$c: $f"; else echo "::warning::U+$c 글자를 그릴 시스템 글꼴이 없습니다(PDF에 빈 상자로 나올 수 있음)"; fi
+          done
+
+      - run: bun run check
+      - run: bun run check:guide
+      - run: bun run build
+      - run: bun run build:guide
+      - run: bun run build:web
+
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

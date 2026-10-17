@@ -1,0 +1,103 @@
+---
+title: 설치와 프로젝트
+description: Arma Reforger Tools로 Workbench를 열고, 모드를 담을 애드온 프로젝트를 만들어 런처 목록에 두는 과정을 화면과 함께 따라갑니다.
+---
+
+<Objectives>
+
+- Arma Reforger Tools, 런처, Workbench 메인 창의 관계를 설명할 수 있다.
+- 런처의 **Add Project** ▾ 메뉴로 새 애드온 프로젝트를 만들 수 있다.
+- **New Project** 창에서 이름, 위치, 의존성을 정할 수 있다.
+- 이미 있는 프로젝트를 런처 목록에 더할 수 있다.
+- 프로젝트 설정을 **File > Project Settings...** 창에서 찾을 수 있다.
+
+</Objectives>
+
+이 책은 Arma Reforger 모드를 만드는 도구인 Enfusion Workbench(이하 Workbench)의 화면과 절차를 다룹니다. 스크립트 언어 Enforce Script는 같은 저자의 《Enforce Script 가이드》(이하 Script 책)에서 다루고, 이 책은 그 예제를 실행하려고 Workbench를 열었을 때 무엇을 어디서 찾는지를 설명합니다.
+
+이 장에서는 Workbench를 처음 열어 모드를 담을 **애드온(addon)** 프로젝트를 만듭니다. 이 책의 메뉴와 창 이름은 Arma Reforger Tools 1.8.0.13 화면에 표시된 그대로 적었습니다.
+
+## Arma Reforger Tools와 Workbench
+
+Workbench는 Steam에서 게임과 따로 받는 앱인 **Arma Reforger Tools**에 들어 있습니다(<FigRef id="ch01-steam-tools" />). 이 책은 Arma Reforger Tools 1.8.0.13(Steam 빌드 24870687)을 기준으로 합니다.
+
+Workbench는 여러 편집기를 한 프로그램에 묶은 도구입니다. 처음 열리는 메인 창에서 프로젝트의 파일을 찾고 열며, 스크립트는 Script Editor, 월드는 World Editor에서 편집합니다. 메인 창의 **Editors** 메뉴에는 이 둘과 함께 Particle, Animation, Audio, String, Procedural Animation, Behavior 편집기가 들어 있습니다. 메인 창은 2장에서 봅니다. 편집기 가운데 이 책이 다루는 것은 Script Editor(4장), World Editor(6장), String Editor(10장)입니다.
+
+<Figure src="ch01/steam-tools.jpg" size="full" alt="Steam 라이브러리의 Arma Reforger Tools" id="ch01-steam-tools">Steam 라이브러리의 Arma Reforger Tools</Figure>
+
+## 런처
+
+Arma Reforger Tools를 실행하면 Workbench 런처가 열립니다. 런처에는 Workbench가 아는 프로젝트의 목록이 있고, 여기서 작업할 프로젝트를 골라 Workbench를 엽니다(<FigRef id="ch01-launcher" />). 오른쪽 위에는 **Search** 칸과 톱니 버튼이, 가운데에는 프로젝트마다 이름이 적힌 타일이, 아래쪽에는 **Add Project** 버튼과 **Open** 버튼이 있습니다. 목록의 타일을 두 번 클릭하면 그 프로젝트를 연 Workbench 메인 창이 열립니다(2장).
+
+<Figure src="ch01/launcher.png" alt="Workbench 런처" id="ch01-launcher">Workbench 런처</Figure>
+
+프로젝트를 만들거나 더하는 일은 **Add Project** 버튼 오른쪽 아래의 ▾를 눌러 여는 메뉴에서 합니다(<FigRef id="ch01-add-project-menu" />). 메뉴에는 다음 세 항목이 있습니다.
+
+- **Create New Project**: 새 프로젝트를 만듭니다.
+- **Add Existing Project**: 이미 있는 프로젝트를 목록에 더합니다.
+- **Scan for Projects**: 프로젝트를 찾을 폴더를 고르는 **Select Folder to Scan for Projects in** 창을 엽니다.
+
+<Figure src="ch01/add-project-menu.png" alt="Add Project 메뉴" id="ch01-add-project-menu">Add Project 메뉴</Figure>
+
+## 새 프로젝트 만들기
+
+모드는 Workbench에서 애드온 프로젝트 하나입니다(Script 책 1장). 여기서는 이 책의 예제에 쓰는 프로젝트 `GuideDemo`를 만듭니다.
+
+<TryIt title="GuideDemo 프로젝트 만들기">
+
+1. 런처의 **Add Project** ▾ 메뉴에서 **Create New Project**를 고릅니다. **New Project** 창이 열립니다(<FigRef id="ch01-new-project" />).
+2. **Project Name** 칸에 들어 있는 `New Enfusion Project`를 지우고 `GuideDemo`를 입력합니다.
+3. **Location** 칸에서 프로젝트를 만들 폴더를 확인합니다. 바꾸려면 칸에 경로를 직접 입력하거나, 오른쪽의 폴더 버튼을 눌러 열리는 **Choose project location** 창에서 폴더를 고릅니다. 아래 "프로젝트 위치" 상자를 먼저 읽으세요.
+4. **Dependencies** 목록을 봅니다. `ArmaReforger`는 체크된 채 흐리게 표시되어 바꿀 수 없습니다. 목록에는 런처가 아는 다른 프로젝트도 보이는데, 체크하지 않고 둡니다. 그림에서는 다른 프로젝트의 이름을 가렸습니다.
+5. **Create**를 누릅니다. **Location** 폴더 안에 프로젝트 이름의 폴더 `GuideDemo`가 생기고, 런처가 닫힌 뒤 이 프로젝트를 연 Workbench 메인 창이 열립니다. 다음에 런처를 열면 목록에 `GuideDemo`가 있습니다.
+
+</TryIt>
+
+<Figure src="ch01/new-project.png" alt="New Project 창" id="ch01-new-project">New Project 창</Figure>
+
+프로젝트 이름에는 글자(letters), 숫자, 공백과 `-`, `.`, `_`만 쓸 수 있고, 글자가 하나 이상 들어가야 합니다. 이름을 입력하는 동안에는 아무 표시가 없지만, `#`처럼 다른 문자가 든 이름으로 **Create**를 누르면 **Warning** 창에 `Project name is not valid.`가 뜨고 프로젝트는 만들어지지 않습니다.
+
+<Warning title="프로젝트 위치">
+
+위키(Mod Project Setup)는 OneDrive 폴더에 만든 프로젝트는 불러오지 못한다고 경고합니다. 런처는 **Location** 기본값으로 문서 폴더 아래의 `My Games\ArmaReforgerWorkbench\addons`를 보여 줍니다. 문서 폴더가 OneDrive에 있는 PC에서는 이 기본값도 `…\OneDrive\문서\My Games\ArmaReforgerWorkbench\addons`처럼 OneDrive 안에 있습니다. 그럴 때는 위치를 OneDrive 밖으로 바꾸세요. 위키는 `C:\Program Files`처럼 현재 Windows 사용자에게 쓰기 권한이 없는 폴더도 피하라고 합니다.
+
+</Warning>
+
+## 이미 있는 프로젝트 더하기
+
+다른 곳에서 받은 모드나 공식 샘플처럼 이미 있는 프로젝트는 **Add Project** ▾ 메뉴의 **Add Existing Project**로 목록에 더합니다. 이 항목을 고르면 `.gproj` 파일을 고르는 **Open Project** 창이 열립니다. 위키(Mod Project Setup)는 런처 목록에 Arma Reforger가 없으면 게임 설치 폴더의 `addons\data\ArmaReforger.gproj`를 이 방법으로 더하라고 안내합니다.
+
+## 프로젝트 설정 보기
+
+새 프로젝트 폴더에는 프로젝트 설정 파일 `addon.gproj`가 생깁니다(Script 책 1장). 파일 형식과 각 항목의 뜻도 그 장에서 다룹니다.
+
+프로젝트를 연 Workbench에서는 메인 창 제목 막대에 `Enfusion Workbench - ` 뒤로 프로젝트의 TITLE이 표시됩니다. 같은 내용은 메인 창의 **File > Project Settings...** 창에서 봅니다(<FigRef id="ch01-project-settings" />). 이 창에는 **ID**, **GUID**, **TITLE**과 **Dependencies** 목록이 있고, **Dependencies** 줄 오른쪽에는 **+** 버튼이 있습니다. 의존성을 더하는 순서는 2장에서 봅니다.
+
+<Figure src="ch01/project-settings.png" alt="Project Settings 창" id="ch01-project-settings">Project Settings 창</Figure>
+
+<Note title="Options와 Project Settings">
+
+같은 **File** 메뉴의 **Options...** 항목은 Workbench 자체의 설정입니다. 위키(Resource Manager: Options)는 의존성을 옵션 화면에서 바꾼다고 적지만, 화면에서는 프로젝트와 의존성 설정이 **Project Settings...** 창에 있습니다(2장).
+
+</Note>
+
+## 프로젝트 목록과 프로필
+
+런처의 프로젝트 목록은 Workbench 사용자 프로필에 저장됩니다. Workbench의 프로필 폴더(`C:\Users\<사용자 이름>\Documents\My Games\ArmaReforgerWorkbench\profile`)에는 `.projectList_`로 시작하는 설정 파일이 있습니다. 시작 매개변수 `-profile <폴더>`로 Workbench를 띄우면 `My Games\ArmaReforgerWorkbench` 대신 그 폴더를 씁니다. 그 아래에 `addons`, `logs`, `profile` 폴더가 따로 생기고, 런처 목록도 따로 저장됩니다. 새 폴더로 처음 띄운 런처의 목록은 비어 있습니다.
+
+## 정리
+
+<Summary>
+
+- Workbench는 Steam에서 게임과 따로 받는 Arma Reforger Tools에 들어 있습니다.
+- 새 프로젝트는 런처의 **Add Project** ▾ 메뉴에서 **Create New Project**로 만들고, **New Project** 창에서 이름(**Project Name**), 위치(**Location**), 의존성(**Dependencies**)을 정합니다.
+- 의존성 `ArmaReforger`는 체크된 채 바꿀 수 없게 들어 있습니다.
+- **Location** 기본값이 OneDrive 안이면 밖으로 바꿉니다.
+- 이미 있는 프로젝트는 **Add Existing Project**로 목록에 더합니다.
+- 프로젝트 설정은 **File > Project Settings...** 창에서 봅니다. **File > Options...** 창은 Workbench 자체 설정입니다.
+
+</Summary>
+
+**더 읽을거리**
+
+- [Mod Project Setup](https://community.bistudio.com/wiki/Arma_Reforger:Mod_Project_Setup)

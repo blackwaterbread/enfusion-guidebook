@@ -1,0 +1,252 @@
+---
+title: 메인 창
+description: 프로젝트를 열면 처음 보이는 메인 창의 구성과 메뉴 여덟 개, 파일이 열리는 탭, 상태 줄과 Log Console, 그리고 Options와 Project Settings 두 설정 창을 살펴봅니다.
+---
+
+<Objectives>
+
+- 메인 창의 메뉴 막대, Resource Browser, 탭 영역, Log Console, 상태 줄을 구별할 수 있다.
+- 메뉴 여덟 개에 무엇이 들어 있는지 알고, 메인 창에서 편집기를 열 수 있다.
+- 파일이 메인 창의 탭으로 열렸을 때 탭의 구성과 저장하지 않은 표시를 읽을 수 있다.
+- **File > Options...** 창과 **File > Project Settings...** 창의 차이를 알고, 의존성과 모듈 설정이 있는 곳을 찾을 수 있다.
+- 위키가 쓰는 이름(Resource Manager, Config Editor, Layout Editor)을 화면의 이름과 맞춰 읽을 수 있다.
+
+</Objectives>
+
+런처에서 프로젝트를 열면 ENFUSION 로고만 있는 작은 창이 잠깐 뜬 뒤 메인 창이 나타납니다. 메인 창은 Workbench의 중심입니다. 프로젝트의 파일을 찾아 열고, Script Editor와 World Editor 같은 편집기를 띄우고, 로그를 보고, 프로젝트 설정을 바꾸는 일이 모두 여기서 시작합니다.
+
+이 장에서는 메인 창의 각 부분과 메뉴 여덟 개, 파일이 탭으로 열린 모습, 메인 창에서 여는 두 설정 창을 차례로 봅니다. 왼쪽의 Resource Browser는 3장에서 따로 다룹니다. 위키는 메인 창을 Resource Manager라고 부르고 같은 이름의 문서에서 설명합니다. 이 장에서 문서 이름을 밝히지 않은 위키 설명은 이 문서의 것입니다. Resource Manager라는 이름과 화면의 관계는 장 끝에서 정리합니다.
+
+## 메인 창 한눈에 보기
+
+프로젝트를 막 열었을 때의 메인 창(<FigRef id="ch02-main-window" />)에는 위에서 아래로, 왼쪽에서 오른쪽으로 다음 여섯 부분이 있습니다.
+
+1. **제목 막대**: `Enfusion Workbench - ` 뒤에 프로젝트의 TITLE이 붙습니다(1장).
+2. **메뉴 막대**: **File**, **Editors**, **View**, **Edit**, **Window**, **Utilities**, **Plugins**, **Help** 여덟 메뉴가 있습니다.
+3. **Resource Browser**: 왼쪽 창입니다. 프로젝트와 기본 게임의 파일을 찾고 엽니다(3장).
+4. **탭 영역**: 가운데의 넓은 곳입니다. 파일을 열면 여기에 탭이 생깁니다. 막 열어 탭이 없을 때는 시작 화면이 보입니다.
+5. **Log Console**: 아래쪽 창입니다. Workbench가 남기는 로그가 쌓입니다.
+6. **상태 줄**: 맨 아래 줄입니다. 왼쪽에는 상태나 고른 파일의 정보가, 오른쪽에는 Workbench 버전이 보입니다.
+
+<Figure src="ch02/main-window.png" size="full" alt="프로젝트를 막 연 메인 창" id="ch02-main-window" marks="1@20.8,1.8;2@27.4,5.1;3@10.4,31.1;4@27.8,22.2;5@60.4,82.2;6@8,98.4">프로젝트를 막 연 메인 창</Figure>
+
+Script Editor와 World Editor는 메인 창 안이 아니라 저마다 별도 창으로 열리고, 창 제목과 메뉴 막대도 따로 있습니다. Script Editor는 4장, World Editor는 6장에서 다룹니다.
+
+### 시작 화면
+
+탭이 없을 때 탭 영역에 보이는 시작 화면에는 세 묶음이 있습니다.
+
+- **QUICK LAUNCH**: 편집기 이름이 붙은 버튼 여덟 개입니다. 버튼의 편집기와 순서는 **Editors** 메뉴와 같습니다. 버튼을 누르면 그 편집기 창이 따로 열립니다.
+- **LINKS**: **Modding Documentation**, **Modding Forums**, **Bohemia Interactive Website** 같은 링크가 세로로 놓이고, 누르면 기본 웹 브라우저로 그 사이트가 열립니다.
+- **NEWS**: 업데이트 소식 같은 글의 목록이 날짜와 함께 보입니다.
+
+## 메뉴 여덟 개
+
+메뉴 막대의 여덟 메뉴에는 다음 항목이 들어 있습니다. 항목 이름은 화면 글자 그대로이고, ▸는 하위 메뉴가 있는 항목입니다. 메뉴에 함께 적힌 단축키는 부록 A에 모았습니다.
+
+| 메뉴 | 항목 |
+|---|---|
+| **File** | **Save**, **Save All**, **Project Settings...**, **Options...**, **Workshop Member Area** 묶음(**User Profile**, **Publish to Workshop**, **Remove from Workshop**, **Check Pending Invitations**), 최근 파일 목록, **Exit** |
+| **Editors** | **World Editor**, **Particle Editor**, **Animation Editor**, **Script Editor**, **Audio Editor**, **String Editor**, **Procedural Animation Editor**, **Behavior Editor** |
+| **View** | **Normal view**, **Text view**, **Hex View** ▸ |
+| **Edit** | **Undo**, **Redo**, **Reimport Resource**, **Locate File in Resource Browser**, **Edit Prefab** |
+| **Window** | **Layout** ▸, **Manage Layouts**, **Reset Default Layouts**, **Next Tab**, **Previous Tab**, **Cycle Tabs**, **Close Tab**, **Reopen Closed Tab**, **Toggle Fullscreen Mode**, **Log Console**, **Resource Browser**, **Resource Browser 2** |
+| **Utilities** | **Generate GUID**, **File System Dump**, **Qt Introspection Tool**, **LSP Tests** ▸, **Resource Tests** ▸ |
+| **Plugins** | **Settings** ▸와 그 아래 플러그인 항목(**Batch resource processor**, **Find Linked Resources**, **Generate Class from Layout** 등), 하위 메뉴(**BIKI** ▸, **Prefabs** ▸, **Tools** ▸ 등) |
+| **Help** | **View Help**, **About** |
+
+### File 메뉴
+
+메인 창 **File** 메뉴의 항목은 다음과 같습니다(<FigRef id="ch02-file-menu" />).
+
+- **Save**, **Save All**: **Save**는 지금 탭의 파일을 저장합니다. 저장하면 탭 이름 앞의 `*`가 사라집니다. 위키는 **Save All**이 열린 탭 모두의 파일을 저장한다고 설명합니다. {/* 확인 대기: 바꾼 탭이 여럿일 때 Save All이 모두 저장하는지 */}
+- **Project Settings...**, **Options...**: 이 장 뒤에서 보는 두 설정 창을 엽니다.
+- **Workshop Member Area** 묶음: **User Profile**, **Publish to Workshop**, **Remove from Workshop**, **Check Pending Invitations**가 있습니다. 모드를 Workshop에 올리는 일은 이 책에서 다루지 않습니다.
+- 최근 파일: 그 아래에는 최근에 연 파일이 최근 것부터 놓입니다. 항목을 누르면 그 파일이 다시 탭으로 열립니다.
+- **Exit**: Workbench를 닫습니다. World Editor에 저장하지 않은 월드가 있으면 먼저 **World editor - closing** 창이 저장할지 묻습니다(6장). 바꾼 것이 없으면 묻지 않고 닫힙니다.
+
+<Figure src="shared/main-file-menu.png" alt="메인 창의 File 메뉴" id="ch02-file-menu">메인 창의 File 메뉴</Figure>
+
+### Editors 메뉴
+
+**Editors** 메뉴에는 **World Editor**, **Particle Editor**, **Animation Editor**, **Script Editor**, **Audio Editor**, **String Editor**, **Procedural Animation Editor**, **Behavior Editor**가 있습니다(<FigRef id="ch02-editors-menu" />). 항목을 고르면 그 편집기가 저마다 별도 창으로 열립니다. 예를 들어 **Editors > Script Editor**를 고르면 Script Editor 창이, **Editors > World Editor**를 고르면 World Editor 창이 열립니다. Script Editor가 열려 있는 동안에는 이 메뉴의 **Script Editor**가 흐리게 표시됩니다. 위키는 이처럼 이미 열려 있거나 스크립트가 컴파일되지 않아 열 수 없는 편집기가 흐리게 표시된다고 설명합니다.
+
+이 책은 이 가운데 Script Editor(4장), World Editor(6장), String Editor(10장)를 다룹니다.
+
+<Figure src="shared/main-editors-menu.png" alt="메인 창의 Editors 메뉴" id="ch02-editors-menu">메인 창의 Editors 메뉴</Figure>
+
+### View와 Edit 메뉴
+
+**View** 메뉴에는 **Normal view**, **Text view**, **Hex View** ▸가 있습니다. 설정 파일 탭을 연 상태에서 펼치면 **Normal view**에 체크가 붙어 있습니다. **Text view**를 고르면 지금 탭의 파일 내용이 글자로 보이고, **Normal view**를 고르면 원래 화면으로 돌아옵니다. 체크는 고른 보기로 옮겨 갑니다. 글자 보기는 읽기 전용이어서 글자를 쳐도 내용이 바뀌지 않습니다. 위키는 **Hex View**로 16진수로 볼 수 있고 이 보기도 읽기 전용이라고 설명합니다.
+
+메인 창의 **Edit** 메뉴에는 **Undo**, **Redo**, **Reimport Resource**, **Locate File in Resource Browser**, **Edit Prefab**이 있습니다. 설정 파일 탭을 열고 아직 값을 바꾸지 않았을 때는 **Undo**, **Redo**, **Edit Prefab**이 흐리게 표시됩니다. **Locate File in Resource Browser**를 고르면 Resource Browser가 지금 탭의 파일이 든 폴더로 옮겨 가 그 파일을 골라 줍니다. 프리팹 탭이 앞에 있을 때 **Edit Prefab**을 고르면 그 프리팹이 World Editor의 프리팹 편집 모드로 열립니다(8장). 위키는 **Reimport Resource**가 지금 파일을 디스크에서 다시 읽는다고 설명합니다. {/* 확인 대기: Reimport Resource의 동작 */}
+
+### Window 메뉴
+
+메인 창의 **Window** 메뉴는 구분선으로 네 부분으로 나뉩니다(<FigRef id="ch02-window-menu" />).
+
+- **Layout** ▸, **Manage Layouts**, **Reset Default Layouts**
+- **Next Tab**, **Previous Tab**, **Cycle Tabs**, **Close Tab**, **Reopen Closed Tab**
+- **Toggle Fullscreen Mode**
+- **Log Console**, **Resource Browser**, **Resource Browser 2**
+
+첫 부분은 창 배치를 다룹니다. **Layout** ▸ 아래에는 지금 배치 `default`(체크 표시)와 **Create New Layout**이 있습니다. **Manage Layouts**는 배치 목록과 **Rename**, **Delete**, **Import...**, **Export...** 버튼이 있는 창을 엽니다. **Reset Default Layouts**를 고르면 기본 배치를 처음 상태로 되돌릴지 묻는 창이 뜨고, **Yes**를 누르면 창 배치가 처음 상태로 돌아갑니다. 숨겨 둔 창도 원래 자리에 다시 나타납니다.
+
+Log Console과 Resource Browser가 보일 때 이 두 항목 앞에는 체크 표시가 있습니다. 체크된 항목을 고르면 그 창이 숨고, 다시 고르면 같은 자리에 돌아옵니다. **Resource Browser 2**를 고르면 첫 Resource Browser 아래에 두 번째 Resource Browser가 열립니다(3장).
+
+<Figure src="shared/main-window-menu.png" alt="메인 창의 Window 메뉴" id="ch02-window-menu">메인 창의 Window 메뉴</Figure>
+
+### Utilities, Plugins, Help 메뉴
+
+**Utilities** 메뉴에는 **Generate GUID**, **File System Dump**, **Qt Introspection Tool**, **LSP Tests** ▸, **Resource Tests** ▸가 있습니다. **Generate GUID**를 고르면 새 GUID가 든 칸과 **Copy**, **Generate** 버튼이 있는 **Generate GUID** 창이 열립니다. **File System Dump**는 창을 띄우지 않고, Workbench가 데이터 원본으로 쓰는 폴더를 이름과 경로로 Log Console에 찍습니다(3장).
+
+메인 창의 **Plugins** 메뉴에는 Workbench 플러그인이 모여 있습니다(위키). 맨 위 **Settings** ▸ 아래로 **Batch resource processor**, **Find Linked Resources**, **Generate Class from Layout** 같은 항목과 **BIKI** ▸, **Prefabs** ▸ 같은 하위 메뉴가 이어집니다. Script Editor와 World Editor에도 저마다 **Plugins** 메뉴가 있고, 예를 들어 Autotest는 Script Editor의 **Plugins** 메뉴에 있습니다(12장).
+
+**Help** 메뉴에는 **View Help**와 **About**이 있습니다.
+
+메뉴 막대가 늘 여덟 개인 것은 아닙니다. 레이아웃 탭이 앞에 있으면 **Help** 오른쪽에 **Preview** 메뉴가 하나 더 생깁니다(10장).
+
+## 파일이 열리는 탭
+
+Resource Browser에서 파일을 두 번 클릭하면 파일 종류에 따라 열리는 곳이 다릅니다(3장의 표). 그 가운데 다음 네 종류는 메인 창의 탭으로 열립니다.
+
+| 파일 | 탭의 모습 | 자세히 |
+|---|---|---|
+| `.et`(엔티티 프리팹) | 왼쪽 **Hierarchy**, 가운데 뷰포트, 오른쪽 **Edit Prefab** 버튼 | 8장 |
+| `.conf`(설정 파일) | 위쪽 검색 칸과 `class:` 칸, `parent:` 칸, 그 아래 속성 표 | 9장 |
+| `.ct`(컴포넌트 프리팹) | `.conf`와 같은 꼴의 속성 표 | — |
+| `.layout`(레이아웃) | 위쪽 도구 막대, 가운데 레이아웃 그림, 오른쪽 **Hierarchy**와 **Properties** | 10장 |
+
+`.c`(스크립트)는 Script Editor의 탭으로, `.ent`(월드)는 World Editor에서 열립니다.
+
+기본 게임의 설정 파일 하나를 열면 메인 창이 <FigRef id="ch02-conf-tab" />처럼 됩니다. 탭의 종류와 상관없이 다음 부분은 같습니다.
+
+- **탭 이름**: 파일 이름입니다. 오른쪽에 닫기 버튼(×)이 있고, 파일을 여러 개 열면 탭이 옆으로 늘어섭니다.
+- **오른쪽 창**: 맨 위에는 덮어쓴 파일을 알아볼 때 보는 **Resource Variants** 칸이 있습니다(3장). 그 아래는 탭 종류마다 다릅니다. 프리팹 탭에는 **Edit Prefab** 버튼이, 레이아웃 탭에는 **Hierarchy**와 **Properties** 창이 있습니다.
+- **Details**, **Import Settings**: 오른쪽 창 아래의 탭입니다. 위키는 **Import Settings**를 리소스 종류마다 다른 가져오기(import) 옵션을 다루는 탭이라고 설명합니다. 설정 파일 탭에서 이 탭을 누르면 흐린 **Import resource** 버튼, 체크 상자 둘, 플랫폼 탭(**PC**, **XBOX_ONE**, **XBOX_SERIES**, **PS4**, **PS5**, **HEADLESS**)이 보이고 옵션 목록은 비어 있습니다.
+
+<Figure src="ch02/conf-tab.png" size="full" alt="설정 파일을 탭으로 연 메인 창" id="ch02-conf-tab">설정 파일을 탭으로 연 메인 창</Figure>
+
+### 저장하지 않은 탭과 닫기
+
+설정 파일 탭이나 레이아웃 탭에서 값을 바꾸면 탭 이름 앞에 `*`가 붙습니다. 아직 저장하지 않았다는 표시입니다. 프리팹 탭의 **Import Settings** 탭에서 **User Note** 같은 값을 바꾸면 그 이름이 굵어지고 값 오른쪽에 되돌리기 화살표(6장)가 생기지만, 탭 이름에는 `*`가 붙지 않습니다.
+
+바꾼 것이 있는 설정 파일 탭이나 레이아웃 탭을 닫으면 **Save File Before Close** 창이 저장할지 묻습니다(<FigRef id="ch02-save-before-close" />). **Yes**를 누르면 저장한 뒤 탭이 닫힙니다. **No**를 누르면 바꾼 내용을 버리고 탭이 닫히며, 파일은 그대로 남습니다. **Cancel**을 누르면 탭이 닫히지 않고 바꾼 내용도 그대로 남습니다. 바꾼 것이 없는 탭은 묻지 않고 닫힙니다.
+
+<Figure src="shared/save-file-before-close.png" alt="Save File Before Close 창" id="ch02-save-before-close">Save File Before Close 창</Figure>
+
+탭을 오른쪽 클릭하면 **Close**, **Close All**, **Close All But This**, **Reopen Closed Tab**, **Navigate to File**, **Show in Explorer** 메뉴가 열립니다. 탭을 두 번 클릭하면 Resource Browser가 그 파일이 든 폴더로 옮겨 가 파일을 골라 줍니다. 위키는 마우스 가운데 버튼으로 누르면 탭이 닫힌다고 설명합니다. {/* 확인 대기: 탭을 마우스 가운데 버튼으로 눌렀을 때 */}
+
+## 상태 줄
+
+메인 창 맨 아래의 상태 줄은 두 부분으로 나뉩니다.
+
+- **왼쪽**: Workbench를 띄운 뒤 모드 프로젝트의 파일을 아직 고르지 않았을 때는 `Ready`가 보입니다. Resource Browser에서 모드 프로젝트의 파일을 고르면 그 파일의 경로, `M:` 뒤에 만든 날짜와 시각, `C:` 뒤에 마지막으로 고친 날짜와 시각, 크기, 파일 종류가 나옵니다(<FigRef id="ch02-status-bar" />). 파일 종류는 `Config file`(설정 파일), `Entity prefab file`(프리팹), `GUI layout`(레이아웃)처럼 표시됩니다. 이 정보는 지금 탭이 아니라 Resource Browser에서 고른 파일을 따릅니다. 파일을 저장해도 바로 바뀌지 않으므로, 저장한 뒤의 크기와 시각은 Resource Browser에서 그 파일을 다시 골라 봅니다.
+- **오른쪽**: `Version 1.8.0.13 (production)`처럼 Workbench 버전이 보입니다. 위키에 따르면 괄호 안은 연결된 백엔드로, `production`은 안정판(Stable)이고 `submission`은 실험판(Experimental)입니다. {/* 확인 대기: 실험판에서 괄호 안 표시 */}
+
+<Figure src="ch02/status-bar.png" size="full" alt="파일을 골랐을 때의 상태 줄 왼쪽" id="ch02-status-bar">파일을 골랐을 때의 상태 줄 왼쪽</Figure>
+
+## Log Console
+
+메인 창 아래쪽의 **Log Console**에는 Workbench가 남기는 로그가 쌓입니다. 위키는 지금 세션의 로그가 계속 갱신되는 창이라고 설명합니다. 스크립트가 `Print`로 찍은 줄과 스크립트 오류도 여기 나타납니다.
+
+<FigRef id="ch02-log-console" />에 보이는 부분은 다음과 같습니다.
+
+- **검색 칸**: 왼쪽 위에 `Search`라고 흐리게 적힌 칸입니다. 글자를 넣으면 World Editor의 Log Console(5장)처럼 다른 줄은 그대로 보이고, 맞는 글자만 파랗게 표시됩니다.
+- **Clear Console**: 창의 로그를 지웁니다. 누르면 줄이 모두 사라지고 오른쪽 숫자도 모두 0이 됩니다.
+- **숫자 셋**: 오른쪽 위에 오류(빨간 ×), 경고(노란 삼각형), 정보(파란 i) 아이콘과 숫자가 있습니다. 숫자는 그 종류로 표시된 로그 줄의 수이고, 여러 줄에 걸친 로그 하나는 1로 셉니다. 아이콘을 누르면 그 종류의 줄이 숨고, 다시 누르면 보입니다.
+- **깔때기 버튼과 톱니 버튼**: 맨 오른쪽의 두 버튼입니다. 깔때기 버튼을 누르면 로그 분류(`SCRIPT`, `RESOURCES` 등)를 고르는 **Context Filter**와 로그 수준(**Spam**, **Verbose**, **Debug**, **Normal**, **Warning**, **Error**, **Fatal**)을 고르는 **Log Level Filter**가 있는 메뉴가 열립니다. 톱니 버튼 메뉴에는 **Open Logs Directory**, **Show Only Matching Lines at Search**, **Font size**, **Reset to Default**가 있습니다.
+
+검색 칸에 글자를 넣었을 때의 표시, 로그 줄 앞에 붙는 분류(`SCRIPT`, `RESOURCES` 등)와 경고·오류 표시(`(W)`, `(E)`), 색과 링크를 읽는 법, 로그 파일, World Editor 창의 Log Console은 5장에서 봅니다.
+
+<Figure src="ch02/log-console.png" size="full" alt="메인 창의 Log Console" id="ch02-log-console">메인 창의 Log Console</Figure>
+
+## 두 설정 창
+
+메인 창의 **File** 메뉴에는 설정 창이 둘 있습니다. **Options...** 창은 Workbench 프로그램 자체의 설정이고, **Project Settings...** 창은 지금 프로젝트의 설정입니다. 두 창의 차이와 **Project Settings...** 창의 위쪽(ID, GUID, TITLE, Dependencies)은 1장에서 보았으니, 여기서는 나머지를 봅니다. 이 절의 위키 설명은 Resource Manager: Options 문서의 것입니다.
+
+### Options 창
+
+**File > Options...** 창 왼쪽에는 범주 일곱 개(**General**, **World Editor**, **Animation Editor**, **Script Editor**, **Audio Editor**, **Behavior Editor**, **Shortcuts**)가 있고, 고른 범주의 설정이 오른쪽에 묶음별로 나옵니다(<FigRef id="ch02-options" />). **Shortcuts** 범주에는 위쪽에 검색 칸과 **Reset All** 버튼이 있고, 그 아래의 단축키 목록은 **Camera**, **Common**, **Resource Manager**, **World Editor**, **Script Editor** 같은 묶음 열아홉 개로 나뉩니다. 단축키를 바꾸는 방법은 부록 A에서 봅니다.
+
+**General** 범주에는 **General**, **Net API**, **Language Server Protocol**, **Autosave**, **Node Graphs**, **Directories** 묶음이 차례로 있습니다. 위키가 Workbench 설정으로 설명하는 항목이 이 범주에 있고, 다음 표에 그 설명을 옮겼습니다.
+
+| 항목 | 위키의 설명 |
+|---|---|
+| **Use SVN Integration** | 파일 이름 바꾸기, 지우기 같은 작업에 SVN을 씁니다. SVN 명령줄 도구가 있어야 하고, Workbench를 다시 시작해야 적용됩니다. |
+| **Auto Rebuild Scripts** | Script Editor에서 바뀐 것을 감지하면 스크립트를 자동으로 다시 빌드합니다. |
+| **FPS Limit Enabled**, **FPS Limit** | Workbench의 FPS를 제한해 자원을 아낍니다. 화면 주사율(60, 144 등)을 권합니다. |
+| **Net API** 묶음의 **Enabled** | Blender(Enfusion Blender Tools) 같은 외부 프로그램이 Workbench와 통신하게 합니다. |
+| **Invert Mouse** | Workbench에서 마우스의 Y축을 뒤집습니다. |
+
+{/* 확인 대기: 표의 동작(위키 설명 그대로이고 1.8.0.13에서 값을 바꿔 보지 않음) */}
+
+**Language Server Protocol** 묶음에는 **Enabled** 체크 상자와 **Port**(`5776`) 칸이 있습니다. LSP는 Script 책 1장에서 설명하고, Workbench 쪽 설정은 4장에서 다시 봅니다.
+
+창 왼쪽 아래에는 버튼이 둘 있습니다. **Export All Settings**를 누르면 **Export workbench settings** 저장 창이 열리고, Workbench 설정을 `.ini` 파일로 내보냅니다. 위키에 따르면 **Register "enfusion://" Protocol**은 Windows에 `enfusion://` 링크를 등록해 이런 링크를 누르면 Workbench가 열리게 합니다. {/* 확인 대기: Register "enfusion://" Protocol을 눌렀을 때의 동작 */} 창 아래에는 **OK**와 **Cancel**이 있습니다. 둘러보기만 했다면 **Cancel**로 닫습니다.
+
+<Figure src="shared/options-general.png" alt="Options 창의 General 범주" id="ch02-options">Options 창의 General 범주</Figure>
+
+### Project Settings 창
+
+**File > Project Settings...** 창은 위아래 두 부분으로 나뉩니다.
+
+위쪽은 프로젝트 자체의 정보입니다. 1장에서 본 **ID**, **GUID**, **TITLE**, **Dependencies** 외에 **Project thumbnail**(**Change**, **Clear** 버튼)과 **Engine Settings Path** 같은 칸이 있고, 오른쪽 위에는 **Project** 펼침 목록이 있습니다. **ID**, **GUID**, **TITLE**, **Dependencies**의 값은 프로젝트 폴더의 `addon.gproj`에 적힌 값과 같습니다(Script 책 1장). **Project** 펼침 목록에는 `core`, `ArmaReforger`와 지금 프로젝트(`GuideDemo`)가 있습니다. 다른 프로젝트를 고르면 창의 값이 그 프로젝트의 것으로 바뀌고, 모두 흐리게 표시되어 고칠 수 없습니다. **Change**를 누르면 썸네일로 쓸 `.png` 파일을 고르는 창이 열립니다. 위쪽 칸을 아래로 스크롤하면 **Engine Settings Path** 아래에 **Game Settings Path**, **Input Settings Path**, **Brush Library Path**, **Offline Game Config**, **Welcome Screen Config**, **WB Documentation Config**가 더 있습니다.
+
+기본 의존성 항목에는 GUID `58D0FB3206B6F859` 옆에 `Arma Reforger`라는 이름이 보입니다. 의존성은 다음 순서로 더합니다.
+
+1. **Dependencies** 줄 오른쪽의 **+** 버튼을 누릅니다. GUID 칸이 비어 있고 이름 자리에 `(unknown addon)`이 적힌 새 항목이 생깁니다.
+2. 새 항목 오른쪽의 `..` 버튼을 누르면 `.gproj` 파일을 고르는 **Open Project** 창이 열립니다. 의존할 프로젝트의 `.gproj`를 고르면 그 프로젝트의 GUID와 이름이 칸에 채워집니다. 위키는 왼쪽 칸에 GUID를 직접 입력해도 된다고 설명합니다.
+3. **OK**를 눌러 저장합니다. 프로젝트 폴더에 있는 `addon.gproj`의 `Dependencies`에 그 GUID가 더해집니다.
+
+저장한 의존성은 Workbench를 다시 시작한 뒤에 불러옵니다. 그 전에는 Resource Browser 트리에도 의존 프로젝트가 나오지 않습니다. 의존성을 지울 때는 항목을 고른 뒤 **+** 옆의 **-** 버튼을 누릅니다. **-** 버튼은 항목을 고르지 않은 상태에서는 흐리게 표시됩니다. 위키는 칸의 글자를 지워서 없애면 빈 GUID를 가진 의존성이 되어 불러오기에 실패한다고 경고합니다.
+
+아래쪽은 구성(configuration)별 설정입니다. **Configuration** 펼침 목록에서 고른 구성의 설정이 **General**, **Engine**, **Modules** 묶음으로 나오고, 그림에서는 `PC`가 골라져 있습니다(<FigRef id="ch02-project-settings-search" />). 펼침 목록에는 `PC`, `XBOX_ONE`, `XBOX_SERIES`, `PS4`, `PS5`, `HEADLESS`가 있습니다. 새 프로젝트의 `addon.gproj`에는 구성 항목이 없지만, 이 창을 **OK**로 닫으면 이 여섯 구성이 빈 항목으로 `addon.gproj`에 적힙니다. 위키는 플랫폼마다 설정을 따로 둘 수 있고, 펼침 목록 옆의 **+**, **-** 버튼으로 구성을 더하고 지운다고 설명합니다. {/* 확인 대기: Configuration 옆 +와 -의 동작 */}
+
+- **General**: **World File**, **Splash Screen Class**가 있습니다. 위키에 따르면 **World File**은 프로젝트를 시작할 때 불러오는 월드(예: 메인 메뉴 월드)입니다. {/* 확인 대기: World File의 뜻(위키 설명만 있음) */}
+- **Engine**: **Platform Hardware**, **Product ID**, **Default Settings**, **Config Constants**가 있습니다.
+- **Modules**: **Audio Global Config**, **Chimera Global Config**, **Clustered Tiling User Settings**처럼 이름에 Config, Settings, Profiles가 붙은 설정 항목이 이름순으로 있습니다.
+
+**Modules** 묶음의 모듈은 Script 책 1장의 스크립트 모듈과 다른 말입니다. 10장에서 문자열 테이블을 등록하는 **Widget Manager Settings**도 이 묶음에 있습니다. 스크립트 모듈의 설정은 이 묶음의 **Script Project Manager Settings** 아래 **Modules**에 있습니다. 검색 칸에 `script`를 넣으면 이 부분이 남고, `core`, `gameLib`, `game`, `workbench`, `workbenchGame` 다섯 모듈이 보입니다. 예를 들어 `game` 모듈을 펼치면 스크립트 폴더 목록(**Paths**)과 **Entry Point**(`CreateGame`)가 있습니다.
+
+아래쪽은 항목이 많아서 검색 칸을 쓰는 편이 빠릅니다. 예를 들어 검색 칸에 `string`을 입력하면 **Modules > Widget Manager Settings > String Tables**만 남습니다(<FigRef id="ch02-project-settings-search" />). 문자열 테이블을 등록하는 일은 10장에서 봅니다. 이 창도 둘러보기만 했다면 **Cancel**로 닫습니다.
+
+<Figure src="shared/project-settings-string.png" alt="Project Settings 창에서 string으로 찾은 String Tables" id="ch02-project-settings-search">Project Settings 창에서 string으로 찾은 String Tables</Figure>
+
+## 위키 이름과 화면 이름
+
+위키는 Workbench 화면을 설명할 때 화면에 없는 이름을 쓰기도 하므로, 다음처럼 바꿔 읽습니다.
+
+| 위키의 이름 | 화면 이름 |
+|---|---|
+| Resource Manager | 메인 창. 창 제목은 `Enfusion Workbench - ` 뒤에 프로젝트 TITLE |
+| Workbench 메뉴 | **File** 메뉴 |
+| Workbench > Options의 Game Project | **File > Project Settings...** 창 |
+| Workbench > Options의 Workbench 항목 | **File > Options...** 창의 **General** 범주 |
+| Welcome Tab | 탭이 없을 때의 시작 화면 |
+| Config Editor | `.conf` 파일의 탭(상태 줄의 파일 종류는 `Config file`) |
+| Layout Editor | `.layout` 파일의 탭(상태 줄은 `GUI layout`, 메뉴 막대에 **Preview**가 더해짐) |
+
+메인 창의 제목 막대와 메뉴 여덟 개의 항목 어디에도, 하위 메뉴까지 펼쳐 보아도 Resource Manager, Config Editor, Layout Editor라는 이름은 없습니다. `.conf`와 `.layout` 파일은 별도 편집기 창이 아니라 메인 창의 탭으로 열리고, 탭 이름은 파일 이름입니다. 이 책은 화면을 따라 메인 창, 설정 파일 탭, 레이아웃 탭이라고 씁니다.
+
+그래도 Resource Manager라는 이름이 화면에서 완전히 사라진 것은 아닙니다. World Editor 창의 Resource Browser에서 설정 파일이나 프리팹을 오른쪽 클릭하면 메뉴 끝에 그 파일을 메인 창의 탭으로 여는 **Open in Resource Manager** 항목이 있고(3장), 위키(Workbench Links)가 소개하는 `enfusion://` 링크도 메인 창을 `ResourceManager`라는 이름으로 가리킵니다.
+
+## 정리
+
+<Summary>
+
+- 메인 창은 제목 막대, 메뉴 막대, 왼쪽 Resource Browser, 가운데 탭 영역, 아래 Log Console, 맨 아래 상태 줄로 이루어집니다.
+- 메뉴는 **File**, **Editors**, **View**, **Edit**, **Window**, **Utilities**, **Plugins**, **Help** 여덟 개이고, 레이아웃 탭이 앞에 있으면 **Preview**가 더해집니다.
+- 편집기는 **Editors** 메뉴나 시작 화면의 **QUICK LAUNCH**에서 열고, Script Editor와 World Editor는 별도 창으로 열립니다.
+- `.et`, `.conf`, `.ct`, `.layout` 파일은 메인 창의 탭으로 열립니다. 바꾸고 저장하지 않은 탭을 닫으면 **Save File Before Close** 창이 저장할지 묻습니다.
+- 상태 줄 오른쪽에는 Workbench 버전이 있고, Log Console 위쪽에는 **Clear Console**과 종류별 숫자가 있습니다.
+- **File > Options...** 창은 Workbench 설정, **File > Project Settings...** 창은 프로젝트 설정입니다. 의존성은 위쪽의 **Dependencies**, 문자열 테이블 같은 모듈 설정은 아래쪽의 **Modules**에 있습니다.
+- 위키의 Resource Manager, Config Editor, Layout Editor는 화면에서 메인 창과 그 탭입니다.
+
+</Summary>
+
+**더 읽을거리**
+
+- [Resource Manager](https://community.bistudio.com/wiki/Arma_Reforger:Resource_Manager)
+- [Resource Manager: Options](https://community.bistudio.com/wiki/Arma_Reforger:Resource_Manager:_Options)
+- [Workbench Links](https://community.bistudio.com/wiki/Arma_Reforger:Workbench_Links)

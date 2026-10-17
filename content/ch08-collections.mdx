@@ -1,0 +1,607 @@
+---
+title: 컬렉션과 템플릿
+description: 여러 값을 담는 동적 배열, 정적 배열, 집합, 맵의 사용법과 컬렉션에 ref를 붙이는 규칙을 배웁니다. 타입 별칭과 템플릿 클래스, 컬렉션의 성능 감각도 다룹니다.
+---
+
+<Objectives>
+
+- `array<T>`를 만들고 추가·조회·수정·삭제·검색·정렬할 수 있다.
+- 순서를 유지하는 삭제와 그렇지 않은 삭제의 차이를 설명하고 상황에 맞게 고를 수 있다.
+- 정적 배열, `set<T>`, `map<TKey, TValue>`를 쓸 수 있다.
+- 객체를 담는 컬렉션에 `ref`를 알맞게 붙일 수 있다.
+- `typedef`로 타입 별칭을 만들고, 간단한 템플릿 클래스를 정의할 수 있다.
+
+</Objectives>
+
+게임 스크립트는 여러 개를 한꺼번에 다루는 일이 많습니다. 분대원 목록, 방문한 지점, 플레이어별 점수처럼 말입니다. Enforce Script는 이런 데이터를 위해 동적 배열 `array`, 고정 크기의 정적 배열, 중복을 허용하지 않는 집합 `set`, 키와 값을 짝지어 두는 맵 `map`을 제공합니다.
+
+세 컬렉션 클래스는 공식 정의 파일 `Core/proto/Types.c`에 선언되어 있으며, 이 장의 메서드 이름과 동작은 이 파일의 선언과 주석을 기준으로 합니다. 7장에서 본 것처럼 컬렉션도 `Managed`를 상속한 객체이므로 `ref` 규칙이 그대로 적용됩니다. 장 뒤에서는 이 컬렉션들처럼 타입을 매개변수로 받는 템플릿 클래스를 직접 만들어 봅니다.
+
+## 동적 배열 array
+
+### 만들기와 초기화
+
+`array<T>`는 크기가 실행 중에 바뀌는 배열입니다. `T` 자리에 원소 타입을 씁니다. 배열 변수도 객체 변수이므로 선언만 하면 `null`이고, 배열 객체를 따로 만들어야 합니다.
+
+```enforce
+array<string> names = {};                 // 빈 배열 (권장)
+array<int> scores = {40, 15, 90};         // 초기화 리스트
+array<float> weights = new array<float>(); // 이것도 가능
+array<string> missing;                    // null: 아직 배열이 없음
+```
+
+공식 컨벤션은 `{}`로 만드는 형태를 올바른 형태로, `new array<float>()`를 허용되는 형태로 소개합니다. 클래스 멤버로 둘 때는 7장에서 본 대로 `ref`를 붙입니다. 공식 게임 스크립트에서도 `protected ref array<ref AIActionBase> m_aSubactions = {};`처럼 선언과 함께 `{}`로 만드는 형태가 가장 흔합니다.
+
+### 추가와 조회
+
+원소를 넣고 읽는 주요 메서드는 다음과 같습니다.
+
+| 메서드 | 반환 | 설명 |
+|---|---|---|
+| `Insert(T value)` | `int` | 맨 뒤에 추가하고, 추가된 위치를 반환 |
+| `InsertAt(T value, int index)` | `int` | `index` 위치에 끼워 넣고 뒤 원소를 한 칸씩 밈. 추가 후 원소 수를 반환 |
+| `InsertAll(array<T> from)` | `void` | 다른 배열의 원소를 모두 뒤에 추가 |
+| `Get(int n)` 또는 `[n]` | `T` | `n`번째 원소 |
+| `Set(int n, T value)` 또는 `[n] =` | `void` | `n`번째 원소를 바꿈 |
+| `Count()` | `int` | 원소 수 |
+| `IsEmpty()` | `bool` | 비었는지 확인 |
+| `IsIndexValid(int index)` | `bool` | 유효한 인덱스인지 확인 |
+
+`InsertAt`은 **값이 먼저, 인덱스가 나중**입니다. Python의 `insert(index, value)`와 순서가 반대이니 주의하세요. 공식 주석에 따르면 `index`는 `Count()`보다 작아야 합니다. 맨 뒤에 붙일 때는 `Insert`를 씁니다.
+
+다음 예제는 분대 이름 목록을 만들고 원소를 넣은 뒤 하나씩 출력합니다. 반복문은 3장에서 본 `foreach`입니다. 변수를 두 개 쓰면 인덱스와 값을 함께 받습니다.
+
+```enforce title="Scripts/Game/TAG_ArrayDemo.c"
+class TAG_ArrayDemo
+{
+	static void Run()
+	{
+		array<string> squads = {"Alpha", "Bravo", "Charlie"};
+
+		squads.Insert("Delta");    // 맨 뒤에 추가, 3을 반환
+		squads.InsertAt("Zulu", 0); // 맨 앞에 끼워 넣음
+		PrintFormat("count: %1, first: %2", squads.Count(), squads[0]);
+
+		foreach (int i, string squad : squads)
+		{
+			PrintFormat("%1: %2", i, squad);
+		}
+	}
+}
+```
+
+실행 결과는 다음과 같습니다.
+
+```text
+count: 5, first: Zulu
+0: Zulu
+1: Alpha
+2: Bravo
+3: Charlie
+4: Delta
+```
+
+인덱스는 0부터 시작합니다. 범위를 벗어난 인덱스를 쓰지 않도록, 확실하지 않을 때는 `IsIndexValid`로 먼저 확인하세요.
+
+### 검색
+
+| 메서드 | 반환 | 설명 |
+|---|---|---|
+| `Find(T value)` | `int` | 처음 찾은 위치, 없으면 -1 |
+| `Contains(T value)` | `bool` | 값이 있는지 확인 |
+
+```enforce
+int index = squads.Find("Bravo");       // 2
+int none = squads.Find("Echo");         // -1
+bool hasDelta = squads.Contains("Delta"); // true
+```
+
+두 메서드 모두 앞에서부터 하나씩 비교하므로 원소 수에 비례해 시간이 듭니다(공식 주석의 O(n)). 객체 배열에서는 같은 객체인지(참조가 같은지)로 비교합니다.
+
+### 삭제: 순서를 지킬 것인가
+
+배열에서 원소를 빼는 메서드는 두 쌍입니다. 인덱스로 지우느냐 값으로 지우느냐, 그리고 **순서를 유지하느냐**로 나뉩니다.
+
+| 메서드 | 반환 | 설명 |
+|---|---|---|
+| `Remove(int index)` | `void` | 빈자리를 마지막 원소로 채움. 빠르지만 순서가 바뀜 |
+| `RemoveOrdered(int index)` | `void` | 뒤 원소를 한 칸씩 당김. 순서는 유지되지만 느림 |
+| `RemoveItem(T value)` | `bool` | 값을 찾아 지움. 빈자리를 마지막 원소로 채움 |
+| `RemoveItemOrdered(T value)` | `bool` | 값을 찾아 지움. 순서 유지 |
+| `Clear()` | `void` | 원소를 모두 지움 |
+
+차이는 결과를 보면 바로 알 수 있습니다. `string.Join`은 배열을 구분자로 이어 붙인 문자열을 돌려줍니다(9장).
+
+```enforce
+array<string> a = {"A", "B", "C", "D", "E"};
+array<string> b = {"A", "B", "C", "D", "E"};
+
+a.Remove(1);          // 마지막 원소 E가 1번 자리로 옴
+b.RemoveOrdered(1);   // C, D, E가 한 칸씩 당겨짐
+
+Print(string.Join(", ", a, false));
+Print(string.Join(", ", b, false));
+```
+
+실행 결과는 다음과 같습니다.
+
+```text
+A, E, C, D
+A, C, D, E
+```
+
+순서가 의미 없는 목록(예: 처리할 대상 모음)이라면 `Remove`가 빠릅니다. 화면에 보이는 목록이나 차례가 중요한 대기열이라면 `RemoveOrdered`를 씁니다.
+
+<Pitfall title="반복하면서 지우기">
+
+앞에서부터 반복하며 원소를 지우면 다음 원소를 건너뛰게 됩니다. 공식 스크립트는 **뒤에서부터** 반복하며 지웁니다.
+
+```enforce
+// 체력이 0 이하인 병사를 목록에서 뺍니다
+for (int i = m_aSoldiers.Count() - 1; i >= 0; i--)
+{
+	if (m_aSoldiers[i].GetHealth() <= 0)
+		m_aSoldiers.Remove(i);
+}
+```
+
+뒤에서부터 돌면 `Remove`가 빈자리를 마지막 원소로 채워도, 그 원소는 이미 검사를 마친 원소라서 안전합니다. 공식 `SCR_ArrayHelperT`의 중복 제거 코드도 이렇게 뒤에서부터 돌며 `RemoveOrdered`를 씁니다.
+
+</Pitfall>
+
+### 정렬과 그 밖의 메서드
+
+`Sort()`는 원소를 오름차순으로, `Sort(true)`는 내림차순으로 정렬합니다. 공식 정의는 "원소 타입에 따라 정렬한다"고 설명하며, 숫자 배열과 문자열 배열을 정렬하는 코드가 공식 스크립트에 많습니다.
+
+```enforce
+array<int> scores = {40, 15, 90, 70};
+scores.Sort();      // 15, 40, 70, 90
+scores.Sort(true);  // 90, 70, 40, 15
+```
+
+객체 배열은 정렬 기준이 될 멤버에 `[SortAttribute()]` 어트리뷰트를 붙이면 `Sort()`로 정렬할 수 있습니다. 공식 정의에 따르면 기준 멤버의 타입은 `int`, `float`, `string`, 객체를 지원합니다. 공식 `SCR_AISettingBase`도 우선순위 멤버(`m_iPriority`)에 이 어트리뷰트를 붙이고, `SCR_AISettingsBaseComponent`가 `Sort(true)`로 높은 우선순위부터 정렬합니다.
+
+```enforce
+class TAG_ScoreEntry
+{
+	string m_sPlayer;
+
+	[SortAttribute()]
+	int m_iScore;
+
+	void TAG_ScoreEntry(string player, int score)
+	{
+		m_sPlayer = player;
+		m_iScore = score;
+	}
+}
+
+class TAG_ScoreBoardDemo
+{
+	static void Run()
+	{
+		array<ref TAG_ScoreEntry> board = {};
+		board.Insert(new TAG_ScoreEntry("Alpha", 30));
+		board.Insert(new TAG_ScoreEntry("Bravo", 50));
+		board.Sort(true); // 점수가 높은 Bravo가 앞으로
+	}
+}
+```
+
+비교 규칙을 직접 정해야 한다면 Game 모듈의 `SCR_Sorting`을 쓸 수 있습니다. `SCR_SortCompare<T>`를 상속한 비교 클래스를 만들고, 공식 코드처럼 `SCR_Sorting<SCR_WorkshopItem, SCR_CompareWorkshopItemName>.HeapSort(itemsRegistered);` 형태로 부릅니다.
+
+그 밖에 알아 두면 좋은 메서드는 다음과 같습니다.
+
+| 메서드 | 설명 |
+|---|---|
+| `Copy(array<T> from)` | `from`의 원소를 이 배열로 복사하고, 복사한 원소 수를 반환 |
+| `Resize(int newSize)` | 크기를 바꿈. 늘어난 자리는 0이나 `null`로 채움 |
+| `Reserve(int newSize)` | 원소를 넣기 전에 메모리를 미리 확보 |
+| `Swap(array<T> other)` | 두 배열의 내용을 통째로 맞바꿈 |
+| `SwapItems(int i1, int i2)` | 두 원소의 자리를 바꿈 |
+| `GetRandomElement()` | 무작위 원소. 내부에서 `GetRandomIndex()`를 쓰므로 빈 배열에는 쓰지 않음 |
+| `GetRandomIndex()` | 무작위 인덱스. 빈 배열이면 -1 |
+
+<Compare title="Python 리스트와 비교">
+
+```python
+names = ["Alpha", "Bravo"]
+names.append("Charlie")
+names.insert(0, "Zulu")
+names.pop(1)              # 순서 유지 삭제
+i = names.index("Bravo")  # 없으면 ValueError
+names.sort(reverse=True)
+```
+
+```enforce
+array<string> names = {"Alpha", "Bravo"};
+names.Insert("Charlie");
+names.InsertAt("Zulu", 0);       // 값이 먼저, 인덱스가 나중
+names.RemoveOrdered(1);          // 순서 유지 삭제
+int i = names.Find("Bravo");     // 없으면 -1 (예외 없음)
+names.Sort(true);
+```
+
+</Compare>
+
+## 정적 배열
+
+크기가 컴파일할 때 정해지는 배열을 **정적 배열**이라고 합니다. 변수 이름 뒤에 대괄호로 크기를 씁니다. 크기에는 숫자나 상수만 쓸 수 있고 변수는 쓸 수 없습니다.
+
+```enforce
+class TAG_Loadout
+{
+	const int SLOT_COUNT = 4;
+	protected string m_aSlots[SLOT_COUNT]; // 클래스 상수로 크기 지정
+
+	void Example()
+	{
+		int counts[3];               // 0, 0, 0
+		int ids[3] = {53, 90, 7};    // 초기화 리스트
+		int values[] = {7, 3, 6, 8}; // 초기화 리스트로 크기를 정함
+
+		int size = 3;
+		int wrong[size];             // 오류: 크기에 변수를 쓸 수 없음
+	}
+}
+```
+
+정적 배열은 인덱스 연산자 `[]`로 읽고 쓰며, `foreach`로 순회할 수 있습니다. 동적 배열과 달리 **값으로 전달**되고 자동으로 만들어지고 사라집니다. `Count()` 같은 메서드는 없으므로 크기는 선언에 쓴 상수를 그대로 쓰거나 `StaticArray.Length(arr)`로 얻습니다. `StaticArray`에는 `Sort`, `Reverse`, `Copy`도 있습니다.
+
+정적 배열은 크기가 정해진 데이터에 씁니다. 대표적인 예가 엔티티의 위치와 방향을 담는 변환 행렬 `vector mat[4]`입니다(10장). 클래스 멤버로도 쓸 수 있으며, 객체를 담으려면 원소에 `ref`를 붙입니다. 공식 `SCR_AISectorThreatFilter`는 클래스 상수 `SECTOR_COUNT`로 크기를 정해 `protected ref SCR_AIThreatSector m_aSectors[SECTOR_COUNT];`처럼 선언합니다.
+
+## 집합 set
+
+`set<T>`는 **중복을 허용하지 않는** 컬렉션입니다. 같은 값을 다시 넣으면 무시됩니다. 엔진 문서에 따르면 배열보다 넣는 속도는 느리지만 들어 있는지 확인하는 속도는 빠릅니다. 공식 주석도 `set`의 `Find`와 `Contains`를 O(log n)으로 설명합니다. 공식 스크립트는 집합을 `new`로 만듭니다.
+
+```enforce
+set<string> visited = new set<string>();
+
+bool added = visited.Insert("Checkpoint A"); // true
+added = visited.Insert("Checkpoint A");      // false: 이미 있음
+
+if (visited.Contains("Checkpoint A"))
+	Print("already visited");
+
+visited.RemoveItem("Checkpoint A");
+```
+
+| 메서드 | 반환 | 설명 |
+|---|---|---|
+| `Insert(T value)` | `bool` | 새로 넣었으면 `true`, 이미 있으면 `false` |
+| `Contains(T value)` | `bool` | 값이 있는지 확인 |
+| `Find(T value)` | `int` | 값의 인덱스, 없으면 -1 |
+| `RemoveItem(T value)` | `bool` | 값을 지움 |
+| `Remove(int index)` | `void` | 인덱스로 지움 |
+| `Get(int n)` | `T` | `n`번째 원소 |
+| `Count()`, `IsEmpty()`, `Clear()` | | 배열과 같음 |
+
+`foreach (string place : visited)`로 순회할 수 있습니다. 다만 엔진 문서는 집합 원소의 **순서가 보장되지 않는다**고 경고합니다. 넣은 순서가 필요하다면 배열을 함께 쓰세요.
+
+## 맵 map
+
+### 키와 값
+
+`map<TKey, TValue>`는 키로 값을 찾는 컬렉션입니다. Python의 딕셔너리, JavaScript의 `Map`과 같은 역할입니다. 키는 겹칠 수 없고, 엔진 문서에 따르면 `float`는 키로 쓸 수 없습니다. 공식 스크립트는 맵도 `new`로 만듭니다.
+
+```enforce
+map<string, int> kills = new map<string, int>();
+
+kills.Set("Alpha", 3);
+kills.Set("Bravo", 5);
+kills.Set("Alpha", kills.Get("Alpha") + 1); // Alpha: 4
+
+int bravoKills = kills["Bravo"];            // 5: Get과 같음
+kills["Charlie"] = 1;                       // 값 넣기
+```
+
+| 메서드 | 반환 | 설명 |
+|---|---|---|
+| `Set(TKey key, TValue value)` | `void` | 키가 없으면 만들고, 있으면 값을 바꿈 |
+| `Insert(TKey key, TValue value)` | `bool` | 새 원소를 넣음. 새로 만들 때는 `Set`보다 빠름 |
+| `Get(TKey key)` | `TValue` | 값. 키가 없으면 값 타입의 기본값 |
+| `Find(TKey key, out TValue val)` | `bool` | 키가 있으면 `true`와 함께 `val`에 값을 넣음 |
+| `Contains(TKey key)` | `bool` | 키가 있는지 확인 |
+| `Remove(TKey key)` | `bool` | 키와 값을 지움 |
+| `Take(TKey key, out TValue value)` | `bool` | 값을 꺼내면서 지움 |
+| `Count()`, `IsEmpty()`, `Clear()` | | 원소 수, 비었는지, 모두 지우기 |
+
+이미 있는 키의 값을 바꿀 때는 `Set`을 쓰세요. `Insert`는 새 키를 넣을 때 씁니다. `ReplaceKey`와 `GetKeyByValue`도 있지만 공식 정의에서 더 쓰지 말라는 `Obsolete` 표시가 붙어 있고, 대신 `SCR_MapHelper`를 쓰라고 안내합니다.
+
+### 없는 키 다루기
+
+`Get`은 키가 없어도 오류를 내지 않고 기본값(`int`는 0, `string`은 빈 문자열, 객체는 `null`)을 돌려줍니다. 그래서 "값이 0"인지 "키가 없는지" 구별할 수 없습니다. 둘을 구별해야 하면 `Find`나 `Contains`를 씁니다.
+
+```enforce
+int value;
+if (kills.Find("Delta", value))
+	PrintFormat("Delta: %1", value);
+else
+	Print("Delta has no record");
+```
+
+<Compare title="없는 키 처리 비교">
+
+```python
+kills = {"Alpha": 3}
+v = kills.get("Delta")      # None
+if "Delta" in kills:
+    print(kills["Delta"])   # 없는 키를 []로 읽으면 KeyError
+```
+
+```enforce
+map<string, int> kills = new map<string, int>();
+kills.Set("Alpha", 3);
+int v = kills.Get("Delta"); // 0: 오류도 null도 아님
+int found;
+if (kills.Find("Delta", found))
+	PrintFormat("%1", found);
+```
+
+</Compare>
+
+### 순회
+
+`foreach`에 변수를 두 개 쓰면 키와 값을, 하나만 쓰면 값만 받습니다.
+
+```enforce
+foreach (string name, int count : kills)
+{
+	PrintFormat("%1: %2", name, count);
+}
+
+foreach (int count : kills)
+{
+	// 값만 필요할 때
+}
+```
+
+위키의 Enforce Script Syntax 문서는 맵이 값을 넣은 순서대로 저장하지 않는다고 밝힙니다. 그러니 순회 순서에 기대면 안 됩니다. 정해진 순서로 출력해야 한다면 키를 배열에 모아 정렬한 뒤 그 순서대로 값을 읽으세요. `GetKey(i)`와 `GetElement(i)`로 i번째 키와 값을 읽을 수도 있지만, 공식 주석이 경고하듯 O(n) 연산이므로 반복문 안에서 쓰면 느려집니다. 전체를 돌 때는 `foreach`를 씁니다.
+
+## 컬렉션과 ref
+
+7장의 규칙을 컬렉션 관점에서 다시 정리합니다.
+
+- 컬렉션을 **멤버나 정적 변수**로 둘 때는 컬렉션 자체에 `ref`를 붙입니다. 공식 게임 스크립트에서 멤버 컬렉션을 선언과 함께 만드는 코드는 모두 `ref`를 붙입니다.
+- 컬렉션이 원소 객체를 **소유**하면 원소 타입에 `ref`를 붙입니다. `array<ref T>`, `set<ref T>`, `map<K, ref V>`입니다.
+- 컬렉션 안에 컬렉션을 넣을 때도 안쪽에 `ref`를 붙입니다. 공식 코드의 `map<SCR_EArsenalItemType, ref array<SCR_ArsenalItem>>`, `array<ref array<int>>`가 그런 예입니다.
+- `int`, `string`, `vector` 같은 값 타입 원소에는 `ref`가 필요 없습니다.
+
+컬렉션 변수끼리 대입하면 컬렉션 객체를 함께 가리킬 뿐 원소가 복사되지 않습니다. `==`도 같은 컬렉션 객체인지를 비교하며, 내용이 같은지 비교하지 않습니다. 내용을 복사하려면 새 배열을 만들고 `Copy`나 `InsertAll`을 씁니다.
+
+```enforce
+array<int> original = {1, 2, 3};
+array<int> sameArray = original;   // 같은 배열
+array<int> copied = {};
+copied.Copy(original);             // 원소를 복사한 새 배열
+bool same = (original == copied);  // false: 다른 배열 객체
+```
+
+`ref` 원소 배열을 복사할 때는 공식 Game 모듈의 `SCR_ArrayHelperRefT<T>.CopyReferencesFromTo(source, destination)`를 쓸 수 있습니다. 공식 주석은 이 메서드를 "참조 배열을 위한 `array.Copy`"라고 설명하며, 안에서는 대상 배열을 비운 뒤 `foreach`로 원소를 하나씩 `Insert`합니다. 어느 쪽이든 복사되는 것은 객체를 가리키는 참조입니다. 객체 자체가 복제되지는 않습니다.
+
+## typedef로 타입 별칭 만들기
+
+`typedef`는 긴 타입에 짧은 별칭을 붙입니다. 엔진 문서의 예처럼 `typedef string Text;`라고 쓰면 `Text`를 `string` 대신 쓸 수 있습니다. 템플릿 타입처럼 꺾쇠가 겹치는 타입에 특히 쓸모가 있습니다.
+
+`Types.c`에는 자주 쓰는 컬렉션의 별칭이 미리 정의되어 있어 공식 코드에서 자주 보입니다.
+
+| 별칭 | 원래 타입 |
+|---|---|
+| `TStringArray`, `TIntArray`, `TFloatArray`, `TBoolArray`, `TVectorArray` | `array<string>`, `array<int>`, `array<float>`, `array<bool>`, `array<vector>` |
+| `TStringSet`, `TIntSet` | `set<string>`, `set<int>` |
+| `TStringIntMap`, `TIntStringMap`, `TStringStringMap` | `map<string, int>`, `map<int, string>`, `map<string, string>` |
+
+직접 별칭을 만들 때는 파일의 최상위(클래스 바깥)에 둡니다. 공식 게임 스크립트도 `ref`가 들어간 타입에 별칭을 붙여 씁니다.
+
+```enforce
+// 공식 SCR_AIGroupFireteamLock.c
+typedef array<ref SCR_AIGroupFireteamLock> TFireteamLockRefArray;
+
+// 사용하는 쪽(공식 SCR_AIInvestigateClusterActivity의 멤버 선언)
+protected ref TFireteamLockRefArray m_aFireteamsInvestigate = {};
+```
+
+별칭에도 태그를 붙여 다른 모드와 이름이 겹치지 않게 합니다(`TAG_TItemArray` 등). `typedef`는 함수 시그니처를 나타내는 `func`와 함께 쓰여 이벤트 타입을 정의하는 데도 쓰입니다. 이 용법은 11장에서 다룹니다.
+
+## 템플릿 클래스
+
+### 정의와 사용
+
+`array`, `set`, `map`은 원소 타입을 매개변수로 받는 **템플릿** 클래스입니다. 공식 정의도 `class array<Class T>: Managed`처럼 선언되어 있습니다. 같은 문법으로 직접 템플릿 클래스를 만들 수 있습니다. 클래스 이름 뒤 꺾쇠 안에 `Class T`처럼 타입 매개변수를 선언하고, 본문에서 `T`를 타입처럼 씁니다.
+
+다음은 최근 값 몇 개만 기억하는 기록 클래스입니다. 정수든 문자열이든 같은 코드로 다룹니다.
+
+```enforce title="Scripts/Game/TAG_History.c"
+//! 최근 값을 정해진 개수만큼만 기억합니다.
+class TAG_History<Class T>
+{
+	protected ref array<T> m_aValues = {};
+	protected int m_iCapacity;
+
+	//------------------------------------------------------------------------------------------------
+	void TAG_History(int capacity)
+	{
+		m_iCapacity = capacity;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	void Add(T value)
+	{
+		if (m_aValues.Count() >= m_iCapacity)
+			m_aValues.RemoveOrdered(0); // 가장 오래된 값을 버림
+
+		m_aValues.Insert(value);
+	}
+
+	//------------------------------------------------------------------------------------------------
+	int Count()
+	{
+		return m_aValues.Count();
+	}
+
+	//------------------------------------------------------------------------------------------------
+	T Get(int index)
+	{
+		return m_aValues[index];
+	}
+}
+```
+
+사용할 때는 타입 인수를 꺾쇠 안에 씁니다. 생성자 이름에는 타입 매개변수를 붙이지 않고, `new` 뒤에는 붙입니다.
+
+```enforce
+TAG_History<int> damage = new TAG_History<int>(3);
+damage.Add(10);
+damage.Add(25);
+damage.Add(5);
+damage.Add(40);          // 10이 밀려남
+int oldest = damage.Get(0); // 25
+
+TAG_History<string> chat = new TAG_History<string>(10);
+chat.Add("Contact front");
+```
+
+타입 매개변수는 여러 개 둘 수 있습니다. 공식 `Core/tuple.c`의 `class Tuple2<Class T1, Class T2> extends Tuple`이 그런 예이고, `new Tuple2<float, string>(3.14, "Pi")`처럼 씁니다.
+
+### 템플릿의 제약
+
+위키 문서가 말하듯 템플릿 클래스의 메서드는 `T`가 어떤 타입인지 가정할 수 없습니다. 예를 들어 `T.Cast()`는 클래스 타입에서는 되지만 `int`에서는 오류가 납니다. 그래서 템플릿 코드는 대입, 비교, 컬렉션에 넣고 빼기처럼 모든 타입에 통하는 연산 위주로 씁니다.
+
+`ref`도 주의해야 합니다. `TAG_History<T>`는 `array<T>`를 쓰므로 `T`가 클래스라면 원소가 약한 참조가 되어, `new`로 만든 객체를 넣자마자 사라집니다. 객체를 소유하는 템플릿이 필요하면 공식 `SCR_Stack<Class T>`처럼 `ref array<ref T>`로 원소를 붙잡고, 그 템플릿은 클래스 타입 전용으로 씁니다. 공식 `SCR_BTParam<Class T>`와 `SCR_BTParamRef<Class T>`도 멤버를 `T m_Value`로 둘지 `ref T m_Value`로 둘지에 따라 두 버전으로 나뉘어 있습니다.
+
+템플릿 클래스의 정적 메서드는 타입 인수를 붙여 부릅니다. 공식 Game 모듈의 배열 도우미는 `SCR_ArrayHelperT<int>.Reverse(values);`처럼 씁니다.
+
+## 성능 감각
+
+컬렉션 연산의 비용은 공식 정의의 주석에 나와 있습니다. 많은 데이터를 매 프레임 다루는 코드라면 다음을 기억해 두세요.
+
+| 작업 | 비용 | 대안 |
+|---|---|---|
+| 배열 `Find`, `Contains`, `RemoveItem` | 원소 수에 비례(O(n)) | 자주 찾는다면 `set`이나 `map` |
+| `set`의 `Find`, `Contains` | O(log n) | |
+| 배열 `RemoveOrdered` | 뒤 원소를 모두 옮김 | 순서가 필요 없으면 `Remove` |
+| 맵 `GetKey(i)`, `GetElement(i)` | O(n) | `foreach`로 순회 |
+| 배열 `Count()` | O(1) | |
+
+- 위키 문서에 따르면 동적 배열의 `arr[i]`는 `Get(i)` 호출과 같습니다. 같은 원소를 여러 번 쓴다면 지역 변수에 한 번 받아 두거나 `foreach`를 쓰세요.
+- 공식 스크립트에는 반복 조건에서 매번 `Count()`를 부르지 않도록 `for (int i, count = arr.Count(); i < count; i++)`처럼 쓰는 코드도 자주 보입니다.
+- 넣을 원소 수를 미리 안다면 `Reserve`로 메모리를 확보해 두면 중간에 다시 할당하는 일을 줄일 수 있습니다. 반대로 남는 메모리를 해제하는 `Compact`는 조심해서 씁니다. 공식 주석은 메모리 할당과 해제가 비싸므로, 프레임마다 원소를 다시 넣을 배열에는 `Compact`를 쓰지 말라고 경고합니다.
+- 큰 목록을 한 프레임에 모두 처리하는 것 자체가 문제일 때가 많습니다. 처리를 여러 프레임에 나누는 방법은 11장과 15장에서 다룹니다.
+
+## 정리
+
+<Summary>
+
+- `array<T>`는 `{}`나 `new`로 만듭니다. `Insert`는 추가한 위치를, `Find`는 위치 또는 -1을 반환하며, `InsertAt`은 값이 먼저 인덱스가 나중입니다.
+- `Remove`·`RemoveItem`은 빈자리를 마지막 원소로 채워 빠르지만 순서가 바뀌고, `RemoveOrdered`·`RemoveItemOrdered`는 순서를 지키지만 느립니다. 반복하며 지울 때는 뒤에서부터 돕니다.
+- `Sort()`는 오름차순, `Sort(true)`는 내림차순입니다. 객체 배열은 기준 멤버에 `[SortAttribute()]`를 붙입니다.
+- 정적 배열은 상수 크기로 선언하며 값으로 전달됩니다. 크기는 `StaticArray.Length`로 얻습니다.
+- `set<T>`는 중복을 막고 `Insert`가 `bool`을 반환합니다. 원소 순서는 보장되지 않습니다.
+- `map<K, V>`는 `Set`으로 넣거나 바꾸고, `Get`은 없는 키에 기본값을 돌려주므로 구별이 필요하면 `Find`나 `Contains`를 씁니다. `float`는 키로 쓸 수 없습니다.
+- 멤버 컬렉션에는 `ref`를, 원소 객체를 소유하면 원소 타입에도 `ref`를 붙입니다. 컬렉션 대입과 `==`는 같은 객체를 가리키는지의 문제입니다.
+- `typedef`로 긴 타입에 별칭을 붙이고, `class 이름<Class T>`로 템플릿 클래스를 만듭니다. 템플릿 안에서는 `T`가 어떤 타입인지 가정하지 않습니다.
+
+</Summary>
+
+**더 읽을거리**
+
+- [Scripting: Values](https://community.bistudio.com/wiki/Arma_Reforger:Scripting:_Values)
+- [Class Template Example](https://community.bistudio.com/wiki/Arma_Reforger:Class_Template_Example)
+- [Scripting: Performance](https://community.bistudio.com/wiki/Arma_Reforger:Scripting:_Performance)
+
+## 연습문제
+
+<Exercise id="8-1" level="기초" title="배열 다루기">
+
+`array<int> numbers = {5, 3, 8, 1};`에서 시작해 다음을 차례로 수행하는 코드를 쓰고, 각 단계가 끝난 뒤 배열의 내용을 적으세요.
+
+1. 맨 뒤에 7을 추가합니다.
+2. 맨 앞에 2를 끼워 넣습니다.
+3. 값 8의 위치를 찾아 출력합니다.
+4. 값 3을 순서를 유지하며 지웁니다.
+5. 내림차순으로 정렬합니다.
+
+</Exercise>
+
+<Exercise id="8-2" level="기초" title="삭제 결과 예측">
+
+다음 코드가 끝났을 때 `a`와 `b`의 내용, 그리고 `removed1`, `removed2`의 값을 적으세요.
+
+```enforce
+array<string> a = {"Q", "W", "E", "R", "T"};
+array<string> b = {"Q", "W", "E", "R", "T"};
+
+a.Remove(0);
+bool removed1 = b.RemoveItemOrdered("E");
+bool removed2 = b.RemoveItemOrdered("Z");
+b.Remove(b.Count() - 1);
+```
+
+</Exercise>
+
+<Exercise id="8-3" level="응용" title="단어 세기">
+
+공백으로 구분된 문장에서 단어마다 몇 번 나왔는지 세어, 단어를 사전순으로 정렬해 출력하는 정적 메서드 `CountWords(string sentence)`를 작성하세요. 문자열을 나누는 `Split`은 9장에서 다루는 메서드로, `sentence.Split(" ", words, true)`처럼 쓰면 빈 조각을 빼고 `words` 배열에 단어를 채웁니다. `"move move hold fire move"`를 넣으면 다음처럼 출력되어야 합니다.
+
+```text
+fire: 1
+hold: 1
+move: 3
+```
+
+</Exercise>
+
+<Exercise id="8-4" level="응용" title="처음 나온 순서로 중복 없애기">
+
+플레이어 이름 배열에서 중복을 없애되, 각 이름이 **처음 나온 순서**는 유지한 새 배열을 반환하는 정적 메서드를 작성하세요. 이미 본 이름인지 확인할 때는 `set`을 쓰고, `Insert`의 반환값을 활용하세요. 집합의 순서에 의존하면 안 됩니다.
+
+</Exercise>
+
+<Exercise id="8-5" level="응용" title="ref 고치기">
+
+다음 클래스는 팀별 대원 이름 목록과 장비 목록을 관리하려고 하지만 컴파일되지 않고, 컴파일 오류를 없애도 제대로 동작하지 않습니다. 컴파일러가 막는 선언과, 컴파일은 되지만 실행 중에 문제가 되는 선언을 모두 찾아 이유를 설명하고 고치세요. `TAG_Gear`는 인수 없는 생성자를 가진 클래스입니다.
+
+```enforce
+class TAG_Roster
+{
+	protected map<string, array<string>> m_mTeams;
+	protected array<TAG_Gear> m_aGear;
+
+	void TAG_Roster()
+	{
+		m_mTeams = new map<string, array<string>>();
+		m_aGear = {};
+	}
+
+	void AddMember(string team, string name)
+	{
+		array<string> members = m_mTeams.Get(team);
+		if (!members)
+		{
+			members = {};
+			m_mTeams.Set(team, members);
+		}
+
+		members.Insert(name);
+	}
+
+	void AddGear()
+	{
+		m_aGear.Insert(new TAG_Gear());
+	}
+}
+```
+
+</Exercise>
+
+<Exercise id="8-6" level="도전" title="고리 버퍼 템플릿">
+
+용량이 정해진 고리 버퍼(ring buffer) `TAG_RingBuffer<Class T>`를 만드세요.
+
+- 생성자는 용량을 받습니다. 내부 배열은 `Resize`로 미리 그 크기를 만들어 둡니다.
+- `Push(T value)`는 값을 넣고, 가득 찼으면 가장 오래된 값을 덮어씁니다. 원소를 옮기는 `RemoveOrdered`를 쓰지 마세요.
+- `Count()`는 들어 있는 값의 수를, `Get(int i)`는 가장 오래된 값부터 셌을 때 `i`번째 값을 반환합니다.
+
+용량 3인 버퍼에 1, 2, 3, 4, 5를 넣었을 때 `Get(0)`부터 `Get(2)`까지의 값도 적으세요.
+
+</Exercise>

@@ -1,0 +1,201 @@
+---
+title: 단축키
+description: 메인 창, Script Editor, World Editor, String Editor와 Play 중에 쓰는 단축키를 창별로 모았습니다. 메뉴에 적혀 있기만 한 키는 비고 칸에 따로 표시했습니다.
+---
+
+이 부록은 Arma Reforger Tools 1.8.0.13 화면을 기준으로 단축키를 창별로 모은 것입니다. 메뉴 항목 옆에 적힌 키는 화면 글자 그대로 옮겼고, 메뉴에 없는 키도 함께 실었습니다. 메뉴 전체는 부록 B, 위키 이름과 화면 이름이 다른 곳은 부록 C에 있습니다.
+
+비고 칸이 빈 키는 눌러서 동작을 확인한 키이고, '메뉴 표시'는 메뉴 항목 옆에 적혀 있는 키입니다.
+
+동작 열은 메뉴 이름을 우리말로 옮긴 것이고, 기능의 자세한 설명은 본문 각 장에 있습니다.
+
+<Note title="키는 창마다 다릅니다">
+
+단축키는 그 키가 적힌 창을 활성 창으로 두고 누릅니다. Script Editor의 <Kbd>F4</Kbd>, <Kbd>F5</Kbd>, <Kbd>F9</Kbd>, <Kbd>F10</Kbd>도 Script Editor가 활성 창일 때 동작합니다. 같은 키가 창마다 다른 일을 하기도 합니다. 예를 들어 <Kbd>F10</Kbd>은 Script Editor에서는 **Debug > Step Over**이고, Play 중에는 게임의 일시정지 메뉴를 엽니다. <Kbd>Ctrl</Kbd>+<Kbd>B</Kbd>는 메인 창에서 **Locate File in Resource Browser**, Script Editor에서 **Navigate To File**, World Editor에서 **Bake MLOD Texture**, String Editor에서 **Build Runtime Table** 옆에 적혀 있습니다. <Kbd>Ctrl</Kbd>+<Kbd>Shift</Kbd>+<Kbd>D</Kbd>는 Script Editor의 **Plugins** 메뉴에서 **Debug Line Shortcut** 옆에 적혀 있고, World Editor에서는 Dedicated Server Tool을 실행합니다(12장).
+
+</Note>
+
+## 메인 창
+
+| 동작 | 키 | 메뉴 위치·출처 | 비고 |
+|---|---|---|---|
+| 지금 탭 저장 | <Kbd>Ctrl</Kbd>+<Kbd>S</Kbd> | **File > Save** | 메뉴 표시 |
+| 모두 저장 | <Kbd>Ctrl</Kbd>+<Kbd>Shift</Kbd>+<Kbd>S</Kbd> | **File > Save All** | 메뉴 표시 |
+| 되돌리기 | <Kbd>Ctrl</Kbd>+<Kbd>Z</Kbd> | **Edit > Undo** | 메뉴 표시 |
+| 다시 하기 | <Kbd>Ctrl</Kbd>+<Kbd>Y</Kbd> | **Edit > Redo** | 메뉴 표시 |
+| 리소스 다시 가져오기 | <Kbd>F5</Kbd> | **Edit > Reimport Resource** | 메뉴 표시 |
+| Resource Browser에서 파일 위치 찾기 | <Kbd>Ctrl</Kbd>+<Kbd>B</Kbd> | **Edit > Locate File in Resource Browser** | 메뉴 표시 |
+| 프리팹 편집 | <Kbd>Ctrl</Kbd>+<Kbd>E</Kbd> | **Edit > Edit Prefab** | |
+| 다음 탭 | <Kbd>Ctrl</Kbd>+<Kbd>PgDown</Kbd> | **Window > Next Tab** | 메뉴 표시 |
+| 이전 탭 | <Kbd>Ctrl</Kbd>+<Kbd>PgUp</Kbd> | **Window > Previous Tab** | 메뉴 표시 |
+| 탭 돌아가며 고르기 | <Kbd>Ctrl</Kbd>+<Kbd>Tab</Kbd> | **Window > Cycle Tabs** | 메뉴 표시 |
+| 탭 닫기 | <Kbd>Ctrl</Kbd>+<Kbd>W</Kbd> | **Window > Close Tab** | 메뉴 표시 |
+| 닫은 탭 다시 열기 | <Kbd>Ctrl</Kbd>+<Kbd>Shift</Kbd>+<Kbd>T</Kbd> | **Window > Reopen Closed Tab** | 메뉴 표시 |
+| 전체 화면 모드 전환 | <Kbd>F11</Kbd> | **Window > Toggle Fullscreen Mode** | 메뉴 표시 |
+| Log Console 창 | <Kbd>F1</Kbd> | **Window > Log Console** | 메뉴 표시 |
+| Resource Browser 창 | <Kbd>F3</Kbd> | **Window > Resource Browser** | 메뉴 표시 |
+| 데이터를 스프레드시트로(플러그인) | <Kbd>Alt</Kbd>+<Kbd>Shift</Kbd>+<Kbd>E</Kbd> | **Plugins > Data To Spreadsheet plugin** | 메뉴 표시 |
+| 고른 파일 로컬라이즈(플러그인) | <Kbd>Ctrl</Kbd>+<Kbd>Alt</Kbd>+<Kbd>L</Kbd> | **Plugins > Localise Selected Files** | 메뉴 표시 |
+
+위키(Resource Manager)의 단축키 표는 다음 탭을 <Kbd>Ctrl</Kbd>+<Kbd>Page Up</Kbd>, 이전 탭을 <Kbd>Ctrl</Kbd>+<Kbd>Page Down</Kbd>으로 적지만, 화면의 메뉴에는 그 반대로 적혀 있습니다. 같은 위키 문서의 Window 메뉴 설명은 화면의 메뉴와 같습니다.
+
+## Script Editor
+
+### 메뉴에 표시된 키
+
+| 동작 | 키 | 메뉴 위치·출처 | 비고 |
+|---|---|---|---|
+| 모두 저장 | <Kbd>Ctrl</Kbd>+<Kbd>S</Kbd> | **File > Save All** | |
+| Script Editor 닫기 | <Kbd>Ctrl</Kbd>+<Kbd>Q</Kbd> | **File > Exit** | 메뉴 표시 |
+| 되돌리기 | <Kbd>Ctrl</Kbd>+<Kbd>Z</Kbd> | **Edit > Undo** | 메뉴 표시 |
+| 다시 하기 | <Kbd>Ctrl</Kbd>+<Kbd>Y</Kbd> | **Edit > Redo** | 메뉴 표시 |
+| 찾기 | <Kbd>Ctrl</Kbd>+<Kbd>F</Kbd> | **Edit > Find** | |
+| 파일 찾기 | <Kbd>Alt</Kbd>+<Kbd>Shift</Kbd>+<Kbd>O</Kbd> | **Edit > Find File** | |
+| 기호 찾기 | <Kbd>Alt</Kbd>+<Kbd>Shift</Kbd>+<Kbd>S</Kbd> | **Edit > Find Symbol** | |
+| 엔티티 찾기 | <Kbd>Alt</Kbd>+<Kbd>Shift</Kbd>+<Kbd>E</Kbd> | **Edit > Find Entity** | |
+| 다음 찾기 | <Kbd>F3</Kbd> | **Edit > Find Next** | |
+| 이전 찾기 | <Kbd>Shift</Kbd>+<Kbd>F3</Kbd> | **Edit > Find Prev** | |
+| 모든 파일에서 찾기 | <Kbd>Ctrl</Kbd>+<Kbd>Shift</Kbd>+<Kbd>F</Kbd> | **Edit > Find in Files** | |
+| Outline에서 찾기 | <Kbd>Alt</Kbd>+<Kbd>M</Kbd> | **Edit > Find in Outline** | |
+| 줄로 이동 | <Kbd>Ctrl</Kbd>+<Kbd>G</Kbd> | **Edit > Jump To Line** | |
+| 스택 트레이스 찾기 | <Kbd>Alt</Kbd>+<Kbd>G</Kbd> | **Edit > Find Stack Trace** | |
+| 뒤로 이동 | <Kbd>Alt</Kbd>+<Kbd>Left</Kbd> | **Edit > Navigate Back** | |
+| 앞으로 이동 | <Kbd>Alt</Kbd>+<Kbd>Right</Kbd> | **Edit > Navigate Forward** | 메뉴 표시 |
+| 링크 복사 | <Kbd>Ctrl</Kbd>+<Kbd>Shift</Kbd>+<Kbd>L</Kbd> | **Edit > Copy Link** | 메뉴 표시 |
+| 줄 복제 | <Kbd>Ctrl</Kbd>+<Kbd>D</Kbd> | **Edit > Duplicate Line** | 메뉴 표시 |
+| 선택한 줄 주석 켜고 끄기 | <Kbd>/</Kbd> | **Edit > Comment Selection Toggle** | 메뉴 표시 |
+| 스크립트 검사 | <Kbd>F7</Kbd> | **Build > Validate Scripts** | |
+| 검사하고 다시 불러오기 | <Kbd>Shift</Kbd>+<Kbd>F7</Kbd> | **Build > Validate and Reload Scripts** | |
+| 스크립트 다시 불러오기 | <Kbd>Ctrl</Kbd>+<Kbd>Shift</Kbd>+<Kbd>F7</Kbd> | **Build > Reload Scripts** | |
+| 계속 실행 | <Kbd>F5</Kbd> | **Debug > Continue** | |
+| 함수 안으로 들어가며 한 단계 | <Kbd>F11</Kbd> | **Debug > Step Into** | |
+| 함수를 건너뛰며 한 단계 | <Kbd>F10</Kbd> | **Debug > Step Over** | |
+| 지금 함수 밖으로 | <Kbd>Shift</Kbd>+<Kbd>F11</Kbd> | **Debug > Step Out** | |
+| 디버깅 멈추기 | <Kbd>Shift</Kbd>+<Kbd>F5</Kbd> | **Debug > Stop** | 메뉴 표시 |
+| 브레이크포인트 켜고 끄기 | <Kbd>F9</Kbd> | **Debug > Toggle Breakpoint** | |
+| 호스트에서 파일 다시 컴파일 | <Kbd>Ctrl</Kbd>+<Kbd>F7</Kbd> | **Debug > Recompile File on Host** | |
+| 콘솔 실행 | <Kbd>F6</Kbd> | **Debug > Console Execute** | |
+| 다음 탭 | <Kbd>Ctrl</Kbd>+<Kbd>PgDown</Kbd> | **Window > Next Tab** | 메뉴 표시 |
+| 이전 탭 | <Kbd>Ctrl</Kbd>+<Kbd>PgUp</Kbd> | **Window > Previous Tab** | 메뉴 표시 |
+| 탭 돌아가며 고르기 | <Kbd>Ctrl</Kbd>+<Kbd>Tab</Kbd> | **Window > Cycle Tabs** | 메뉴 표시 |
+| 탭 닫기 | <Kbd>Ctrl</Kbd>+<Kbd>W</Kbd> | **Window > Close Tab** | |
+| 닫은 탭 다시 열기 | <Kbd>Ctrl</Kbd>+<Kbd>Shift</Kbd>+<Kbd>T</Kbd> | **Window > Reopen Closed Tab** | 메뉴 표시 |
+| 파일로 이동 | <Kbd>Ctrl</Kbd>+<Kbd>B</Kbd> | **Window > Navigate To File** | 메뉴 표시 |
+| 책갈피 켜고 끄기 | <Kbd>Ctrl</Kbd>+<Kbd>F2</Kbd> | **Bookmarks > Toggle Bookmark** | |
+| 다음 책갈피 | <Kbd>Shift</Kbd>+<Kbd>F2</Kbd> | **Bookmarks > Next Bookmark** | |
+| 이전 책갈피 | <Kbd>Alt</Kbd>+<Kbd>F2</Kbd> | **Bookmarks > Previous Bookmark** | 메뉴 표시 |
+| 자동 완성과 코드 조각(플러그인) | <Kbd>Ctrl</Kbd>+<Kbd>Return</Kbd> | **Plugins > Autocomplete** | 메뉴 표시 |
+| 테스트 실행(플러그인) | <Kbd>F4</Kbd> | **Plugins > Autotest** | |
+| 코드 서식 정리(플러그인) | <Kbd>Ctrl</Kbd>+<Kbd>Shift</Kbd>+<Kbd>K</Kbd> | **Plugins > Basic Code Formatter** | 메뉴 표시 |
+| 코드 서식 정리, 강제(플러그인) | <Kbd>Ctrl</Kbd>+<Kbd>Alt</Kbd>+<Kbd>Shift</Kbd>+<Kbd>K</Kbd> | **Plugins > Basic Code Formatter - forced** | 메뉴 표시 |
+| 클래스·메서드 이름 복사(플러그인) | <Kbd>Ctrl</Kbd>+<Kbd>Shift</Kbd>+<Kbd>C</Kbd> | **Plugins > Copy Class and Method Name** | 메뉴 표시 |
+| 새 스크립트 만들기(플러그인) | <Kbd>Ctrl</Kbd>+<Kbd>N</Kbd> | **Plugins > Create New Script** | 메뉴 표시 |
+| Debug Line Shortcut(플러그인) | <Kbd>Ctrl</Kbd>+<Kbd>Shift</Kbd>+<Kbd>D</Kbd> | **Plugins > Debug Line Shortcut** | 메뉴 표시 |
+| Doxygen 주석 뼈대 넣기(플러그인) | <Kbd>Ctrl</Kbd>+<Kbd>Alt</Kbd>+<Kbd>Shift</Kbd>+<Kbd>D</Kbd> | **Plugins > Doxygen Filler** | 메뉴 표시 |
+| 템플릿으로 내용 채우기(플러그인) | <Kbd>Ctrl</Kbd>+<Kbd>T</Kbd> | **Plugins > Fill from Template** | 메뉴 표시 |
+
+**Comment Selection Toggle** 옆에는 <Kbd>/</Kbd> 하나만 적혀 있지만, 편집 영역에서 <Kbd>/</Kbd>를 누르면 그 글자가 입력됩니다. 줄을 주석으로 바꿀 때는 메뉴에서 이 항목을 고릅니다. 고른 줄의 맨 앞에 `//`가 붙고, 다시 고르면 빠집니다. 플러그인 항목의 동작 열은 위키의 플러그인 문서(Script Editor: Autocomplete Plugin 등)를 따랐습니다.
+
+### 그 밖의 키
+
+| 동작 | 키 | 메뉴 위치·출처 | 비고 |
+|---|---|---|---|
+| 선언 열기 | <Kbd>Ctrl</Kbd>+클릭 | 편집 영역의 클래스·메서드·변수 이름 위 | |
+| 자동 완성 목록 보기 | <Kbd>Ctrl</Kbd>+<Kbd>Space</Kbd> | 편집 영역(이름을 입력하는 중에는 저절로 뜸) | |
+| 함수의 선언을 작은 창으로 보기 | <Kbd>Ctrl</Kbd>+<Kbd>Shift</Kbd>+<Kbd>Space</Kbd> | 편집 영역의 함수 호출 괄호 안 | |
+
+<Note title="위키 단축키 표와 다른 곳">
+
+위키(Script Editor)의 단축키 표는 이전 책갈피(Previous Bookmark)를 <Kbd>Shift</Kbd>+<Kbd>F7</Kbd>로 적지만, 화면에서 <Kbd>Shift</Kbd>+<Kbd>F7</Kbd>은 **Build > Validate and Reload Scripts**의 키이고 **Previous Bookmark** 옆에는 <Kbd>Alt</Kbd>+<Kbd>F2</Kbd>가 적혀 있습니다. 같은 표는 다음 책갈피를 <Kbd>F2</Kbd>로 적지만, <Kbd>F2</Kbd>를 눌러도 다음 책갈피로 가지 않습니다. 다음 책갈피는 <Kbd>Shift</Kbd>+<Kbd>F2</Kbd>입니다. 같은 표의 Open File(<Kbd>Ctrl</Kbd>+<Kbd>O</Kbd>)은 Script Editor의 메뉴에 없습니다. 같은 표가 Compile, Insert Breakpoint, Compile current file on host (game)라고 부르는 항목은 화면의 메뉴에서 **Validate Scripts**, **Toggle Breakpoint**, **Recompile File on Host**입니다(부록 C).
+
+</Note>
+
+## World Editor
+
+| 동작 | 키 | 메뉴 위치·출처 | 비고 |
+|---|---|---|---|
+| 새 월드 | <Kbd>Ctrl</Kbd>+<Kbd>N</Kbd> | **File > New World** | 메뉴 표시 |
+| 월드 불러오기 | <Kbd>Ctrl</Kbd>+<Kbd>O</Kbd> | **File > Load World** | 메뉴 표시 |
+| 월드 저장 | <Kbd>Ctrl</Kbd>+<Kbd>S</Kbd> | **File > Save World** | 메뉴 표시 |
+| 옵션을 골라 저장 | <Kbd>Ctrl</Kbd>+<Kbd>Shift</Kbd>+<Kbd>S</Kbd> | **File > Save with Options** | 메뉴 표시 |
+| 프리팹 저장(프리팹 편집 모드) | <Kbd>Ctrl</Kbd>+<Kbd>S</Kbd> | **File > Save Prefabs** | 메뉴 표시 |
+| 옵션을 골라 프리팹 저장(프리팹 편집 모드) | <Kbd>Ctrl</Kbd>+<Kbd>Shift</Kbd>+<Kbd>S</Kbd> | **File > Save Prefabs with Options** | 메뉴 표시 |
+| 되돌리기 | <Kbd>Ctrl</Kbd>+<Kbd>Z</Kbd> | **Edit > Undo** | |
+| 다시 하기 | <Kbd>Ctrl</Kbd>+<Kbd>Y</Kbd> | **Edit > Redo** | 메뉴 표시 |
+| 복사 | <Kbd>Ctrl</Kbd>+<Kbd>C</Kbd> | **Edit > Copy** | 메뉴 표시 |
+| 붙여넣기 | <Kbd>Ctrl</Kbd>+<Kbd>V</Kbd> | **Edit > Paste** | 메뉴 표시 |
+| 같은 자리에 붙여넣기 | <Kbd>Ctrl</Kbd>+<Kbd>Shift</Kbd>+<Kbd>V</Kbd> | **Edit > Paste on Same Position** | 메뉴 표시 |
+| 복제 | <Kbd>Ctrl</Kbd>+<Kbd>D</Kbd> | **Edit > Duplicate** | 메뉴 표시 |
+| 잘라내기 | <Kbd>Ctrl</Kbd>+<Kbd>X</Kbd> | **Edit > Cut** | 메뉴 표시 |
+| 커서 아래 재질 열기 | <Kbd>M</Kbd> | **Edit > Open Material under Cursor** | 메뉴 표시 |
+| 새 카메라 키프레임 | <Kbd>K</Kbd> | **Edit > New Camera Keyframe** | 메뉴 표시 |
+| 플레이 모드 끝내기 | <Kbd>Esc</Kbd> | **Game > Exit game** | |
+| 게임 스크립트 다시 불러오기 | <Kbd>Shift</Kbd>+<Kbd>R</Kbd> | **Game > Reload Game Scripts** | 메뉴 표시 |
+| 뷰 링크 복사 | <Kbd>Ctrl</Kbd>+<Kbd>Shift</Kbd>+<Kbd>L</Kbd> | **Game > Copy View Link** | 메뉴 표시 |
+| 지면 따라 옮기기 도구 | <Kbd>Q</Kbd> | **Tools > Ground Manipulation Tool** | |
+| 이동 도구 | <Kbd>W</Kbd> | **Tools > Move** | |
+| 회전 도구 | <Kbd>E</Kbd> | **Tools > Rotate** | |
+| 크기 도구 | <Kbd>R</Kbd> | **Tools > Scale** | |
+| 선 그리기 도구 | <Kbd>V</Kbd> | **Tools > Vector Tool** | 메뉴 표시 |
+| MLOD 텍스처 굽기 | <Kbd>Ctrl</Kbd>+<Kbd>B</Kbd> | **Tools > Bake MLOD Texture** | 메뉴 표시 |
+| 프리팹 일괄 작업 도구 | <Kbd>2</Kbd> | **Tools > Batch prefabs operations tool** | 메뉴 표시 |
+| 지형 도구 | <Kbd>Ctrl</Kbd>+<Kbd>T</Kbd> | **Tools > Terrain Tool** | 메뉴 표시 |
+| 플레이 시작 | <Kbd>F5</Kbd> | **Game > Play Game** | |
+| 기즈모 기준(월드·객체) 바꾸기 | <Kbd>X</Kbd> | 도구 막대 **Transform Space** 버튼의 툴팁 | |
+| 카메라 앞뒤·옆으로 | 마우스 오른쪽 버튼을 누른 채 <Kbd>W</Kbd> <Kbd>S</Kbd> <Kbd>A</Kbd> <Kbd>D</Kbd> | — | |
+| 카메라 위아래로 | 마우스 오른쪽 버튼을 누른 채 <Kbd>Q</Kbd> <Kbd>Z</Kbd> | — | |
+| 카메라 속도 | 마우스 오른쪽 버튼을 누른 채 휠 | — | |
+| 고른 엔티티로 카메라 맞추기 | <Kbd>F</Kbd> | — | |
+
+**File** 메뉴는 월드를 편집할 때와 프리팹 편집 모드에서 항목이 다릅니다(부록 B). Play 중에는 **Game** 메뉴의 **Play Game Options**, **Reload Game Scripts**, **Copy View Link**가 흐리게 표시됩니다.
+
+Play는 <Kbd>Esc</Kbd>나 **Game > Exit game**으로 끝냅니다(11장). 게임의 일시정지 메뉴는 <Kbd>F10</Kbd>으로 엽니다.
+
+## String Editor
+
+| 동작 | 키 | 메뉴 위치·출처 | 비고 |
+|---|---|---|---|
+| 새로 만들기 | <Kbd>Ctrl</Kbd>+<Kbd>N</Kbd> | **File > New** | 메뉴 표시 |
+| 열기 | <Kbd>Ctrl</Kbd>+<Kbd>O</Kbd> | **File > Open** | 메뉴 표시 |
+| 저장 | <Kbd>Ctrl</Kbd>+<Kbd>S</Kbd> | **File > Save** | 메뉴 표시 |
+| String Editor 닫기 | <Kbd>Ctrl</Kbd>+<Kbd>Q</Kbd> | **File > Exit** | 메뉴 표시 |
+| 항목 넣기 | <Kbd>Ctrl</Kbd>+<Kbd>I</Kbd> | **Table > Insert Item** | 메뉴 표시 |
+| 항목 지우기 | <Kbd>Del</Kbd> | **Table > Delete Item** | 메뉴 표시 |
+| 테이블 가져오기 | <Kbd>Ctrl</Kbd>+<Kbd>Shift</Kbd>+<Kbd>I</Kbd> | **Table > Import Table** | 메뉴 표시 |
+| 테이블 내보내기 | <Kbd>Ctrl</Kbd>+<Kbd>Shift</Kbd>+<Kbd>E</Kbd> | **Table > Export Table** | 메뉴 표시 |
+| 런타임 테이블 만들기 | <Kbd>Ctrl</Kbd>+<Kbd>B</Kbd> | **Table > Build Runtime Table** | 메뉴 표시 |
+
+## Play 중
+
+Play 중에 게임 화면과 Diag Menu에서 쓰는 키입니다. 플레이 모드를 끝내는 <Kbd>Esc</Kbd>는 위 World Editor 표에 있습니다. Diag Menu는 Play 중 World Editor 뷰포트에 뜨는 게임 안의 메뉴라, 메뉴 위치는 그 안의 경로를 코드 글꼴로 적었습니다.
+
+| 동작 | 키 | 메뉴 위치·출처 | 비고 |
+|---|---|---|---|
+| 게임의 일시정지 메뉴 열기 | <Kbd>F10</Kbd> | Play 중 World Editor 뷰포트 | |
+| Diag Menu 열기 | <Kbd>Win</Kbd>+<Kbd>Alt</Kbd> | Play 중 World Editor 뷰포트 | |
+| 다음 줄로 | <Kbd>Win</Kbd>+<Kbd>Alt</Kbd>를 누른 채 <Kbd>↓</Kbd> | Diag Menu | |
+| 값을 다음 값으로 | <Kbd>Win</Kbd>+<Kbd>Alt</Kbd>를 누른 채 <Kbd>→</Kbd> | Diag Menu | |
+| 하위 메뉴로 들어가기 | <Kbd>Win</Kbd>+<Kbd>Alt</Kbd>를 누른 채 <Kbd>→</Kbd> | Diag Menu | |
+| `true`인 값을 `false`로 | <Kbd>Win</Kbd>+<Kbd>Alt</Kbd>를 누른 채 <Kbd>←</Kbd> | Diag Menu | |
+| 하위 메뉴에서 나오기 | <Kbd>Win</Kbd>+<Kbd>Alt</Kbd>를 누른 채 <Kbd>Backspace</Kbd> | Diag Menu | |
+| 맨 위 목록으로 | <Kbd>Win</Kbd>+<Kbd>Alt</Kbd>를 누른 채 <Kbd>Home</Kbd> | Diag Menu | |
+| 지금 메뉴의 값만 기본값으로 | <Kbd>Win</Kbd>+<Kbd>Alt</Kbd>를 누른 채 <Kbd>Insert</Kbd> | Diag Menu | |
+| 모든 값을 기본값으로 | <Kbd>Win</Kbd>+<Kbd>Alt</Kbd>를 누른 채 <Kbd>Delete</Kbd> | Diag Menu | |
+| 세 줄씩 이동 | <Kbd>Win</Kbd>+<Kbd>Alt</Kbd>를 누른 채 <Kbd>Shift</Kbd>+<Kbd>↑</Kbd>, <Kbd>Shift</Kbd>+<Kbd>↓</Kbd> | Diag Menu | |
+| 지금 값을 프로필 폴더(`$profile:`)의 `diagmenu.save`에 저장 | <Kbd>Win</Kbd>+<Kbd>Alt</Kbd>를 누른 채 <Kbd>F1</Kbd> | Diag Menu | |
+| `diagmenu.save`에 저장한 값 불러오기 | <Kbd>Win</Kbd>+<Kbd>Alt</Kbd>를 누른 채 <Kbd>F2</Kbd> | Diag Menu | |
+| `FPS` 항목 | `lctrl+num1` | `Statistics > FPS` 옆 | 메뉴 표시 |
+| `General` 항목 | `lctrl+num2` | `Statistics > General` 옆 | 메뉴 표시 |
+| `Counters` 항목 | `lctrl+num3` | `Statistics > Counters` 옆 | 메뉴 표시 |
+
+위키(Diag Menu)는 메뉴 안의 키를 <Kbd>Win</Kbd>+<Kbd>Alt</Kbd> 없이 적지만, Diag Menu는 <Kbd>Win</Kbd>+<Kbd>Alt</Kbd>를 누른 채로 보고 다룹니다(11장). 같은 문서의 Hotkeys List에는 `Statistics`의 세 키 말고도 디버그 기능의 단축키가 더 있습니다. {/* 확인 대기: Hotkeys List의 키 */}
+
+<Warning title="화살표와 Windows 창 정렬">
+
+Windows 11에서는 <Kbd>Win</Kbd>+<Kbd>Alt</Kbd>를 누른 채 화살표를 누르면 Diag Menu도 움직이지만, Windows의 창 정렬도 함께 일어나 World Editor 창이 화면 아래쪽 절반이나 오른쪽, 왼쪽에 붙습니다. Diag Menu를 다루는 방법은 11장에서 설명합니다.
+
+</Warning>
+
+## 단축키 설정
+
+메인 창의 **File > Options...** 창 왼쪽 목록에는 **Shortcuts** 범주가 있습니다(2장). 이 범주의 단축키 목록은 **Camera**, **Common**, **Resource Manager**, **World Editor**, **Script Editor** 같은 묶음으로 나뉩니다. 예를 들어 메인 창 **Edit** 메뉴의 **Locate File in Resource Browser**는 **Resource Manager** 묶음에 있습니다. 항목의 키 칸을 누르면 `Press new shortcut`이 표시되고, 이때 새 키를 누르면 그 키로 바뀝니다. 바꾼 칸은 이름이 굵게 보이고 오른쪽에 되돌리기 화살표(6장)가 붙습니다. **OK**로 창을 닫으면 메뉴 항목 옆에 적힌 키도 새 키로 바뀝니다. 위키(Resource Manager: Options)는 검색 칸 옆의 **Reset All** 버튼으로 모든 키를 기본값으로 되돌린다고 설명합니다. 위키(Workbench Plugin)는 플러그인의 단축키를 플러그인 스크립트에 적는다고 설명합니다.

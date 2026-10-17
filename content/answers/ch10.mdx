@@ -1,0 +1,220 @@
+<Answer id="10-1">
+
+문제는 두 가지입니다.
+
+1. 짝 클래스의 이름이 `TAG_BlinkClass`입니다. 짝 클래스는 정확히 "컴포넌트 이름 + `Class`", 즉 `TAG_BlinkComponentClass`여야 합니다. 이름이 다르면 컴포넌트의 짝 클래스가 없는 것으로 보아 컴파일 오류(`Missing Component Class for 'TAG_BlinkComponentClass' for Component 'TAG_BlinkComponent'`)가 납니다.
+2. `SetEventMask`를 생성자에서 호출합니다. `GenericComponent.SetEventMask()`의 공식 주석은 생성자에서 호출하면 부모 엔티티에 마스크가 제대로 설정되지 않는다고 경고합니다. `OnPostInit`으로 옮깁니다.
+
+```enforce title="Scripts/Game/TAG_BlinkComponent.c"
+[ComponentEditorProps(category: "TAG/Tutorial", description: "매 프레임 로그를 남깁니다")]
+class TAG_BlinkComponentClass : ScriptComponentClass
+{
+}
+
+class TAG_BlinkComponent : ScriptComponent
+{
+	override void EOnFrame(IEntity owner, float timeSlice)
+	{
+		Print("깜빡");
+	}
+
+	override void OnPostInit(IEntity owner)
+	{
+		SetEventMask(owner, EntityEvent.FRAME);
+	}
+}
+```
+
+`description`은 위키에 따르면 현재 쓰이지 않지만, 무엇을 하는 컴포넌트인지 남겨 두는 습관으로 적었습니다. 덧붙여 매 프레임 로그를 남기면 로그가 금세 넘쳐납니다. 몇 초에 한 번씩 하고 싶다면 `timeSlice`를 누적하거나 11장의 콜 큐를 씁니다.
+
+</Answer>
+
+<Answer id="10-2">
+
+열거형은 0부터 차례로 값이 매겨지므로 `BURST`는 1입니다. `ParamEnumArray.FromEnum()`은 열거형 값을 문자열로 바꿔 항목을 만들기 때문에 기본값도 `"1"`로 적습니다.
+
+```enforce
+enum TAG_EFireMode
+{
+	SINGLE,
+	BURST,
+	AUTO
+}
+```
+
+```enforce title="Scripts/Game/TAG_TurretSettingsComponent.c"
+[ComponentEditorProps(category: "TAG/Tutorial", description: "포탑 설정")]
+class TAG_TurretSettingsComponentClass : ScriptComponentClass
+{
+}
+
+class TAG_TurretSettingsComponent : ScriptComponent
+{
+	[Attribute(defvalue: "1", desc: "사격 가능 여부", category: "Turret")]
+	protected bool m_bCanFire;
+
+	[Attribute(defvalue: "100", uiwidget: UIWidgets.Slider, desc: "탐지 거리(m)",
+		params: "10 500 1", category: "Turret")]
+	protected float m_fDetectionRange;
+
+	[Attribute("", UIWidgets.ResourceNamePicker, desc: "발사할 탄 프리팹",
+		params: "et", category: "Turret")]
+	protected ResourceName m_sProjectilePrefab;
+
+	[Attribute(defvalue: "1", uiwidget: UIWidgets.ComboBox, desc: "사격 모드",
+		enums: ParamEnumArray.FromEnum(TAG_EFireMode), category: "Turret")]
+	protected TAG_EFireMode m_eFireMode;
+}
+```
+
+- `bool`은 `uiwidget`을 생략해도 체크 상자가 됩니다. 켜진 상태는 `"1"`이지 `"true"`가 아닙니다.
+- 슬라이더의 `params`는 `"최솟값 최댓값 간격"` 순서입니다.
+- `ResourceName`의 `params: "et"`는 선택기에 `.et` 파일만 보이게 합니다. 세 번째 속성처럼 처음 몇 개 인수는 순서대로, 나머지는 이름을 붙여 적을 수도 있습니다.
+- 이름에 타입 접두사(`m_b`, `m_f`, `m_s`, `m_e`)를 붙이면 속성 창에도 깔끔한 이름으로 보입니다.
+
+</Answer>
+
+<Answer id="10-3">
+
+처음 위치는 컴포넌트가 위치를 바꾸기 시작하기 직전에 한 번 저장하면 됩니다. 이 해답은 첫 `EOnFrame`에서 저장합니다. 이때는 엔티티의 생성과 초기화가 모두 끝난 뒤이므로, 월드에 배치된 엔티티든 실행 중에 생성된 엔티티든 위치가 확정되어 있습니다.
+
+```enforce title="Scripts/Game/TAG_BobComponent.c"
+[ComponentEditorProps(category: "TAG/Tutorial", description: "엔티티를 위아래로 흔듭니다")]
+class TAG_BobComponentClass : ScriptComponentClass
+{
+}
+
+class TAG_BobComponent : ScriptComponent
+{
+	[Attribute(defvalue: "0.5", desc: "진폭(m)")]
+	protected float m_fAmplitude;
+
+	[Attribute(defvalue: "2", desc: "한 번 오르내리는 데 걸리는 시간(초)", params: "0.1 60")]
+	protected float m_fPeriod;
+
+	protected vector m_vStartOrigin;
+	protected bool m_bStarted;
+	protected float m_fTime;
+
+	override void EOnFrame(IEntity owner, float timeSlice)
+	{
+		if (!m_bStarted)
+		{
+			m_vStartOrigin = owner.GetOrigin();
+			m_bStarted = true;
+		}
+
+		m_fTime += timeSlice;
+		float offset = m_fAmplitude * Math.Sin(Math.PI2 * m_fTime / m_fPeriod);
+		owner.SetOrigin(m_vStartOrigin + Vector(0, offset, 0));
+	}
+
+	override void OnPostInit(IEntity owner)
+	{
+		SetEventMask(owner, EntityEvent.FRAME);
+	}
+}
+```
+
+- 사인 함수의 인수에 `Math.PI2`(2π)를 곱해 `m_fPeriod`초마다 한 바퀴를 돌게 했습니다. `Math.Sin()`은 라디안을 받습니다.
+- 매 프레임 "지금 위치 + 변화량"으로 계산하면 오차가 쌓여 물체가 조금씩 떠내려갑니다. 저장해 둔 처음 위치를 기준으로 계산해야 합니다.
+- `m_fPeriod`의 `params: "0.1 60"`은 편집 UI의 범위를 정해 0으로 나누는 일을 막으려는 것입니다. 값이 다른 경로로 들어올 수도 있으니 코드에서도 0 이하를 걸러 내면 더 안전합니다.
+
+</Answer>
+
+<Answer id="10-4">
+
+`FindComponents()`로 한 엔티티의 모든 회전 컴포넌트를 처리한 뒤, `GetChildren()`과 `GetSibling()`으로 자식을 돌며 같은 함수를 재귀 호출합니다.
+
+```enforce
+void TAG_StopAllSpinning(IEntity root)
+{
+	if (!root)
+		return;
+
+	array<Managed> found = {};
+	root.FindComponents(TAG_SpinComponent, found);
+	foreach (Managed item : found)
+	{
+		TAG_SpinComponent spin = TAG_SpinComponent.Cast(item);
+		if (spin)
+			spin.SetSpinning(false);
+	}
+
+	IEntity child = root.GetChildren();
+	while (child)
+	{
+		TAG_StopAllSpinning(child);	// 자식의 자손까지 처리된다
+		child = child.GetSibling();
+	}
+}
+```
+
+공식 `SCR_EntityHelper.GetHierarchyEntityList(notnull IEntity entity, notnull inout array<IEntity> output)`도 같은 방식으로 자손 엔티티를 모두 배열에 모아 줍니다. 이 헬퍼는 루트 자신은 넣지 않으므로, 쓴다면 루트는 따로 처리해야 합니다.
+
+문제에서 요구한 대로 전역 함수로 만들었지만, 전역 함수에도 태그를 붙여야 하고 modded 클래스로 바꿀 수 없다는 단점이 있습니다(12장). 실제 모드라면 `TAG_SpinUtils` 같은 클래스의 정적 메서드로 두는 편이 좋습니다.
+
+</Answer>
+
+<Answer id="10-5">
+
+만든 엔티티는 배열에 기억해 둡니다. `IEntity`는 `Managed`이므로 `ref` 없이 담은 배열 원소는 약한 참조이고, 엔티티가 해제되면 null이 됩니다. 1.8.0.13 싱글플레이에서 실행해 보면 `DeleteEntityAndChildren`으로 지운 원소는 그 자리에서 null이 되므로 null 검사로 걸러집니다. `IsDeleted()` 검사는 지워진 엔티티의 포인터가 그 프레임 끝까지 유효하다는 `IEntity.IsDeleted()`의 주석을 따른 안전장치입니다.
+
+```enforce
+[ComponentEditorProps(category: "TAG/Tutorial", description: "프리팹으로 엔티티를 만듭니다")]
+class TAG_SpawnerComponentClass : ScriptComponentClass
+{
+}
+
+class TAG_SpawnerComponent : ScriptComponent
+{
+	[Attribute("", UIWidgets.ResourceNamePicker, desc: "생성할 프리팹", params: "et")]
+	protected ResourceName m_sPrefab;
+
+	protected ref array<IEntity> m_aSpawned = {};
+
+	void SpawnRing(int count, float radius)
+	{
+		if (count <= 0)
+			return;
+
+		vector center = GetOwner().GetOrigin();
+		for (int i = 0; i < count; i++)
+		{
+			float angle = Math.PI2 * i / count;
+			vector offset = Vector(Math.Cos(angle) * radius, 0, Math.Sin(angle) * radius);
+			IEntity spawned = SpawnAt(center + offset);
+			if (spawned)
+				m_aSpawned.Insert(spawned);
+		}
+	}
+
+	void DespawnAll()
+	{
+		foreach (IEntity entity : m_aSpawned)
+		{
+			if (entity && !entity.IsDeleted())
+				SCR_EntityHelper.DeleteEntityAndChildren(entity);
+		}
+
+		m_aSpawned.Clear();
+	}
+
+	// SpawnAt()은 본문과 같다
+}
+```
+
+컴포넌트가 지워질 때 남은 엔티티를 정리하는 코드는 `OnDelete`에 둡니다. 수명 주기 표에서 보았듯이 `OnDelete`는 엔티티나 컴포넌트가 지워지기 직전에 불리고, 컴포넌트의 소멸자는 소유 엔티티가 이미 지워진 뒤에 불리므로 정리 작업에 맞지 않습니다.
+
+```enforce
+override void OnDelete(IEntity owner)
+{
+	DespawnAll();
+}
+```
+
+- `Math.PI2 * i / count`는 앞의 곱셈 결과가 `float`이므로 실수 나눗셈이 됩니다. `i / count`를 먼저 계산하는 `Math.PI2 * (i / count)`는 받는 곳에 따라 값이 다릅니다(2장). 1.8.0.13에서 실행해 보면 `float` 변수에 담으면 같은 값(`i`가 1, `count`가 4면 1.5708)이 나오지만, `Print`·`PrintFormat`에 바로 넘기면 0이 됩니다.
+- 생성 위치의 높이는 생성기와 같습니다. 지형이 고르지 않다면 높이를 따로 맞춰야 합니다.
+- 프리팹 생성은 기본적으로 서버에서만 허용되므로, 실제로는 이 메서드들을 서버에서 호출해야 합니다(14장).
+
+</Answer>

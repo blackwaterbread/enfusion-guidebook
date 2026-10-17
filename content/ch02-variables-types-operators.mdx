@@ -1,0 +1,711 @@
+---
+title: 변수, 타입, 연산자
+description: 변수 선언과 기본 타입, 리터럴, 형변환, 연산자, 스코프, 열거형을 배웁니다. Python과 JavaScript에 익숙한 사람이 헷갈리기 쉬운 정수 나눗셈, 참조 전달, 삼항 연산자가 없다는 점도 짚습니다.
+---
+
+<Objectives>
+
+- 변수를 선언하고 타입별 기본값을 말할 수 있다.
+- 기본 타입(`int`, `float`, `bool`, `string`, `vector`, `typename`)의 리터럴을 쓰고, 값으로 전달되는 타입과 참조로 전달되는 타입을 구별할 수 있다.
+- `int`와 `float`, 숫자와 문자열 사이를 올바르게 변환할 수 있다.
+- 연산자의 동작과 우선순위를 알고, 지원하지 않는 삼항 연산자를 `if`/`else`로 바꿔 쓸 수 있다.
+- 열거형을 선언하고 비트 플래그와 문자열 변환을 다룰 수 있다.
+
+</Objectives>
+
+1장에서 본 것처럼 Enforce Script는 정적 타입 언어입니다. 이 장에서는 값을 담는 변수와 타입, 값을 계산하는 연산자를 다룹니다. 대부분은 C 계열 언어와 같지만, 선언만 해도 기본값이 채워지고, 문자열이 `null`이 될 수 없고, 삼항 연산자가 없다는 점처럼 Enforce Script만의 규칙이 있습니다.
+
+이 장의 짧은 예제는 대부분 메서드 본문의 일부입니다. 직접 실행해 보려면 1장의 `TAG_HelloWorld`처럼 클래스의 정적 메서드 안에 넣고 Remote Console에서 부르면 됩니다.
+
+## 변수 선언과 초기화
+
+### 선언하는 방법
+
+변수는 `타입 이름;` 또는 `타입 이름 = 값;` 형태로 선언합니다. 다음 클래스는 변수 세 개를 선언하고 값을 바꾼 뒤 출력합니다.
+
+```enforce title="Scripts/Game/TAG_VariableDemo.c"
+class TAG_VariableDemo
+{
+	//------------------------------------------------------------------------------------------------
+	static void Run()
+	{
+		int ammo = 30;
+		float reloadTime = 2.5;
+		string weaponName = "M16A2";
+
+		ammo = ammo - 1;
+		Print(weaponName + " ammo: " + ammo);
+		Print("Reload time: " + reloadTime);
+	}
+}
+```
+
+Remote Console에서 `TAG_VariableDemo.Run();`을 실행한 결과는 다음과 같습니다.
+
+```text
+M16A2 ammo: 29
+Reload time: 2.5
+```
+
+같은 타입의 변수 여러 개를 쉼표로 이어 한 번에 선언할 수도 있습니다. 공식 코드에도 `string company, platoon, squad, character, format;`처럼 쓴 곳이 있습니다.
+
+### 타입별 기본값
+
+값을 주지 않고 선언한 변수는 타입별 기본값으로 초기화됩니다. 공식 Best Practices 문서는 오히려 `int i = 0;` 대신 `int i;`처럼 기본값에 맡기는 쪽을 권합니다. 클래스의 멤버 변수도 객체를 만들 때 기본값으로 채워집니다.
+
+| 타입 | 기본값 | 참고 |
+|---|---|---|
+| `int` | `0` | |
+| `float` | `0.0` | |
+| `bool` | `false` | |
+| `string` | `""` | 빈 문자열입니다. `string`은 `null`이 될 수 없습니다. |
+| `vector` | 세 성분 모두 `0` | |
+| 열거형 | `0` | 열거형에 0인 값이 없어도 0입니다. |
+| `typename` | `typename.Empty` | 공식 코드는 `null` 대신 `typename.Empty`와 비교합니다. |
+| 클래스, 배열, `set`, `map` | `null` | 빈 배열이 아니라 아무것도 없는 상태입니다. |
+
+<Compare title="선언만 한 변수를 읽으면">
+
+```python
+print(count)    # NameError: count가 정의되지 않음
+```
+
+```javascript
+let count;
+console.log(count);   // undefined
+```
+
+```enforce
+int count;            // 0
+string name;          // "" (빈 문자열)
+array<int> scores;    // null: 배열 객체는 아직 없음
+```
+
+</Compare>
+
+### 정적 타입
+
+엔진 문서는 Enforce Script가 강한 타입(strong type)을 쓰며, 값의 타입은 그 값이 살아 있는 동안 바뀌지 않는다고 설명합니다. Python처럼 같은 변수에 숫자를 넣었다가 문자열로 바꿔 쓸 수 없습니다.
+
+```enforce
+int health = 100;
+health = 75;        // 같은 타입이므로 문제없음
+health = "full";    // 경고만 나고 컴파일됨. health에는 문자열이 아니라 0이나 1이 들어감
+```
+
+`int` 변수에 문자열을 넣으면 컴파일러는 오류 대신 "Implicit conversion of 'string' to 'int' yields a conditional expression result of either 0 or 1"이라는 경고를 내고, 문자열을 0이나 1로 바꿔 넣습니다. 변수의 타입은 그대로 `int`입니다. 이런 실수는 실행해도 오류가 나지 않으므로, 컴파일할 때 Workbench의 경고까지 확인합니다. 타입을 바꿔야 할 때는 이 장 뒤쪽의 형변환을 씁니다.
+
+### 식별자 규칙
+
+변수, 함수, 클래스의 이름(식별자)은 다음 규칙을 따릅니다. 정규식으로는 `^[a-zA-Z_][a-zA-Z0-9_]*$`입니다.
+
+- ASCII 영문자, 숫자, 밑줄(`_`)만 쓸 수 있습니다. 한글 이름은 쓸 수 없습니다.
+- 숫자로 시작할 수 없습니다.
+- 대소문자를 구분합니다.
+- 키워드와 같은 이름은 쓸 수 없습니다(키워드 목록은 부록 A).
+
+```enforce
+int myNumber = 10;
+int _myNumber = 10;
+int myNUMBER = 10;   // myNumber와 다른 변수
+int 1number = 1;     // 오류: 숫자로 시작함
+int auto = 1;        // 오류: auto는 키워드
+```
+
+## 기본 타입과 리터럴
+
+### 한눈에 보기
+
+엔진 문서에 정리된 기본 타입은 다음과 같습니다. 크기는 엔진 문서의 값이고, 문자열과 벡터는 내부적으로 포인터를 함께 씁니다.
+
+| 타입 | 담는 값 | 크기 | 전달 방식 | 리터럴 예 |
+|---|---|---|---|---|
+| `int` | 32비트 정수 | 4바이트 | 값 | `42`, `-7`, `0xFF` |
+| `float` | 32비트 실수 | 4바이트 | 값 | `2.5`, `0.25`, `1.0e-8` |
+| `bool` | 참 또는 거짓 | 4바이트 | 값 | `true`, `false` |
+| `string` | 문자열 | 포인터 8바이트와 문자열 길이 | 값 | `"Hello"` |
+| `vector` | 실수 3개 | 포인터 8바이트와 12바이트 | 값 | `"0 1 0"`, `{ 0, 1, 0 }` |
+| `typename` | 타입 정보 | 8바이트 | 참조 | 클래스 이름(`TAG_HelloWorld`) |
+| `void` | 값 없음 | 없음 | 없음 | 없음 |
+
+### int와 float
+
+`int`는 −2,147,483,648부터 2,147,483,647까지의 정수입니다. 이 범위의 끝 값은 `int.MAX`와 `int.MIN` 상수로 얻을 수 있으며, 공식 코드는 최솟값을 찾을 때 `int minSize = int.MAX;`처럼 시작값으로 씁니다. 16진수는 `0x`를 붙여 씁니다. 공식 스크립트의 색 상수가 `const int COLOR_RED = 0xFFF22613;`처럼 16진수를 씁니다.
+
+`float`는 32비트 부동소수점 수입니다. 엔진 문서는 0에서 멀어질수록 정밀도가 떨어진다고 경고합니다. 리터럴은 `2.5`, `0.333`처럼 쓰고, 공식 코드처럼 `1.0e-8` 같은 지수 표기도 씁니다.
+
+실수는 계산 오차 때문에 `==`로 비교하면 기대와 다른 결과가 나올 수 있습니다. 공식 문서의 예처럼 `float.AlmostEqual`로 "거의 같은지"를 비교합니다. 세 번째 매개변수 `epsilon`의 기본값은 0.0001입니다.
+
+```enforce
+float original = 1;
+float divided = original / 3333;
+float result = divided * 3333;
+bool exact = original == result;                     // 부동소수점 오차 때문에 false
+bool close = float.AlmostEqual(original, result);    // true
+```
+
+### bool
+
+`bool`은 `true`와 `false` 두 값만 가집니다. 비교 연산의 결과도 `bool`입니다.
+
+```enforce
+int health = 35;
+bool isAlive = health > 0;        // true
+bool isCritical = health < 20;    // false
+```
+
+### string
+
+`string`은 값으로 전달되는 문자열입니다. 대입하면 내용이 복사되고, 선언하면 빈 문자열 `""`로 시작합니다. 문자열은 `null`이 될 수 없으므로, 비어 있는지는 `IsEmpty()`나 빈 문자열 상수 `string.Empty`로 확인합니다. 비교는 대소문자를 구분하므로 `"abc"`와 `"ABC"`는 다릅니다.
+
+엔진 문서가 정리한 이스케이프 문자는 다섯 가지입니다.
+
+| 이스케이프 | 뜻 |
+|---|---|
+| `\n` | 줄바꿈 |
+| `\r` | 캐리지 리턴 |
+| `\t` | 탭 |
+| `\\` | 역슬래시 |
+| `\"` | 큰따옴표 |
+
+```enforce
+string quote = "He said \"Move!\"";
+string path = "Mods\\TAG_FirstMod";
+string letters = "ABCDE";
+string third = letters[2];          // "C": 한 글자짜리 문자열
+int length = letters.Length();      // 5
+bool empty = letters.IsEmpty();     // false
+```
+
+문자열의 메서드(찾기, 자르기, 바꾸기 등)는 9장에서 자세히 다룹니다.
+
+### vector
+
+`vector`는 실수 세 개를 담는 3차원 벡터이며, `string`처럼 값으로 전달됩니다. 엔진 문서가 소개하는 선언 방법은 세 가지이고, 공식 스크립트에는 실수 세 개로 벡터를 만드는 `Vector(x, y, z)` 함수도 있습니다.
+
+```enforce
+vector origin;                       // 세 성분 모두 0
+vector up = "0 1 0";                 // 문자열 리터럴
+vector offset = { 0, 1.5, 2 };       // 중괄호 리터럴
+vector spawn = Vector(100, 0, 250);  // Vector 함수
+
+float height = spawn[1];             // 0: 두 번째 성분(Y)
+spawn[1] = 5;                        // Y 성분만 바꿈
+vector copy = up;
+bool same = copy == up;              // true: 벡터의 ==는 값을 비교
+```
+
+성분은 `[0]`, `[1]`, `[2]`가 각각 X, Y, Z입니다. 위키에 따르면 Enfusion에서는 Y축이 위쪽(바닥에서 하늘)입니다. 문자열 리터럴은 고정된 숫자만 표현할 수 있으므로, 계산한 값으로 벡터를 만들려면 공식 코드의 `{ 0, vectorDir.ToYaw(), 0 }`처럼 중괄호 형태나 `Vector()`를 씁니다. `vector.Zero`, `vector.Up` 같은 상수와 길이, 거리 계산은 9장에서 다룹니다.
+
+### typename과 void
+
+`typename`은 타입 자체를 값으로 담습니다. 클래스 이름을 그대로 대입하고, 문자열과 서로 바꿀 수 있습니다.
+
+```enforce
+typename type = TAG_HelloWorld;               // 클래스 이름으로 타입을 담음
+string typeName = type.ToString();            // "TAG_HelloWorld"
+typename found = typeName.ToType();           // 이름으로 타입 찾기
+typename missing = "NoSuchClass".ToType();    // 없는 이름이면 typename.Empty
+```
+
+공식 코드는 "타입이 없음"을 `null`이 아니라 `typename.Empty`로 나타내고, `bool checkType = activityType != typename.Empty;`처럼 비교합니다. `typename`으로 객체의 타입을 검사하는 방법은 6장에서 다룹니다.
+
+`void`는 "값 없음"을 뜻하며 반환값이 없는 함수의 반환 타입으로 씁니다(4장). 1장에서 본 `Print(void var, ...)`처럼 엔진 함수 선언에서 `void` 매개변수는 어떤 타입이든 받는다는 표시입니다.
+
+## 값 전달과 참조 전달
+
+엔진 문서는 값을 넘기는 방식을 두 가지로 나눕니다. **값 전달**(by content)은 내용을 복사하고, **참조 전달**(by reference)은 같은 대상을 함께 가리킵니다.
+
+```enforce
+int first = 33;
+int second = first;     // 값 복사
+second = 42;            // first는 여전히 33
+
+array<int> listA = { 0, 1, 2, 3 };
+array<int> listB = listA;   // 같은 배열을 가리킴
+listB[0] = 99;              // listA[0]도 99
+```
+
+| 전달 방식 | 타입 |
+|---|---|
+| 값 전달 | `int`, `float`, `bool`, `string`, `vector`, 열거형, 정적 배열 |
+| 참조 전달 | 동적 배열(`array`), `set`, `map`, 클래스 객체, `typename` |
+
+Python과 JavaScript에서도 리스트와 객체는 참조로 다루므로 배열의 동작은 익숙할 것입니다. 다른 점은 `string`과 `vector`가 값 타입이라는 것입니다. 함수에 인수를 넘길 때도 같은 규칙이 적용됩니다(4장). 참조와 객체 수명의 관계는 7장에서 자세히 다룹니다.
+
+## 상수, auto, 전역 변수
+
+### const
+
+`const`를 붙인 값은 선언한 뒤 바꿀 수 없습니다. 상수 이름은 모두 대문자로 쓰고 단어를 밑줄로 나누며, `m_`이나 `s_` 접두사를 붙이지 않습니다.
+
+```enforce title="Scripts/Game/TAG_RespawnRules.c"
+class TAG_RespawnRules
+{
+	const float BASE_DELAY = 5.0;          // 클래스 상수
+	static const int MAX_TICKETS = 100;    // 정적 상수
+
+	//------------------------------------------------------------------------------------------------
+	static float GetDelay(int deaths)
+	{
+		const float penaltyPerDeath = 1.5; // 이 메서드 안에서만 쓰는 지역 상수
+		return BASE_DELAY + deaths * penaltyPerDeath;
+	}
+}
+```
+
+공식 코드는 `const int COLOR_RED = 0xFFF22613;`처럼 클래스 밖의 전역 상수도 씁니다. 지역 상수는 위키 예제와 공식 코드 모두 `const float minRadius = ...;`처럼 지역 변수와 같은 camelCase로 쓰는 경우가 많습니다.
+
+배열이나 객체에 `const`를 붙이면 **참조만 고정**됩니다. 위키의 설명처럼 다른 배열을 대입할 수는 없지만, 배열 안의 내용은 바꿀 수 있습니다. 공식 코드의 `static const ref array<...> EXTREMITY_LIMB_GROUPS = { ... };`가 이런 형태입니다(`ref`는 7장).
+
+### auto
+
+`auto`로 선언하면 컴파일러가 대입하는 값을 보고 타입을 정합니다. 위키는 `auto myVar = 5;`가 `int`가 되지만 작성자는 `float`를 의도했을 수 있다는 예를 들며 쓰지 말라고 권합니다. Best Practices 문서도 타입을 알고 있는데 `auto`를 쓰면 코드가 읽기 어려워지고 자동 완성이 동작하지 않는다고 설명합니다.
+
+```enforce
+auto count = 5;      // int로 정해짐
+float speed = 5;     // float가 필요하면 타입을 직접 씀
+```
+
+공식 코드에는 `foreach (auto ft : fireteams)`처럼 `auto`를 쓴 곳도 있지만, 이 책은 언제나 타입을 직접 씁니다.
+
+### 전역 변수
+
+클래스 밖에 변수를 선언하면 전역 변수가 됩니다. 공식 컨벤션은 전역 변수에 `g_` 접두사를 붙이되 "꼭 필요한 경우가 아니면 쓰지 말라"고 정합니다. 공식 스크립트의 대표적인 예는 게임 객체입니다.
+
+```enforce title="Game/game.c (공식 스크립트 일부)"
+ArmaReforgerScripted g_ARGame;
+
+ArmaReforgerScripted GetGame()
+{
+	return g_ARGame;
+}
+```
+
+모드에서는 전역 변수 대신 클래스의 정적 멤버(5장)나 컴포넌트(10장)에 상태를 둡니다. 전역 함수와 전역 변수는 `modded` 클래스로 바꿀 수 없어서 다른 모드가 확장하기 어렵기 때문입니다(12장).
+
+## 형변환 기초
+
+### int와 float 사이
+
+`int`를 `float`에 넣으면 그대로 실수가 됩니다. 반대로 `float`를 `int`에 넣으면 엔진 문서의 설명대로 반올림하지 않고 소수 부분을 **버립니다**. 직접 형변환을 표시하려면 공식 코드처럼 `(int)`, `(float)`를 앞에 붙입니다.
+
+```enforce
+float distance = 4.9;
+int truncated = distance;              // 4: 소수 부분을 버림
+int rounded = Math.Round(distance);    // 5
+int down = Math.Floor(distance);       // 4
+int up = Math.Ceil(4.1);               // 5
+float asFloat = (float)truncated;      // 4.0
+```
+
+`Math.Round`, `Math.Floor`, `Math.Ceil`은 `float`를 돌려주며, 공식 코드도 `int nEnemies = Math.Ceil(fEnemies);`처럼 결과를 바로 `int`에 넣습니다.
+
+### 정수 나눗셈
+
+정수끼리 나눈 결과를 `int` 변수에 담거나 `Print`·`PrintFormat`에 넘기면 소수 부분이 버려집니다. 한쪽이라도 `float`이면 결과는 `float`입니다. 다만 1.8.0.13에서 실행해 보면 정수끼리 나눈 식도 결과를 `float`로 받는 자리(`float` 변수, 스크립트 함수의 `float` 매개변수, `float`를 돌려주는 `return`)에서는 실수로 계산됩니다(아래 함정 상자).
+
+<Compare title="7 나누기 2">
+
+```python
+7 / 2     # 3.5
+7 // 2    # 3
+```
+
+```javascript
+7 / 2              // 3.5
+Math.trunc(7 / 2)  // 3
+```
+
+```enforce
+int a = 7 / 2;       // 3
+float b = 7 / 2.0;   // 3.5
+```
+
+</Compare>
+
+<Pitfall title="정수끼리 나눈 결과는 받는 곳에 따라 다릅니다">
+
+1.8.0.13에서 실행해 보면 정수끼리 나눈 식은 결과를 `float`로 받으면 실수로, `int` 변수나 `Print`·`PrintFormat` 인수로 받으면 버린 정수로 계산됩니다. 위키 Operators 문서는 정수끼리 나누면 버린 정수라고만 설명하므로, 실수 결과가 필요하면 `(float)kills / deaths`처럼 한쪽을 직접 바꿔 의도를 드러냅니다.
+
+```enforce
+int kills = 7;
+int deaths = 2;
+int whole = kills / deaths;              // 3
+PrintFormat("%1", kills / deaths);       // 3
+float ratio = (float)kills / deaths;     // 3.5
+```
+
+또 공식 예제 문서는 나눗셈을 쓸 때마다 나누는 값이 0이 될 수 있는지 먼저 검사하라고 당부합니다.
+
+</Pitfall>
+
+### 숫자와 문자열
+
+숫자를 문자열로 바꾸는 가장 쉬운 방법은 문자열과 `+`로 잇는 것입니다. 왼쪽이 문자열이면 오른쪽 값이 문자열로 바뀝니다. 자릿수를 맞추거나 16진수로 바꿀 때는 `ToString` 메서드를 씁니다.
+
+```enforce
+// int의 ToString
+proto external string ToString(int len = -1, bool hex = false, string prefix = string.Empty);
+
+// float의 ToString
+proto external string ToString(int len = -1, int lenDec = -1);
+```
+
+공식 문서의 예를 보면 `123`에 `ToString(5)`를 부르면 `"00123"`, `ToString(len: 4, hex: true, prefix: "#")`를 부르면 `"#007B"`가 됩니다. `float`의 `123.456`에 `ToString(10, 4)`를 부르면 전체 10자리, 소수 4자리인 `"00123.4560"`이 됩니다.
+
+문자열을 숫자로 바꿀 때는 `ToInt`와 `ToFloat`를 씁니다.
+
+```enforce
+proto external int ToInt(int default = 0, int offset = 0, out int parsed = -1);
+proto external float ToFloat(float default = 0.0, int offset = 0, out int parsed = -1);
+```
+
+공식 문서에 따르면 `ToInt`는 앞쪽 공백을 건너뛰고, 숫자가 아닌 글자를 만나면 거기서 멈춥니다. 읽지 못하면 첫 번째 매개변수 `default`의 값을 돌려줍니다. 공식 문서에 실린 예는 다음과 같습니다.
+
+| 식 | 결과 |
+|---|---|
+| `"42".ToInt()` | `42` |
+| `" 42abc".ToInt()` | `42` |
+| `" 42.7".ToInt()` | `42` |
+| `"abc42".ToInt()` | `0` (읽지 못함) |
+| `"abc42".ToInt(17)` | `17` (읽지 못하면 `default`) |
+| `"abc42".ToInt(offset: 3)` | `42` (앞의 세 글자를 건너뜀) |
+| `"42.7".ToFloat()` | `42.7` |
+
+`"0"`을 읽은 결과와 읽지 못한 결과는 둘 다 0이므로, 구별하려면 읽은 글자 수를 돌려주는 `out` 매개변수 `parsed`를 씁니다. `parsed`가 0이면 숫자를 하나도 읽지 못한 것입니다.
+
+```enforce
+string input = "42";
+int readChars;
+int value = input.ToInt(parsed: readChars);   // value는 42, readChars는 2
+if (readChars == 0)
+	Print("Not a number: " + input);
+```
+
+`parsed:`처럼 매개변수 이름을 붙여 넘기는 방법과 `out` 매개변수는 4장에서 자세히 다룹니다.
+
+## 연산자
+
+### 산술 연산자
+
+| 연산자 | 뜻 | 예 | 결과 |
+|---|---|---|---|
+| `+` | 덧셈 | `5 + 2.5` | `7.5` |
+| `-` | 뺄셈 | `5 - 3` | `2` |
+| `*` | 곱셈 | `5 * 3` | `15` |
+| `/` | 나눗셈 | `5 / 3` | `1` (`int` 변수나 `Print`로 받을 때. `float`로 받으면 1.66667, 위의 함정 상자) |
+| `%` | 나머지 | `5 % 3` | `2` (정수에만 씀) |
+
+실수의 나머지가 필요하면 `Math.Mod(float v, float div)`를 씁니다(9장).
+
+### 대입 연산자와 증감 연산자
+
+`=`는 오른쪽 값을 왼쪽 변수에 넣습니다. 복합 대입 연산자 `+=`, `-=`, `*=`, `/=`, `<<=`, `>>=`, `&=`, `|=`는 계산과 대입을 한 번에 합니다.
+
+`++`와 `--`는 `int`와 `float` 변수를 1씩 늘리거나 줄입니다. 변수 앞에 쓰면(전위) 바뀐 값을, 뒤에 쓰면(후위) 바뀌기 전 값을 식의 결과로 돌려줍니다.
+
+```enforce
+int result = 5;
+PrintFormat("%1", result++);   // 5를 출력하고 result는 6이 됨
+PrintFormat("%1", ++result);   // result를 7로 만든 뒤 7을 출력
+```
+
+### 비교 연산자
+
+`==`, `!=`, `<`, `>`, `<=`, `>=`는 `bool`을 돌려줍니다. 엔진 문서는 `==`와 `!=`가 타입에 따라 다르게 비교한다고 정리합니다.
+
+| 피연산자 | `==`가 비교하는 것 |
+|---|---|
+| `bool`, `int`, `float`, `int`와 `float` | 값. `10 == 10.0`은 `true` |
+| `string` | 값. 대소문자를 구분 |
+| `vector` | 값(세 성분) |
+| 배열, 객체 | 참조. 같은 객체인지 비교 |
+
+배열 두 개의 내용이 같은지 알고 싶다면 `==`로는 안 되고 원소를 직접 비교해야 합니다.
+
+### 논리 연산자
+
+`&&`(그리고), `||`(또는), `!`(부정)는 `bool`을 다룹니다. `&&`와 `||`는 왼쪽만으로 결과가 정해지면 오른쪽을 계산하지 않습니다(짧은 회로 평가, short-circuit evaluation). Best Practices 문서가 "값싼 검사를 앞에, 메서드 호출 같은 비싼 검사를 뒤에" 두라고 권하고, `return obj && obj.m_Health > 0;`처럼 `null` 검사와 멤버 접근을 한 식에 쓰는 예를 드는 것도 이 성질 덕분입니다. 왼쪽의 `obj`가 `null`이면 오른쪽은 계산되지 않습니다.
+
+`!`는 `bool` 말고도 숫자(0인지), 문자열(비었는지), 객체(`null`인지)에 쓸 수 있습니다. 위키는 객체가 아닌 경우에는 이런 줄임 표현을 권하지 않으므로 숫자는 `== 0`, 문자열은 `IsEmpty()`로 비교합니다. 조건식에서의 참거짓 판정은 3장에서 다시 다룹니다.
+
+### 비트 연산자
+
+정수의 비트를 다루는 연산자입니다. 열거형 플래그를 다룰 때 자주 씁니다.
+
+| 연산자 | 뜻 | 예 | 결과 |
+|---|---|---|---|
+| `&` | 비트 AND | `13 & 11` | `9` |
+| `\|` | 비트 OR | `13 \| 11` | `15` |
+| `^` | 비트 XOR | `13 ^ 11` | `6` |
+| `~` | 비트 NOT | `~7` | `-8` |
+| `<<` | 왼쪽 시프트 | `1 << 2` | `4` |
+| `>>` | 오른쪽 시프트 | `6 >> 2` | `1` |
+
+위키는 `>>`가 부호를 유지한다는 점(부호 확장)도 경고합니다. 예를 들어 `0x80000000`을 8비트 오른쪽으로 밀면 `0xFF800000`이 됩니다.
+
+### 문자열 연결
+
+`+`의 왼쪽이 `string`이면 오른쪽 값을 문자열로 바꿔 이어 붙입니다. 엔진 문서에 따르면 왼쪽이 문자열이어야 하며, `3 + "test"`는 컴파일 오류입니다.
+
+```enforce
+int kills = 3;
+string ok = "Kills: " + kills;              // "Kills: 3"
+string alsoOk = kills.ToString() + " kills"; // 숫자로 시작할 때는 먼저 문자열로 바꿈
+string error = kills + " kills";            // 오류: 왼쪽이 문자열이 아님
+```
+
+### 삼항 연산자는 없다
+
+엔진 문서는 C와 C++의 삼항 연산자 `? :`를 지원하지 않으며 쓰면 컴파일 오류가 난다고 명시합니다. `if`/`else`로 바꿔 씁니다.
+
+<Compare title="조건에 따라 값 고르기">
+
+```python
+label = "alive" if hp > 0 else "dead"
+```
+
+```javascript
+const label = hp > 0 ? "alive" : "dead";
+```
+
+```enforce
+string label = "dead";
+if (hp > 0)
+	label = "alive";
+```
+
+</Compare>
+
+같은 선택을 여러 곳에서 한다면 값을 돌려주는 작은 메서드로 만드는 것이 깔끔합니다(4장).
+
+### 연산자 우선순위
+
+엔진 문서와 위키는 Enforce Script의 연산자 우선순위가 C 언어와 같다고 설명합니다. 위에서부터 먼저 계산됩니다.
+
+| 순서 | 연산자 |
+|---|---|
+| 1 | 후위 `++` `--`, 함수 호출 `()`, 인덱스 `[]`, 멤버 접근 `.` |
+| 2 | 전위 `++` `--`, 단항 `+` `-`, `!`, `~`, `new`, `delete` |
+| 3 | `*` `/` `%` |
+| 4 | `+` `-` |
+| 5 | `<<` `>>` |
+| 6 | `<` `<=` `>` `>=` |
+| 7 | `==` `!=` |
+| 8 | `&` |
+| 9 | `^` |
+| 10 | `\|` |
+| 11 | `&&` |
+| 12 | `\|\|` |
+| 13 | `=`와 복합 대입 연산자 |
+
+C와 같은 규칙이므로 `==`가 `&`보다 먼저 계산됩니다. `flags & MASK == MASK`라고 쓰면 `flags & (MASK == MASK)`로 묶여 의도와 달라집니다. 공식 `SCR_Enum.HasFlag`처럼 `(flags & condition) == condition`으로 괄호를 씁니다. 헷갈리면 언제나 괄호로 묶으세요. 전체 표는 부록 A에 있습니다.
+
+## 스코프
+
+중괄호로 둘러싼 블록은 **스코프**(scope)를 만듭니다. 블록 안에서 선언한 변수는 그 블록 안에서만 쓸 수 있고, 블록이 끝나면 사라집니다.
+
+```enforce
+// 클래스에 int m_iHealth 멤버가 있다고 가정한 메서드
+void SetDamage(int damage)
+{
+	int newHealth = m_iHealth - damage;
+	if (newHealth < 0)
+	{
+		newHealth = 0;
+	}
+	else if (newHealth > 100)
+	{
+		int overflow = newHealth - 100;     // 이 블록 안에서만 존재
+		Print("Health overflow: " + overflow);
+		newHealth = 100;
+	}
+	// 여기서는 overflow를 쓸 수 없음
+
+	m_iHealth = newHealth;
+}
+```
+
+엔진 문서와 위키가 설명하는 규칙을 정리하면 다음과 같습니다.
+
+- **이웃한 블록은 같은 이름을 다시 쓸 수 있습니다.** `if` 블록과 `else` 블록에서 각각 `int x`를 선언해도 서로 상관없는 변수입니다. 공식 코드에도 한 메서드 안에 `for (int i = 0; ...)` 반복문을 두 번 이어 쓴 곳이 많습니다.
+- **블록 밖에서도 쓸 값은 블록 앞에서 선언합니다.** `if`와 `else`에서 각각 `string message`를 선언하면 블록이 끝난 뒤에는 `message`를 쓸 수 없습니다.
+- **실행할 코드는 함수 안에 있어야 합니다.** 함수 밖은 선언만 두는 곳입니다.
+
+<Tip title="안쪽 블록에서 바깥 이름을 다시 쓰지 않기">
+
+안쪽 블록에서 바깥 블록의 지역 변수와 같은 이름을 다시 선언하면 어느 변수를 가리키는지 읽는 사람이 헷갈립니다. 공식 스크립트도 반복문을 겹칠 때는 바깥과 안쪽에 서로 다른 이름을 씁니다. 이 책도 중첩된 반복문에는 `i`, `j`처럼 다른 이름을 씁니다.
+
+</Tip>
+
+## 열거형 기초
+
+### 선언과 값
+
+엔진 문서에 따르면 열거형(enum)은 이름 붙은 정수 상수의 모음입니다. 공식 컨벤션에 따라 이름은 태그 뒤에 `E`를 붙인 `TAG_EWeather` 형태로, 값은 대문자와 밑줄로 씁니다.
+
+```enforce title="Scripts/Game/TAG_EWeather.c"
+//! 날씨 상태
+enum TAG_EWeather
+{
+	CLEAR,        // 0
+	CLOUDY,       // 1
+	RAIN = 10,    // 10
+	STORM,        // 11
+}
+```
+
+첫 값은 0이고 다음 값은 1씩 커집니다. `RAIN = 10`처럼 값을 정하면 그 뒤의 값은 거기서부터 1씩 커집니다. 마지막 값 뒤의 쉼표는 있어도 됩니다.
+
+### 열거형과 정수
+
+열거형 값은 그대로 `int` 변수에 넣을 수 있고, 선언만 한 열거형 변수는 0입니다. 0에 해당하는 값이 없는 열거형이라도 기본값은 0이라는 점에 주의합니다.
+
+```enforce
+TAG_EWeather weather = TAG_EWeather.RAIN;
+int code = weather;              // 10
+TAG_EWeather unset;              // 0, 즉 CLEAR
+```
+
+공식 코드는 정수를 돌려주는 함수의 결과를 열거형 변수에 바로 넣기도 합니다(아래의 `StringToEnum`). 열거형 변수에는 열거형에 정의되지 않은 정수도 들어갈 수 있으므로(기본값 0이 그 예입니다), 정수에서 얻은 값은 필요하면 따로 확인합니다.
+
+### 비트 플래그
+
+여러 상태를 한 값에 함께 담고 싶다면 값을 `1 << n`(1, 2, 4, 8...)으로 정한 플래그 열거형을 만듭니다. 공식 코드도 `DIRECTED_AT_ME = 1<<0`처럼 씁니다.
+
+```enforce title="Scripts/Game/TAG_EUnitFlags.c"
+enum TAG_EUnitFlags
+{
+	NONE     = 0,
+	INFANTRY = 1 << 0,    // 1
+	VEHICLE  = 1 << 1,    // 2
+	AIR      = 1 << 2,    // 4
+}
+```
+
+`|`로 플래그를 합치고, `&`로 검사하고, `&= ~`로 끕니다. 게임 모듈에는 이를 감싼 `SCR_Enum.HasFlag`, `SetFlag`, `RemoveFlag` 정적 메서드도 있습니다.
+
+```enforce
+TAG_EUnitFlags flags = TAG_EUnitFlags.INFANTRY | TAG_EUnitFlags.AIR;   // 5
+
+if (flags & TAG_EUnitFlags.AIR)
+	Print("Air unit");
+
+flags &= ~TAG_EUnitFlags.AIR;        // AIR 끄기
+flags |= TAG_EUnitFlags.VEHICLE;     // VEHICLE 켜기
+
+int both = TAG_EUnitFlags.INFANTRY | TAG_EUnitFlags.VEHICLE;
+bool hasBoth = SCR_Enum.HasFlag(flags, both);    // 두 플래그가 모두 켜져 있으면 true
+```
+
+### 문자열로 바꾸기
+
+열거형 값과 이름 사이의 변환은 `typename`의 정적 메서드가 맡습니다. 공식 선언은 다음과 같습니다.
+
+```enforce
+static proto string EnumToString(typename e, int enumValue);
+static proto int StringToEnum(typename e, string enumName);
+```
+
+```enforce
+TAG_EWeather weather = TAG_EWeather.STORM;
+string weatherName = typename.EnumToString(TAG_EWeather, weather);   // "STORM"
+TAG_EWeather parsed = typename.StringToEnum(TAG_EWeather, "RAIN");   // 10
+```
+
+플래그를 합친 값은 하나의 이름이 아니므로, 게임 모듈의 `SCR_Enum.FlagsToString(typename e, int flags, string delimiter = ", ", string noValue = "N/A")`로 `"INFANTRY, VEHICLE"` 같은 문자열을 얻습니다. 값이 0 이하면 `noValue`를 돌려줍니다.
+
+### 열거형 상속
+
+엔진 문서에 따르면 열거형은 다른 열거형을 상속할 수 있습니다. `enum TAG_EBigWeather : TAG_EWeather`처럼 쓰면 부모의 값을 이어받고, 새 값의 번호는 부모의 마지막 값 다음부터 시작합니다. 공식 코드에도 `enum ECharacterHitZoneGroup : EHitZoneGroup` 같은 예가 있습니다. 이미 있는 열거형에 값을 덧붙이는 `modded enum`은 12장에서 다룹니다.
+
+## 정리
+
+<Summary>
+
+- 변수는 `타입 이름 = 값;`으로 선언하며, 값을 주지 않으면 타입별 기본값(0, `false`, `""`, `null` 등)으로 시작합니다. 변수의 타입은 바뀌지 않습니다.
+- `int`, `float`, `bool`, `string`, `vector`, 열거형은 값으로, 배열, `set`, `map`, 클래스 객체는 참조로 전달됩니다. `string`은 `null`이 될 수 없습니다.
+- `float`를 `int`에 넣으면 소수 부분을 버립니다. 정수끼리 나눈 결과는 `int`에 담거나 `Print`에 넘기면 정수이고, `float`로 받으면 실수가 됩니다. 실수 결과가 필요하면 `(float)`로 의도를 드러냅니다.
+- 숫자는 `+`나 `ToString`으로 문자열이 되고, 문자열은 `ToInt`, `ToFloat`로 숫자가 됩니다. 읽기 실패는 `parsed` 매개변수로 구별합니다.
+- 연산자 우선순위는 C와 같습니다. 삼항 연산자 `? :`는 없으므로 `if`/`else`를 씁니다.
+- 블록은 스코프를 만들고, 이웃한 블록은 같은 이름을 다시 쓸 수 있습니다.
+- 열거형은 이름 붙은 `int` 상수이며, `1 << n` 플래그와 `typename.EnumToString`, `typename.StringToEnum`으로 다룹니다.
+
+</Summary>
+
+**더 읽을거리**
+
+- [Scripting: Values](https://community.bistudio.com/wiki/Arma_Reforger:Scripting:_Values)
+- [Scripting: Operators](https://community.bistudio.com/wiki/Arma_Reforger:Scripting:_Operators)
+- [Scripting: Keywords](https://community.bistudio.com/wiki/Arma_Reforger:Scripting:_Keywords)
+- [Scripting: Best Practices](https://community.bistudio.com/wiki/Arma_Reforger:Scripting:_Best_Practices)
+
+## 연습문제
+
+<Exercise id="2-1" level="기초" title="기본값 맞히기">
+
+다음 변수를 선언만 했을 때 각 변수의 값을 쓰세요.
+
+```enforce
+int kills;
+float accuracy;
+bool isLeader;
+string callsign;
+vector position;
+TAG_EWeather weather;
+array<string> names;
+typename componentType;
+```
+
+</Exercise>
+
+<Exercise id="2-2" level="기초" title="계산 결과 예측하기">
+
+다음 각 변수의 값을 예측하고, 그렇게 되는 이유를 한 줄씩 설명하세요.
+
+```enforce
+int a = 7 / 2;
+float b = 7 / 2;
+float c = 7 / 2.0;
+int d = 17 % 5;
+int e = 9.99;
+float f = (float)9 / 4;
+int g = Math.Round(2.6);
+int h = 1 << 4;
+```
+
+</Exercise>
+
+<Exercise id="2-3" level="응용" title="문자열에서 탄약 수 읽기">
+
+문자열을 받아 탄약 수를 돌려주는 정적 메서드 `int ParseAmmo(string text)`를 클래스 `TAG_AmmoParser`에 작성하세요. 문자열 앞쪽에서 숫자를 하나도 읽지 못하면 `-1`을, 읽었으면 그 값을 돌려줍니다. `"30"`, `" 12 rounds"`, `"none"`, `"0"`을 넣으면 각각 무엇을 돌려주는지도 쓰세요.
+
+</Exercise>
+
+<Exercise id="2-4" level="응용" title="권한 플래그 만들기">
+
+서버 관리 권한을 나타내는 플래그 열거형 `TAG_EPermission`을 만드세요. 값은 `KICK`, `BAN`, `SPAWN_VEHICLE`, `EDIT_WORLD` 네 가지입니다. 그런 다음 다음 일을 하는 코드를 쓰세요.
+
+1. `KICK`과 `SPAWN_VEHICLE`을 가진 권한 값을 만든다.
+2. `BAN` 권한이 있는지 검사해 결과를 출력한다.
+3. `KICK` 권한을 뺀다.
+4. 남은 권한 이름을 `SCR_Enum.FlagsToString`으로 출력한다.
+
+</Exercise>
+
+<Exercise id="2-5" level="도전" title="JavaScript 습관 고치기">
+
+JavaScript에 익숙한 동료가 다음 코드를 썼습니다. 컴파일 오류가 나거나 의도와 다르게 동작하는 곳을 모두 찾아 이유를 설명하고, 올바른 Enforce Script로 고치세요. `m_iFlags`는 `int` 멤버 변수이고 `TAG_EUnitFlags`는 본문의 플래그 열거형입니다.
+
+```enforce
+void Report(int kills, int deaths)
+{
+	float ratio = kills / deaths;
+	string status = ratio > 1 ? "good" : "bad";
+	bool isAir = m_iFlags & TAG_EUnitFlags.AIR == TAG_EUnitFlags.AIR;
+	Print(kills + " kills, status: " + status);
+}
+```
+
+</Exercise>

@@ -1,0 +1,209 @@
+---
+title: 프리팹
+description: 월드에서 꾸민 엔티티를 프리팹(.et)으로 저장하고, 메인 창의 프리팹 탭과 World Editor의 프리팹 편집 모드에서 고치는 방법을 살펴봅니다. 기본 게임 프리팹을 덮어쓰고 상속하고 복제하는 메뉴도 다룹니다.
+---
+
+<Objectives>
+
+- 프리팹 인스턴스를 Hierarchy와 Object Properties에서 알아볼 수 있다.
+- Hierarchy의 엔티티를 Resource Browser로 끌어다 놓아 프리팹 파일을 만들 수 있다.
+- 메인 창의 프리팹 탭에서 **Edit Prefab**으로 프리팹 편집 모드를 열고, **File > Save Prefabs**로 저장할 수 있다.
+- 기본 게임 프리팹을 **Override in**으로 덮어쓴 파일의 특징을 설명할 수 있다.
+- 덮어쓰기(Override), 상속(Inherit), 복제(Duplicate)의 차이를 말할 수 있다.
+
+</Objectives>
+
+프리팹(prefab)은 엔티티와 컴포넌트의 구성과 값을 담아 둔 파일(`.et`)입니다. 프리팹이 무엇이고 스크립트에서 어떻게 쓰는지는 Script 책 10장에 있습니다. 6장에서는 Resource Browser의 프리팹을 뷰포트로 끌어다 놓아 인스턴스를 만들었습니다. 이 장은 프리팹 파일 자체를 만들고 고치는 화면을 다룹니다.
+
+모드에서 기본 게임의 프리팹을 고칠 때는 원본 파일을 바꾸지 않고 자기 프로젝트에 덮어쓰는 파일을 만듭니다. 그 원리와 방식의 종류는 Script 책 12장에서 설명합니다. 이 장의 뒤쪽은 그 파일을 만드는 메뉴와 고치는 화면입니다.
+
+## 프리팹 인스턴스 알아보기
+
+월드에 놓인 엔티티가 프리팹 인스턴스인지는 6장에서 본 대로 Hierarchy에 표시됩니다. 프리팹 인스턴스는 파란 아이콘으로 보이고 **prefab** 열에 프리팹 이름이 표시됩니다.
+
+Object Properties에서도 차이가 보입니다(<FigRef id="ch08-instance-props" />).
+
+- 속성 영역 위의 펼침 목록에는 `Entity instance`라고 적혀 있습니다. 위키(Prefabs Basics)에 따르면 이 상태에서는 월드에 놓인 이 인스턴스의 값만 고칩니다. 프리팹이 아닌 엔티티에서도 같은 글자가 보입니다.
+- 맨 아래 **Apply to prefab** 버튼은 월드에 놓인 프리팹 인스턴스를 골랐을 때 눌리는 상태입니다. 프리팹이 아닌 엔티티를 고르거나 뒤에서 볼 프리팹 편집 모드에서는 흐리게 표시됩니다.
+- 인스턴스에서 바꾼 값은 이름이 굵게 보입니다(6장).
+
+펼침 목록과 **Apply to prefab**으로 프리팹 쪽 값을 바꾸는 방법은 이 장 끝의 "월드에서 프리팹 값 바꾸기"에서 봅니다.
+
+<Figure src="ch08/instance-props.png" alt="프리팹 인스턴스를 고른 Object Properties" id="ch08-instance-props">프리팹 인스턴스를 고른 Object Properties</Figure>
+
+## 엔티티를 프리팹으로 저장하기
+
+월드에서 꾸민 엔티티는 Hierarchy에서 Resource Browser로 끌어다 놓아 프리팹 파일로 저장합니다(위키 Prefabs Basics). 엔티티를 Resource Browser 파일 목록의 빈 곳에 놓으면 **New entity prefab** 창이 뜹니다(<FigRef id="ch08-new-entity-prefab" />). 창에는 **Enter new prefab name** 칸과 **OK**, **Cancel** 버튼이 있고, 이름을 넣고 **OK**를 누르면 Resource Browser에서 열려 있던 폴더에 `.et` 파일이 생깁니다.
+
+확장자 `.et`는 자동으로 붙습니다. 이름에 `.et`까지 넣으면 `.et.et` 파일이 생기므로 확장자 없이 입력합니다.
+
+<TryIt title="상자를 프리팹으로 저장하기">
+
+1. 6장에서 만든 `GuideTest` 월드를 엽니다. 6장의 실습에서 모델(`.xob`)로 만든 상자 엔티티를 씁니다. 7장처럼 컴포넌트를 더해 두어도 됩니다.
+2. World Editor 아래쪽 **Resource Browser**에서 `GuideDemo` 프로젝트 안의, 프리팹을 둘 폴더를 엽니다. 폴더를 새로 만드는 방법은 3장에서 봅니다.
+3. Hierarchy에서 상자 엔티티를 끌어 Resource Browser의 파일 목록 빈 곳에 놓습니다.
+4. **New entity prefab** 창의 **Enter new prefab name** 칸에 `TAG_GuideCrate`처럼 확장자 없이 이름을 넣고 **OK**를 누릅니다.
+5. 그 폴더에 `TAG_GuideCrate.et`가 생겼는지 봅니다(<FigRef id="ch08-prefab-created" />).
+
+</TryIt>
+
+`.xob`로 만든 상자를 이렇게 저장한 파일의 내용은 다음과 같습니다. 엔티티의 클래스, `MeshObject` 컴포넌트와 모델, 그리고 월드에 놓여 있던 위치(`coords`)가 들어 있습니다.
+
+```text
+GenericEntity {
+ ID "6A95425A453E8601"
+ components {
+  MeshObject "{6A95425A171F154F}" {
+   Object "{569C9B8C543D3020}Assets/Props/Crates/CrateWooden_02/CrateWooden_02_1x1x1.xob"
+  }
+ }
+ coords 123.306 1 114.774
+}
+```
+
+위키(Prefabs Basics)는 저장하기 전에 여러 엔티티를 Hierarchy에서 끌어다 놓아 부모와 자식으로 묶어 두라고 하고, 루트 엔티티는 하나여야 한다고 설명합니다. 자식이 있는 엔티티를 저장하면 자식 엔티티는 루트 엔티티 블록 안의 중괄호 블록에 이름과 함께 적히고, 루트 엔티티의 이름은 파일에 적히지 않습니다. 프리팹 인스턴스를 이렇게 저장하면 원래 프리팹을 상속한 프리팹이 만들어지며, 파일의 첫 줄이 `GenericEntity : "{GUID}Prefabs/…/원래 프리팹.et" {`처럼 부모 프리팹을 가리킵니다.
+
+저장한 뒤에도 월드의 원래 엔티티는 그대로 남고, 새 프리팹의 인스턴스로 바뀌지 않습니다. Hierarchy에서는 저장하기 전처럼 빨간 아이콘이고 **prefab** 열도 `---`입니다. 월드를 저장하고 다시 열어도 같습니다. 월드에서 새 프리팹을 쓰려면 Resource Browser의 `.et`를 뷰포트로 끌어다 놓습니다(6장).
+
+Script 책 16장의 보급품 상자도 이 방법으로 프리팹으로 저장합니다. 그 장에서 말하듯 리플리케이션을 쓰는 프리팹은 `RplComponent`가 루트 엔티티에 있어야 합니다(Script 책 14장).
+
+<Figure src="ch08/new-entity-prefab.png" alt="New entity prefab 창" id="ch08-new-entity-prefab">New entity prefab 창</Figure>
+
+<Figure src="ch08/prefab-created.png" alt="새로 만든 프리팹 파일" id="ch08-prefab-created">새로 만든 프리팹 파일</Figure>
+
+## 메인 창의 프리팹 탭
+
+Resource Browser에서 `.et` 파일을 두 번 클릭하면 별도 창이 아니라 Workbench 메인 창에 파일 이름의 탭으로 열립니다(2장).
+
+프리팹 탭에는 다음이 있습니다(<FigRef id="ch08-prefab-tab" />).
+
+- 왼쪽 **Hierarchy**: 프리팹에 든 엔티티입니다.
+- 가운데 뷰포트: 프리팹을 미리 보여 줍니다. 위에 도구 버튼과 **View**, **Shading**, **Overlay**, **Options** 탭이 있습니다.
+- 오른쪽 위 **Resource Variants**: 덮어쓴 기본 게임 프리팹에서는 `(2)`와 `2. GuideDemo`처럼 작업 중인 프로젝트 ID가 붙은 값이 보입니다(3장). 직접 만든 프리팹에서는 `(1)`과 `1. GuideDemo`입니다. {/* 확인 대기: 목록에서 다른 항목을 고르면 탭 내용이 바뀌는지 */}
+- 그 아래 **Edit Prefab** 버튼, 오른쪽 끝의 세로 탭 **Prefab**과 **Mesh**, 아래쪽 **Details**와 **Import Settings** 탭이 있습니다.
+- 메인 창의 상태 줄에는 파일 경로, 크기와 함께 파일 종류 `Entity prefab file`이 표시됩니다.
+
+탭을 열었을 때 보이는 창에는 컴포넌트를 더하거나 속성을 고칠 곳이 없습니다. 오른쪽 끝의 세로 탭 **Prefab**은 처음에 보이는 화면이고, **Mesh**를 누르면 **Materials**, **LODs**, **BSP**, **Probe Volumes**, **Colliders**, **Occluders**, **Land Contacts**, **Bones**, **Morphs**, **Runtime Stats** 목록이 나옵니다. 모델이 없는 `DefaultPlayerController.et`에서는 맨 위에 흐린 **No mesh** 버튼이 보이고 목록이 비어 있습니다. 프리팹을 고칠 때는 **Edit Prefab**을 눌러 World Editor의 프리팹 편집 모드로 엽니다. 직접 만든 프리팹의 탭에도 **Edit Prefab** 버튼이 있고, 누르면 다음 절과 같은 프리팹 편집 모드가 열립니다.
+
+메인 창의 **Edit** 메뉴에도 **Edit Prefab**(<Kbd>Ctrl</Kbd>+<Kbd>E</Kbd>) 항목이 있습니다. 설정 파일 탭이 앞에 있을 때는 이 항목이 흐리게 표시됩니다. **Edit Prefab**은 지금 탭의 프리팹을 World Editor의 프리팹 편집 모드로 엽니다. 작업 중인 프로젝트에 있는 프리팹은 Resource Browser 오른쪽 클릭 메뉴의 <strong>Edit Prefab(s)</strong>로도 프리팹 편집 모드로 열 수 있습니다. 위키(Prefabs Basics)는 이 항목으로 여러 프리팹을 한꺼번에 열 수 있다고 설명합니다. 기본 게임 프리팹의 오른쪽 클릭 메뉴에서는 <strong>Edit Prefab(s)</strong>가 흐리게 표시됩니다.
+
+<Figure src="ch08/prefab-tab.png" size="full" alt="메인 창의 프리팹 탭" id="ch08-prefab-tab">메인 창의 프리팹 탭</Figure>
+
+## 프리팹 편집 모드
+
+**Edit Prefab**을 누르면 World Editor가 프리팹 편집 모드로 열립니다(<FigRef id="ch08-prefab-edit-mode" />). 보통 때와 다른 점은 다음과 같습니다.
+
+- 창 제목이 `World Editor - Prefab edit mode`입니다.
+- Hierarchy 맨 위에 `Prefab edit scene`이 있고, 그 아래 `default` 레이어에 프리팹의 인스턴스(파란 아이콘)와 `world`라는 엔티티가 있습니다.
+- **Game** 메뉴와 도구 막대의 초록색 삼각형 모양의 Play 버튼이 흐리게 표시됩니다. 이 모드에서는 게임을 실행할 수 없습니다.
+- 프리팹 인스턴스를 고르면 Object Properties의 펼침 목록에 `Entity instance` 대신 프리팹의 이름이 보입니다. 위키(Prefabs Basics)에 따르면 이 모드에서는 처음부터 프리팹 단계의 값을 고칩니다.
+- **+ Add Component**로 컴포넌트를 더할 수 있고, 더한 컴포넌트는 목록에 굵게 표시됩니다.
+
+World Editor의 **File** 메뉴도 바뀝니다(<FigRef id="ch08-prefab-file-menu" />). 보통 모드의 **Save World**와 **Save with Options**(6장) 자리에 **Save Prefabs**와 **Save Prefabs with Options**가 있고, 메뉴에는 그 옆에 각각 <Kbd>Ctrl</Kbd>+<Kbd>S</Kbd>와 <Kbd>Ctrl</Kbd>+<Kbd>Shift</Kbd>+<Kbd>S</Kbd>가 적혀 있습니다. **Save World As**와 **Go to World File**은 흐리게 표시됩니다. 아직 고친 것이 없으면 **Save Prefabs**와 **Save Prefabs with Options**도 흐리게 표시됩니다.
+
+고친 프리팹은 **File > Save Prefabs**로 저장합니다. **Save Prefabs with Options**를 고르면 **Save changes** 창이 고친 프리팹 파일을 체크 상자와 함께 보여 주고, 체크한 파일만 저장합니다. 이 목록에는 월드 파일이 나오지 않습니다. **Force Save All**은 바꾼 것이 없어도 열려 있는 프리팹 파일을 다시 저장합니다. 위키(Prefabs Basics)는 이 모드에서 엔티티에 한 다른 변경은 편집기를 닫으면 사라진다고 설명합니다.
+
+위키(Prefabs Basics)는 프리팹 편집 모드를 열면 World Editor에 빈 지형이 따로 열리므로, 열기 전에 월드의 변경을 저장해 두라고 경고합니다. 열려 있는 월드에 저장하지 않은 변경이 있으면 **Edit Prefab**을 눌렀을 때 **Editing prefab** 창이 `Do you want to save changes?`라고 묻고, 바뀐 월드와 레이어 파일을 체크된 목록으로 보여 줍니다. **No**를 누르면 월드를 저장하지 않고 프리팹 편집 모드를 열고, **Cancel**을 누르면 프리팹 편집 모드를 열지 않습니다. 프리팹 편집 모드에서 원래 월드로 돌아갈 때는 **File** 메뉴 아래쪽의 최근 월드 목록에서 그 월드를 고릅니다.
+
+<Figure src="ch08/prefab-edit-mode.png" size="full" alt="World Editor의 프리팹 편집 모드" id="ch08-prefab-edit-mode">World Editor의 프리팹 편집 모드</Figure>
+
+<Figure src="ch08/prefab-file-menu.png" alt="프리팹 편집 모드의 File 메뉴" id="ch08-prefab-file-menu">프리팹 편집 모드의 File 메뉴</Figure>
+
+## 기본 게임 프리팹 덮어쓰기
+
+기본 게임의 프리팹을 오른쪽 클릭하면 메뉴의 **Addons** 묶음에 작업 중인 프로젝트 ID가 붙은 세 항목이 있습니다(<FigRef id="ch08-addons-menu" />). 오른쪽 클릭 메뉴의 다른 항목은 3장에서 다룹니다.
+
+- <strong>Override in 'GuideDemo'</strong>: 덮어쓰기(Override)
+- <strong>Duplicate to 'GuideDemo'</strong>: 복제(Duplicate)
+- <strong>Inherit in 'GuideDemo'</strong>: 상속(Inherit)
+
+### Override in
+
+기본 게임 프리팹에서 **Override in**을 누르면 작업 중인 프로젝트에 원본과 같은 경로, 같은 GUID의 파일이 생깁니다. 예를 들어 `Prefabs/Characters/Core/DefaultPlayerController.et`를 덮어쓰면 다음과 같습니다.
+
+- 프로젝트 쪽 파일의 아이콘에는 퍼즐 조각이 붙어, 자물쇠가 붙은 원본과 구별됩니다(<FigRef id="ch08-override-file" />, 3장).
+- 막 만든 파일은 47바이트이고, 두 번 클릭해 연 탭의 **Resource Variants**는 `(2)`입니다.
+- **Edit Prefab**으로 연 프리팹 편집 모드에서 컴포넌트 하나를 더하고 **File > Save Prefabs**로 저장하면, 파일에는 클래스와 ID 말고는 더한 컴포넌트만 적힙니다.
+
+```text
+SCR_PlayerController {
+ ID "1A9BA6BEFA06E3B1"
+ components {
+  TAG_GeneratorRequestComponent "{6A95425975FC243B}" {
+  }
+ }
+}
+```
+
+덮어쓴 파일은 원본 전체가 아니라 바꾼 부분만 담습니다. 위키(Data Modding Basics)는 이 방식으로 원본에 항목을 더하거나 값을 바꿀 수는 있지만 원본의 항목을 지울 수는 없다고 설명합니다.
+
+이미 덮어쓴 원본을 오른쪽 클릭하면 **Override in** 대신 **Navigate to Override**가 켜져 있습니다(3장).
+
+<TryIt title="기본 게임 프리팹에 컴포넌트 더하기">
+
+Script 책 14장은 요청 컴포넌트를 기본 게임의 `DefaultPlayerController.et`에 붙입니다. 그 화면 절차입니다.
+
+1. Resource Browser의 검색 칸에 `DefaultPlayerController`를 입력합니다. 결과가 보이지 않으면 트리 맨 위의 `ArmaReforger`를 누릅니다. 기본 게임의 `Prefabs/Characters/Core/DefaultPlayerController.et`를 오른쪽 클릭합니다.
+2. **Addons** 묶음의 <strong>Override in 'GuideDemo'</strong>를 누릅니다. `GuideDemo`에 같은 경로의 파일이 퍼즐 아이콘과 함께 생깁니다.
+3. `GuideDemo` 쪽 `DefaultPlayerController.et`를 두 번 클릭해 메인 창의 탭으로 열고 **Edit Prefab**을 누릅니다.
+4. 프리팹 편집 모드에서는 프리팹 인스턴스가 이미 골라져 있습니다. **+ Add Component**로 붙일 컴포넌트(예: Script 책 14장의 `TAG_GeneratorRequestComponent`, 분류 `TAG/Tutorial`)를 더합니다.
+5. **File > Save Prefabs**로 저장합니다.
+
+덮어쓴 파일이 필요 없으면 Resource Browser에서 그 파일을 오른쪽 클릭해 **Delete**를 고르고, **Delete Items** 창에서 **Yes**를 누릅니다. 남은 빈 폴더도 같은 방법으로 지웁니다.
+
+</TryIt>
+
+<Figure src="shared/rb-context-base-prefab.png" alt="기본 게임 프리팹의 오른쪽 클릭 메뉴" id="ch08-addons-menu">기본 게임 프리팹의 오른쪽 클릭 메뉴</Figure>
+
+<Figure src="shared/rb-override-icons.png" alt="자물쇠가 붙은 원본과 퍼즐 조각이 붙은 덮어쓴 파일" id="ch08-override-file">자물쇠가 붙은 원본과 퍼즐 조각이 붙은 덮어쓴 파일</Figure>
+
+### Duplicate to와 Inherit in
+
+나머지 두 항목을 누르면 새 파일의 이름을 묻는 창이 뜹니다. **Duplicate to**는 **Duplicate File** 창, **Inherit in**은 **Create inherited file** 창이고, 두 창 모두 **File Name:** 칸에 원본 파일 이름이 골라진 채 들어 있습니다. 이름을 넣고 **OK**를 누르면 작업 중인 프로젝트 안, 원본과 같은 폴더 경로에 새 GUID의 파일이 생깁니다.
+
+- **Duplicate to**: 원본 파일의 내용을 그대로 복사한 새 파일을 만듭니다. 원본이 다른 프리팹을 상속하고 있으면 그 상속도 그대로 복사됩니다. 원본에는 영향이 없습니다.
+- **Inherit in**: 원본을 부모로 상속하는 새 파일을 만듭니다. 막 만든 파일에는 부모 프리팹을 가리키는 첫 줄과 ID만 있어, 값은 모두 부모에게서 물려받습니다. 위키(Data Modding Basics)는 프리팹의 상속을 World Editor에 붙은 Resource Browser에서만 할 수 있다고 설명하지만, 메인 창의 Resource Browser에서도 프리팹에 **Inherit in**을 쓸 수 있고 같은 파일이 만들어집니다.
+
+세 방식을 정리하면 다음과 같습니다. 어느 방식을 언제 쓰는지는 Script 책 12장에서 다룹니다.
+
+| 메뉴 | 새 파일의 GUID | 담기는 내용 |
+|---|---|---|
+| **Override in** | 원본과 같음 | 원본에 덧씌울 바뀐 부분 |
+| **Duplicate to** | 새 GUID | 원본 파일 그대로의 사본 |
+| **Inherit in** | 새 GUID | 원본을 상속한 새 파일 |
+
+## 월드에서 프리팹 값 바꾸기
+
+프리팹 편집 모드를 열지 않고 월드에서 프리팹의 값을 바꾸는 방법도 두 가지 있습니다.
+
+- **펼침 목록**: 속성 영역 위의 `Entity instance` 펼침 목록을 펼치면 그 아래에 인스턴스가 상속한 프리팹이 가까운 것부터 나옵니다(<FigRef id="ch08-instance-combo" />). 프리팹을 고르면 그 프리팹의 값을 바로 고치고, 그 프리팹 파일이 정한 값의 이름이 굵게 보입니다. 바꾼 값은 그 프리팹을 쓰는 다른 인스턴스에도 곧바로 적용됩니다.
+- **Apply to prefab**: 펼침 목록을 `Entity instance`에 둔 채 인스턴스의 값을 고친 뒤, 맨 아래 **Apply to prefab**을 누르면 바꾼 컴포넌트 값이 프리팹으로 옮겨집니다. 상속한 프리팹이 둘 이상이면 **Apply entire entity changes to prefab** 창에서 어느 프리팹에 적용할지 고릅니다. 이 창의 **Apply transformation**은 처음에 꺼져 있고, 꺼진 채로 적용하면 인스턴스의 위치(**Coords**)는 프리팹으로 옮겨지지 않습니다. 상속한 프리팹이 하나일 때는 창 없이 바로 옮겨지며, 이때도 위치는 옮겨지지 않습니다. 속성 하나만 옮길 때는 속성 이름의 오른쪽 클릭 메뉴에서 **Apply Value to Prefab**을 고릅니다.
+
+이렇게 바꾼 프리팹 파일은 곧바로 저장되지 않고, 열려 있는 월드를 저장할 때 함께 저장됩니다. **File > Save with Options**(메뉴 표시: <Kbd>Ctrl</Kbd>+<Kbd>Shift</Kbd>+<Kbd>S</Kbd>)의 **Save changes** 창에는 월드·레이어 파일과 함께 바뀐 프리팹 파일이 나오므로, 저장할 파일을 골라 저장할 수 있습니다(6장). 위키(Prefabs Basics)는 저장하지 않으면 World Editor를 닫을 때 이 변경이 사라진다고 경고합니다. {/* 확인 대기: 저장하지 않고 World Editor를 닫으면 바꾼 프리팹 값이 사라지는지 */}
+
+<Figure src="ch08/instance-combo.png" alt="Entity instance 펼침 목록을 연 모습" id="ch08-instance-combo">Entity instance 펼침 목록을 연 모습</Figure>
+
+<Note title="컴포넌트 프리팹(.ct)">
+
+컴포넌트의 구성과 값만 담는 프리팹은 `.ct` 파일입니다(위키 Prefabs Basics). 기본 게임의 `.ct`를 메인 창의 Resource Browser에서 두 번 클릭하면 메인 창의 탭으로 열리고, 위쪽에 `class:`와 `parent:` 칸, 아래에 그 컴포넌트의 속성 표가 보입니다. 이 표에서도 그 파일에서 정한 값은 굵게 표시됩니다. `.ct`는 Object Properties 컴포넌트 목록의 줄을 Resource Browser의 파일 목록으로 끌어다 놓아 만듭니다. 놓으면 **New component prefab** 창이 이름을 묻습니다. 만든 `.ct`를 다른 엔티티의 Object Properties 속성 영역으로 끌어다 놓으면 그 컴포넌트가 엔티티에 더해지고, 그 컴포넌트를 골랐을 때 펼침 목록에 `.ct` 파일 이름이 나옵니다.
+
+</Note>
+
+## 정리
+
+<Summary>
+
+- 프리팹 인스턴스는 Hierarchy의 파란 아이콘과 **prefab** 열, Object Properties의 눌리는 **Apply to prefab**으로 알아봅니다.
+- Hierarchy의 엔티티를 Resource Browser 파일 목록에 끌어다 놓으면 **New entity prefab** 창이 뜹니다. 이름은 확장자 없이 넣습니다(`.et`가 자동으로 붙음).
+- `.et`를 두 번 클릭하면 메인 창의 프리팹 탭이 열립니다. 고칠 때는 **Edit Prefab**으로 World Editor의 프리팹 편집 모드(`World Editor - Prefab edit mode`)를 엽니다.
+- 프리팹 편집 모드에서는 **Game** 메뉴와 Play 버튼이 흐리고, 고친 프리팹은 **File > Save Prefabs**(메뉴 표시: <Kbd>Ctrl</Kbd>+<Kbd>S</Kbd>)로 저장합니다.
+- **Override in**은 같은 경로·같은 GUID의 파일을 프로젝트에 만들고(퍼즐 아이콘), 그 파일에는 바꾼 부분만 저장됩니다.
+- **Duplicate to**는 새 GUID의 사본, **Inherit in**은 원본을 상속한 새 파일을 만듭니다.
+
+</Summary>
+
+**더 읽을거리**
+
+- [Prefabs Basics](https://community.bistudio.com/wiki/Arma_Reforger:Prefabs_Basics)
+- [Data Modding Basics](https://community.bistudio.com/wiki/Arma_Reforger:Data_Modding_Basics)
+- [Asset Browser Mod Integration](https://community.bistudio.com/wiki/Arma_Reforger:Asset_Browser_Mod_Integration): 기본 게임 프리팹을 덮어쓰고 Edit prefab으로 고치는 예

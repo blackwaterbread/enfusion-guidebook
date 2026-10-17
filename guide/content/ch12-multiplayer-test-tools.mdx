@@ -1,0 +1,266 @@
+---
+title: 멀티플레이와 테스트 도구
+description: 피어 클라이언트를 함께 띄우는 Peer Tool과 Dedicated Server Tool의 설정 창, 같은 PC에서 여러 게임을 띄울 때의 시작 매개변수, Autotest 플러그인과 Autotest Tool로 테스트를 실행하고 결과를 보는 방법을 다룹니다.
+---
+
+<Objectives>
+
+- **Configure Peer tool** 창에서 피어 실행 파일과 피어 구성을 정할 수 있다.
+- Play 목록의 **Server localhost + PeerTool**로 Workbench의 게임을 서버로 삼아 피어 클라이언트를 접속시킬 수 있다.
+- **Start Dedicated Server** 창의 항목과 버튼을 읽을 수 있다.
+- 같은 PC에서 여러 게임을 띄울 때 `-forceUpdate`와 `-maxFPS`가 하는 일을 설명할 수 있다.
+- <Kbd>F4</Kbd>로 테스트를 실행해 결과 창과 결과 파일을 보고, Autotest Tool 창의 칸을 읽을 수 있다.
+
+</Objectives>
+
+리플리케이션 코드는 혼자 하는 Play로는 확인할 수 없습니다(Script 책 14장). 서버와 클라이언트가 따로 있어야 값이 복제되는지, RPC가 어느 기계에서 실행되는지, 늦게 들어온 클라이언트가 무엇을 받는지 볼 수 있습니다. 공식 스크립트에는 이를 위한 World Editor 플러그인이 두 개 들어 있습니다. Workbench의 게임에 피어 클라이언트를 붙이는 Peer Tool과, 데디케이티드 서버를 띄우는 Dedicated Server Tool입니다.
+
+이 장은 두 도구의 설정 창과 실행 방법, 여러 게임을 한 PC에서 띄울 때의 주의점, 그리고 Script 책 15장에서 작성한 자동 테스트를 Workbench에서 실행하는 화면을 다룹니다. Play 버튼 오른쪽의 ▾를 눌러 여는 Play 목록과 플레이 모드를 끝내는 방법은 11장에 있습니다.
+
+## 두 도구 한눈에 보기
+
+| 구분 | Peer Tool | Dedicated Server Tool |
+|---|---|---|
+| 공식 스크립트 | `WorkbenchGameCommon/PeerTool.c` | `WorkbenchGame/WorldEditor/SCR_DedicatedServerPlugin.c` |
+| 서버 | Workbench에서 Play한 게임(리슨 서버) | 따로 띄운 데디케이티드 서버 |
+| 클라이언트 | 설정 창에 정한 피어(게임 실행 파일) | 설정 창에 정한 피어(**Run Peers**를 켰을 때만) |
+| 시작 | Play 목록의 **Server localhost + PeerTool**로 Play | **Start Dedicated Server** 창의 **Run** |
+
+피어로는 이름이 `Diag`로 끝나는 게임 실행 파일을 씁니다. 게임 설치 폴더의 `ArmaReforgerSteamDiag.exe`가 그런 파일입니다. 위키(Development Executables)에 따르면 Diag가 아닌 클라이언트는 Diag 서버에 접속할 수 없고, Workbench 디버깅 도구에도 연결할 수 없습니다. 위키(Startup Parameters)는 Peer Tool이 기본으로 붙이는 `-rpl-reconnect`와 `-rpl-timeout-disable`도 Diag 실행 파일에서만 동작한다고 적습니다.
+
+## Peer Tool 설정 창
+
+### 여는 곳
+
+플러그인의 설정 창은 **Plugins > Settings** 아래의 플러그인 이름으로 엽니다. Peer Tool은 World Editor 플러그인이므로 World Editor의 **Plugins > Settings > Peer Tool**입니다(<FigRef id="ch12-we-plugins-menu" />). Script Editor의 **Plugins** 메뉴에도 맨 위에 **Settings** ▸ 하위 메뉴가 있습니다.
+
+<Figure src="ch12/we-plugins-menu.png" alt="World Editor의 Plugins 메뉴" id="ch12-we-plugins-menu">World Editor의 Plugins 메뉴</Figure>
+
+설정 창의 제목은 **Configure Peer tool**이고, 안쪽 위에 `Settings:`라고 적혀 있습니다(<FigRef id="ch12-peer-config" />). 아래쪽에는 **OK** 버튼 하나만 있습니다. 제목 막대의 닫기 버튼(×)으로 닫아도 바꾼 값은 저장됩니다.
+
+<Figure src="ch12/peer-config.png" alt="Configure Peer tool 창" id="ch12-peer-config">Configure Peer tool 창</Figure>
+
+### 위쪽 항목
+
+창 위쪽의 칸과 공식 스크립트(`PeerTool.c`)의 기본값은 다음과 같습니다.
+
+| 항목 | 기본값 | 내용 |
+|---|---|---|
+| **Executable** | `game.exe` | 피어로 실행할 파일 |
+| **Launch Delay** | `0` | 공식 스크립트의 설명은 "창을 띄우기 전에 기다리는 초"(0부터 1000까지) |
+| **Peers Windows** | — | 피어 구성 목록. 오른쪽 <strong>+</strong>와 <strong>-</strong>로 항목을 더하고 뺍니다 |
+
+**Executable**에는 앞 절의 Diag 실행 파일을 넣습니다. 칸 오른쪽의 작은 버튼을 누르면 **Choose a file** 창에서 파일을 고를 수 있고, 칸에 경로를 직접 입력해도 됩니다.
+
+### 피어 구성
+
+**Peers Windows**의 항목 하나가 피어 하나입니다. 목록 줄에는 **Title** 값이 보이고, 공식 스크립트는 켜진 항목 뒤에 `(Enabled)`를 붙입니다. 항목을 펼친 칸과 기본값, 그리고 Play할 때 공식 스크립트(`PeerTool.c`)가 그 피어에 붙이는 시작 매개변수는 다음과 같습니다. 매개변수의 뜻은 위키(Startup Parameters)의 설명을 줄인 것입니다.
+
+| 항목 | 기본값 | 붙는 시작 매개변수와 뜻 |
+|---|---|---|
+| **Title** | `Peer Config` | 없음. 목록에 보이는 이름 |
+| **Enabled** | 체크 | 없음. 체크한 피어만 띄움 |
+| **X**, **Y** | `-1` | `-posX`, `-posY`: 창 위치. `-1`이면 붙지 않음 |
+| **Width**, **Height** | `-1` | `-screenWidth`, `-screenHeight`: 창 크기. `-1`이면 붙지 않음 |
+| **Windowed** | 체크 | `-window`: 창 모드로 실행 |
+| **Force Update** | 체크 | `-forceupdate`: 창이 초점을 잃어도 계속 그리고 갱신 |
+| **No Focus** | 체크 | `-nofocus`: 시작할 때 초점을 가져가지 않음 |
+| **Max FPS** | `-1` | `-maxFPS`: FPS 상한. 0보다 클 때만 붙음 |
+| **Rpl Auto Join** | 체크 | `-client`: 클라이언트로 서버에 접속 |
+| **Rpl Auto Reconnect** | 체크 | `-rpl-reconnect`: 연결이 끊기면 다시 접속을 시도 |
+| **Rpl Disable Timeout** | 체크 | `-rpl-timeout-disable`: 연결 시간 초과를 끔(디버깅용) |
+| **Profile** | `PeerPlugin` | `-profile PeerPlugin1`처럼 뒤에 피어 번호가 붙은 프로필 |
+| **Params** | 빈칸 | 적은 매개변수가 그대로 덧붙음 |
+
+**X**, **Y**, **Width**, **Height**는 피어 창 안쪽(게임 화면)의 자리와 크기입니다.
+
+**Profile** 값 뒤에는 피어 번호가 붙으므로 피어마다 다른 프로필을 씁니다. 피어를 둘 두면 둘째 피어는 `-profile PeerPlugin2`로 뜹니다. 첫 피어의 로그는 Workbench의 로그 폴더(5장)와 같은 `My Games` 폴더 아래의 `PeerPlugin1\logs`에 남습니다. 문서 폴더가 기본 위치이면 `C:\Users\<사용자 이름>\Documents\My Games\PeerPlugin1\logs`입니다.
+
+## Server localhost + PeerTool로 시험하기
+
+설정을 마쳤으면 Play 목록에서 **Server localhost + PeerTool**을 켜고 Play합니다. Workbench에서 Play한 게임이 서버가 되고, Peer Tool이 설정한 피어를 띄워 이 서버에 접속시킵니다.
+
+<TryIt title="피어 하나를 붙여 Play하기">
+
+1. World Editor의 **Plugins > Settings > Peer Tool**로 **Configure Peer tool** 창을 엽니다.
+2. **Executable**에 게임 설치 폴더의 `ArmaReforgerSteamDiag.exe`를 넣습니다.
+3. **Peers Windows**에 항목이 하나 있고 **Enabled**가 체크되어 있는지 봅니다. 항목이 없으면 <strong>+</strong>로 하나 더합니다. 새 항목은 `Peer Config (Enabled)`로 보입니다. **OK**로 닫습니다.
+4. 6장에서 만든 `GuideTest` 월드처럼 플레이어 캐릭터가 생기는 월드를 엽니다(월드 구성은 Script 책 16장).
+5. 초록색 삼각형 모양의 Play 버튼 오른쪽의 ▾를 눌러 Play 목록을 열고 **Server localhost + PeerTool**을 누릅니다. 항목 앞에 체크가 붙습니다(<FigRef id="ch12-play-menu-peertool" />).
+6. Play 버튼을 누릅니다. 처음 Play라면 **Script Authorization Required** 대화상자부터 답합니다(5장).
+7. 피어 게임이 따로 창으로 뜨고, 잠시 뒤 Workbench의 게임에 접속합니다(<FigRef id="ch12-peer-running" />).
+8. 시험이 끝나면 Workbench 쪽에서 Play를 끝냅니다. Play는 <Kbd>Esc</Kbd>나 **Game > Exit game**으로 끝냅니다(11장).
+
+</TryIt>
+
+<Figure src="ch12/play-menu-peertool.png" alt="Server localhost + PeerTool을 켠 Play 목록" id="ch12-play-menu-peertool">Server localhost + PeerTool을 켠 Play 목록</Figure>
+
+<Figure src="ch12/peer-running.jpg" size="full" alt="피어 게임 창과 Workbench" id="ch12-peer-running">피어 게임 창과 Workbench</Figure>
+
+### 로그로 확인하기
+
+Play를 시작하면 Workbench 로그에 Peer Tool이 피어를 띄운 명령이 `Running command:` 줄로 남습니다. 다음은 그 예입니다. 실제로는 한 줄이고, 읽기 쉽게 나누고 경로는 자리 표시로 바꿨습니다.
+
+```text
+SCRIPT       : Running command: <게임 폴더>\ArmaReforgerSteamDiag.exe
+    -gproj "./addons/data/ArmaReforger.gproj" -addonsDir "<애드온 폴더>/" -addons <프로젝트 ID>
+    -window -forceupdate -nofocus -client -rpl-reconnect -rpl-timeout-disable -profile PeerPlugin1
+```
+
+`-gproj`에는 기본 게임의 프로젝트 파일이 들어가고, 작업 중인 프로젝트는 `-addonsDir`와 `-addons`로 넘어갑니다. 그래서 피어에서도 모드가 함께 실립니다. 뒤쪽 매개변수는 앞 절의 표에서 체크한 칸들과 맞습니다.
+
+피어가 접속할 때 서버 로그에 `Trying to register connection of possibly unauthorized client.` 오류 줄이 남아도 접속은 그대로 이어집니다. 이 구성에서 `RplSession.Mode()`는 Workbench 쪽이 `Listen`, 피어 쪽이 `Client`입니다. 서버 항목을 켜지 않은 보통 Play에서는 `RplMode.None`입니다. 역할을 코드에서 가르는 방법은 Script 책 14장에서 다룹니다.
+
+### 끝낸 뒤
+
+플레이 모드가 끝나면 Peer Tool은 자기가 띄운 피어 프로세스를 끝냅니다. **Exit game**으로 플레이 모드를 끝내면 피어 창도 곧 닫히고, 피어 로그는 끝맺는 줄 없이 끊깁니다.
+
+시험이 끝나면 Play 목록의 **Server localhost + PeerTool**을 다시 눌러 체크를 풀어 둡니다. 켜 둔 채로 두면 다음 Play에도 피어가 뜹니다. Autotest Tool로 테스트를 실행해 플레이 모드가 시작될 때도 피어가 뜹니다. Workbench를 끄고 다시 띄우면 이 체크는 풀려 있습니다.
+
+### 문제가 생기면
+
+| 증상 | 볼 곳 |
+|---|---|
+| 피어 창이 뜨지 않는다 | **Executable** 경로. 피어를 실행하지 못하면 로그에 `Peer #1 couldn't run.`으로 시작하는 오류가 남습니다. **Executable**이 기본값 `game.exe` 그대로일 때도 이렇게 됩니다 |
+| 피어가 접속하자마자 끊긴다 | 서버 로그의 `Another connected player with the same identity found` 줄. Workbench를 다시 띄워 봅니다 |
+
+## Launch Delay와 중도 참가
+
+**Launch Delay**에 초를 넣으면 플레이 모드가 시작되고 그만큼 기다린 뒤 피어를 띄웁니다. 이 값을 쓰면 이미 진행 중인 게임에 클라이언트가 늦게 들어오는 중도 참가(JIP)를 일부러 만들 수 있습니다. 그동안 서버에서 바꾼 상태는 피어가 접속할 때 전달됩니다. 창에는 단위가 표시되지 않습니다.
+
+**Launch Delay**가 0이어도 피어는 Workbench의 게임이 시작되고 잠시 뒤에 접속하므로, 그 사이 서버에서 바꾼 상태는 피어에게 중도 참가로 전달됩니다. 중도 참가 때 무엇이 전달되고 무엇이 전달되지 않는지는 Script 책 14장에서 다룹니다.
+
+## Dedicated Server Tool
+
+### 여는 곳과 창
+
+Dedicated Server Tool도 World Editor 플러그인입니다. 설정 창이 아닌 플러그인 본래의 동작은 **Plugins** 메뉴의 플러그인 이름이나 그 단축키로 실행합니다. World Editor의 **Plugins** 메뉴에 **Dedicated Server Tool**이 있고(<FigRef id="ch12-we-plugins-menu" />), World Editor가 앞에 있을 때 <Kbd>Ctrl</Kbd>+<Kbd>Shift</Kbd>+<Kbd>D</Kbd>를 눌러도 실행됩니다. Script Editor의 **Plugins** 메뉴에는 같은 키가 **Debug Line Shortcut** 옆에 적혀 있습니다.
+
+실행하면 **Start Dedicated Server** 창이 열리고, 위에 `Configure dedicated server before running it.`라고 적혀 있습니다(<FigRef id="ch12-dedicated-server" />). 창은 **Server**와 **Peers** 두 묶음으로 나뉩니다.
+
+<Figure src="ch12/dedicated-server.png" alt="Start Dedicated Server 창" id="ch12-dedicated-server">Start Dedicated Server 창</Figure>
+
+| 묶음 | 항목 | 기본값 | 내용(공식 스크립트) |
+|---|---|---|---|
+| **Server** | **Config** | 비어 있음(**set class**) | 서버를 어떻게 띄울지 정하는 객체. 설명에 이것 없이는 서버를 띄울 수 없다고 적혀 있음 |
+| | **Executable** | `ArmaReforgerServer.exe` | 서버 실행 파일 |
+| | **Profile** | 빈칸 | 서버의 `-profile` |
+| | **No Throw** | 해제 | `-nothrow` |
+| | **Log Backend**, **Backend Env** | `None` | 백엔드 로그와 백엔드 환경 |
+| | **Max FPS** | `30` | 서버의 `-maxFPS`. 0이면 제한 없음 |
+| | **Log Level** | `NORMAL` | `NORMAL`이 아니면 `-logLevel` |
+| | **Params** | 빈칸 | 덧붙일 매개변수 |
+| **Peers** | **Run Peers** | 해제 | 서버를 띄운 뒤 피어도 띄움 |
+| | **Peer Executable** | `ArmaReforger.exe` | 피어 실행 파일 |
+| | **Peers Config** | `(0)` | 피어 구성 목록 |
+
+**Peers Config**는 공식 스크립트에서 Peer Tool의 피어 구성과 같은 형식(`PeerConfig`)이지만, Peer Tool 설정과는 따로 저장되는 별도의 목록입니다.
+
+**Config** 칸의 **set class**를 누르면 목록에 `DedicatedServerPluginCLI`, `DedicatedServerPluginCLI_Config`, `DedicatedServerPluginCLI_Server` 세 클래스가 나옵니다. 첫째는 공식 스크립트에서 나머지 둘이 상속하는 바탕 클래스입니다. 나머지 둘 가운데 하나는 월드, 미션 헤더, 시스템 설정, 관리자 비밀번호를 칸으로 정해 `-server`로 띄우는 클래스(`DedicatedServerPluginCLI_Server`. 월드를 비우면 지금 연 월드)이고, 다른 하나는 JSON 서버 설정 파일을 `-config`로 넘기는 클래스(`DedicatedServerPluginCLI_Config`)입니다. 공식 설명은 둘째 방법이 워크숍이 아닌 로컬 애드온으로 실행할 때는 동작하지 않는다고 적고 있습니다.
+
+### 버튼
+
+창 아래에는 **Start only clients**, **Run**, **Close** 세 버튼이 있습니다. 공식 스크립트에서 **Run**은 설정대로 서버를 띄우고(**Run Peers**를 켰으면 피어도), **Start only clients**는 서버 없이 피어만 띄우고, **Close**는 아무것도 하지 않고 닫습니다. **Config**가 비어 있으면 **Run**을 눌러도 창만 닫히고 서버는 뜨지 않으며, 로그에 `Cannot start dedicated server, 'Config' setting is incomplete!` 경고가 남습니다. **Peers Config**가 비어 있으면 **Start only clients**도 창만 닫히고 아무것도 뜨지 않습니다. {/* 확인 대기: Config를 정했을 때의 Run, Peers Config에 피어가 있을 때의 Start only clients(서버 미설치로 시험하지 않음) */}
+
+창이 열리면 **Run** 버튼에 초점이 가 있습니다(그림에서 테두리가 다른 버튼). 서버를 설치하지 않았다면 <Kbd>Enter</Kbd>를 누르지 말고 **Close**를 마우스로 눌러 닫습니다. 공식 스크립트는 Workbench의 플레이 모드가 끝날 때 이 도구로 띄운 피어와 서버도 끄도록 되어 있습니다.
+
+위키(Server Hosting)에 따르면 데디케이티드 서버는 게임이나 Arma Reforger Tools와 따로 받는 Steam 앱(안정판 AppID 1874900)입니다.
+
+## 같은 PC에서 여러 게임 띄우기
+
+Peer Tool을 쓰면 한 PC에서 Workbench의 게임과 피어 게임이 함께 돕니다. 엔진 문서(Replication)는 이런 경우를 두고, 같은 기계에서 `-forceUpdate`로 여러 인스턴스를 띄울 때는 `-maxFPS`도 함께 지정해 부하를 나누라고 조언합니다. 그러지 않으면 운영체제의 우선순위 때문에 앞에 있는 인스턴스는 200 FPS, 뒤에 있는 인스턴스는 5 FPS로 도는 일이 생길 수 있다고 합니다.
+
+Peer Tool에서는 각 피어의 **Force Update**와 **Max FPS**가 이 두 매개변수입니다(앞의 피어 구성 표). 기본값으로는 앞의 로그처럼 `-forceupdate`만 붙고 `-maxFPS`는 붙지 않으므로, 엔진 문서의 조언을 따르려면 피어의 **Max FPS**에 0보다 큰 값을 넣습니다. Dedicated Server Tool의 서버 **Max FPS**는 기본값이 `30`입니다.
+
+## Autotest로 테스트 실행하기
+
+Script 책 15장은 `SCR_AutotestSuiteBase`와 `SCR_AutotestCaseBase`로 테스트를 작성하고, 실행 도구로 Autotest 플러그인, Autotest Tool, `-autotest` 매개변수를 소개합니다. 이 절은 그 도구들의 화면을 봅니다. Autotest 스위트는 계산만 하는 테스트도 플레이 모드에서만 돕니다.
+
+### Script Editor에서 F4
+
+Script Editor의 **Plugins** 메뉴에는 **Autotest** 항목이 있고 단축키는 <Kbd>F4</Kbd>입니다(<FigRef id="ch12-se-plugins" />). 공식 스크립트의 설명은 "커서가 있는 테스트 스위트나 테스트 케이스를 실행한다. `SCR_Autotest`로 시작하는 스위트만 지원한다"입니다. 위키(Autotest Framework)는 먼저 World Editor에서 아무 월드나 열어 두라고 안내합니다.
+
+<Figure src="shared/se-plugins-menu.png" alt="Script Editor의 Plugins 메뉴" id="ch12-se-plugins">Script Editor의 Plugins 메뉴</Figure>
+
+<TryIt title="F4로 테스트 스위트 실행하기">
+
+1. World Editor에서 월드를 하나 엽니다.
+2. Script Editor에서 테스트 스위트(또는 테스트 케이스) 파일을 열고, 그 클래스 안에 커서를 둡니다. Script 책 15장의 `TAG_TEST_SupplyMathSuite`를 쓸 수 있습니다.
+3. <Kbd>F4</Kbd>를 누르거나 **Plugins > Autotest**를 고릅니다. 로그에 `CLI autotest suite:` 뒤에 스위트 이름이 붙은 줄이 남고, World Editor에서 플레이 모드가 시작됩니다.
+4. 스위트가 시작되면 월드가 바뀝니다. `GetWorldFile()`을 오버라이드하지 않은 스위트는 기본 Autotest 월드(`Autotest_GameMode_Plain.ent`)로 바뀝니다.
+5. 실행이 끝나면 **Test result SUCCESS** 창이 열립니다(<FigRef id="ch12-test-result" />). 창을 닫습니다.
+
+</TryIt>
+
+결과 창에는 스위트 이름 아래로 케이스마다 결과 줄이 있고(통과한 케이스는 초록 체크 표시와 `SUCCESS`), 그 아래에 `FAILED: 0`, `TOTAL: 1`처럼 실패 수와 전체 수가 나옵니다. 오른쪽 아래에는 **Open autotest.log** 버튼이 있습니다. 실패가 있으면 창 제목이 **Test result FAILURE**이고 그 케이스 줄에 빨간 아이콘과 `FAILURE`가 붙습니다. **Open autotest.log**를 누르면 결과 창이 닫히고 Script Editor에 `autotest.log`가 탭으로 열립니다.
+
+결과 창을 닫으면 로그에 `Autotest JUnit XML saved to: $logs:/junit.xml`이 남고 플레이 모드가 끝납니다. World Editor에는 원래 편집하던 월드가 열려 있고, 저장할지 묻는 창은 뜨지 않습니다. 실행 중에 플레이 모드로 바뀌므로, 그 세션의 첫 Play라면 **Script Authorization Required** 대화상자가 먼저 뜰 수 있습니다(5장).
+
+<Figure src="ch12/test-result.png" alt="Test result 창" id="ch12-test-result">Test result 창</Figure>
+
+### 결과 파일
+
+실행 결과는 그 Workbench 세션의 로그 폴더(`…\ArmaReforgerWorkbench\logs\logs_<날짜>_<시각>`, 5장)에 파일로 남습니다. 케이스가 모두 통과한 실행에서 생기는 파일은 다음과 같습니다.
+
+| 파일 | 내용 |
+|---|---|
+| `autotest.log` | 스위트 시작, 바꾼 월드와 시스템 설정 파일, 케이스마다 결과 줄 |
+| `autotest_succeded.log` | 통과한 케이스 이름(파일 이름의 철자가 `succeded`) |
+| `autotest_current.log` | 빈 파일 |
+| `junit.xml` | JUnit 형식의 결과(스위트와 케이스, 걸린 시간) |
+
+실패가 있으면 `autotest_failed.log`(실패한 케이스)와 `autotest_failed_suites.log`(실패한 스위트)가 생기고, 통과한 케이스가 없으면 `autotest_succeded.log`는 남지 않습니다. 이 파일들은 실행할 때마다 새로 씁니다.
+
+### 플러그인 설정
+
+Autotest 플러그인에도 설정 창이 있습니다. Script Editor의 **Plugins > Settings > Autotest**로 열고, 창의 제목은 **Autotest Plugin Configuration**입니다. **Focus World Editor**는 시작할 때 World Editor를 앞으로 가져올지(기본 켬), **Open Dialog After Run**과 **Open Log After Run**은 끝난 뒤 결과 창과 `autotest.log`를 열지(기본 켬, 끔), **Verbose Log**는 통과한 테스트의 로그도 모두 남길지(기본 끔), **Action After Run**은 끝난 뒤 게임을 닫을지(기본 `EXIT`, 그 밖에 `EXIT_IF_NO_ERROR`, `NONE`) 정합니다. 앞의 실습에서 결과 창이 열리고 플레이 모드가 끝난 것은 이 기본값 때문입니다. 이 창에는 **OK**나 **Cancel** 버튼이 없으므로 제목 막대의 닫기 버튼(×)으로 닫습니다.
+
+### Autotest Tool
+
+World Editor의 **Tools** 메뉴에서 **Autotest Tool**을 고르면(<FigRef id="ch12-we-tools-menu" />) 오른쪽 **Object Properties** 옆 탭의 이름이 **Autotest Tool**로 바뀝니다. 그 탭을 누르면 **Autotest Tool** 창이 보입니다(<FigRef id="ch12-autotest-tool" />). 이 창은 **Test Selection**과 **New Process** 두 묶음과 아래쪽 **Run group**, **Run class** 버튼으로 되어 있습니다.
+
+창이 좁으면 칸 이름은 끝이 잘려 보입니다(창 경계를 끌어 넓힙니다, 6장). 칸은 다음과 같습니다.
+
+| 묶음 | 칸 | 내용(공식 스크립트) |
+|---|---|---|
+| **Test Selection** | **Test Group** | `SCR_AutotestGroup` 클래스의 설정 파일(`.conf`)을 고름. **Run group**이 실행 |
+| | **Test Class** | 테스트 스위트나 케이스의 클래스 이름. **Run class**가 실행 |
+| **New Process** | **Run In New Window** | 체크하면 Workbench 안이 아니라 게임 실행 파일을 새로 띄워 실행 |
+| | **Arguments** | 새 프로세스에 덧붙일 매개변수. 기본값은 `-profile ArmaReforger/autotest`로 시작 |
+| | **Exe Path** | 새 프로세스로 띄울 게임 실행 파일 |
+
+**Run class**는 **Run In New Window**를 체크하지 않으면 <Kbd>F4</Kbd>처럼 Workbench의 플레이 모드에서 테스트를 돌리고, 끝나면 같은 **Test result** 창이 열립니다. 체크하면 **Exe Path**의 실행 파일에 `-autotest <클래스 이름>`과 **Arguments**의 매개변수를 붙여 새로 띄웁니다. **Exe Path**가 비어 있으면 **Autotest Tool - Error** 창에 `Executable path not configured.`가 뜹니다. 게임 실행 파일에는 `WORKBENCH`가 정의되지 않으므로, Script 책 15장처럼 `#ifdef WORKBENCH` 안에 둔 스위트는 새 프로세스에서 찾지 못하고 `Invalid -autotest parameter value` 오류를 남긴 채 테스트 없이 끝납니다. 공식 스크립트에서 **Run group**은 같은 방식으로 **Test Group**의 설정 파일을 실행합니다. {/* 확인 대기: Run group 실행(테스트 그룹 설정 파일이 없어 시험하지 않음) */}
+
+Autotest Tool은 World Editor의 도구이므로, 고르면 지금 도구가 바뀝니다. 다 보았으면 **Tools > Move**(메뉴 표시: <Kbd>W</Kbd>)를 골라 평소 도구로 돌아옵니다. 평소 이 탭의 이름은 **Move**입니다(6장).
+
+<Figure src="shared/we-tools-menu.png" alt="World Editor의 Tools 메뉴" id="ch12-we-tools-menu">World Editor의 Tools 메뉴</Figure>
+
+<Figure src="ch12/autotest-tool.png" alt="Autotest Tool 창" id="ch12-autotest-tool">Autotest Tool 창</Figure>
+
+### -autotest 매개변수
+
+`-autotest`는 명령줄에서 테스트를 실행하는 매개변수입니다(Script 책 15장). Workbench를 `-autotest <스위트 클래스 이름>`으로 띄운 뒤 Play 버튼을 누르면 그 스위트가 실행됩니다. 끝나면 `junit.xml`을 남기고 게임을 닫는 처리(기본 `EXIT`)가 도는데, Workbench에서는 플레이 모드만 끝나고 Workbench는 그대로 떠 있습니다.
+
+## 정리
+
+<Summary>
+
+- Peer Tool은 Workbench에서 Play한 게임을 서버로 삼아 피어 클라이언트를 띄워 접속시키고, Dedicated Server Tool은 데디케이티드 서버와 피어를 띄웁니다.
+- Peer Tool 설정 창 **Configure Peer tool**에서 **Executable**에 Diag 게임 실행 파일을 넣고, **Peers Windows**에 피어를 정합니다. 피어마다의 칸은 `-window`, `-forceupdate`, `-client` 같은 시작 매개변수가 됩니다.
+- Play 목록의 **Server localhost + PeerTool**을 켜고 Play하면 피어가 따로 창으로 떠서 접속합니다. 시험이 끝나면 체크를 풀어 둡니다.
+- Workbench 로그의 `Running command:` 줄에서 피어에 넘어간 매개변수를, `…\My Games\PeerPlugin1\logs`에서 첫 피어의 로그를 봅니다.
+- **Start Dedicated Server** 창은 **Server**와 **Peers** 묶음으로 되어 있고, **Config**를 정하지 않으면 서버를 띄울 수 없습니다.
+- 한 PC에서 여러 게임을 띄울 때는 `-forceUpdate`와 함께 `-maxFPS`(피어의 **Max FPS**)를 정하라는 것이 엔진 문서의 조언입니다.
+- Script Editor에서 테스트 클래스 안에 커서를 두고 <Kbd>F4</Kbd>를 누르면 플레이 모드에서 테스트가 돌고, 끝나면 **Test result** 창이 열리며 로그 폴더에 `autotest.log`와 `junit.xml`이 남습니다.
+- World Editor의 **Tools > Autotest Tool**로 여는 Autotest Tool 창에는 테스트 그룹이나 클래스를 실행하는 **Run group**, **Run class** 버튼이 있습니다. 다 쓰면 **Tools > Move**로 돌아옵니다.
+
+</Summary>
+
+**더 읽을거리**
+
+- [World Editor](https://community.bistudio.com/wiki/Arma_Reforger:World_Editor)
+- [Workbench Plugin](https://community.bistudio.com/wiki/Arma_Reforger:Workbench_Plugin)
+- [Development Executables](https://community.bistudio.com/wiki/Arma_Reforger:Development_Executables)
+- [Startup Parameters](https://community.bistudio.com/wiki/Arma_Reforger:Startup_Parameters)
+- [Server Hosting](https://community.bistudio.com/wiki/Arma_Reforger:Server_Hosting)
+- [Autotest Framework](https://community.bistudio.com/wiki/Arma_Reforger:Autotest_Framework)

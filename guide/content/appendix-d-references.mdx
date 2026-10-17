@@ -1,0 +1,80 @@
+---
+title: 참고 자료
+description: Workbench를 더 알아볼 때 찾아볼 위키 문서, Workbench에 들어 있는 엔진 문서, 공식 저장소, 같은 저자의 Script 책을 모았습니다.
+---
+
+Script 책을 뺀 자료는 모두 영어입니다. 위키와 엔진 문서에는 화면과 이름이 다른 곳이 있으니, 문서에 나온 메뉴나 창을 찾지 못하면 부록 C를 함께 보세요.
+
+## Arma Reforger 위키
+
+Bohemia Interactive 커뮤니티 위키의 Arma Reforger 문서 가운데 Workbench를 다루는 것입니다. 굵은 제목 뒤의 장 번호는 그 문서와 이어지는 이 책의 장입니다.
+
+**설치와 프로젝트**(1장)
+
+- [Mod Project Setup](https://community.bistudio.com/wiki/Arma_Reforger:Mod_Project_Setup): 런처, 새 프로젝트, 프로젝트 목록과 `-profile`
+- [Directory Structure](https://community.bistudio.com/wiki/Arma_Reforger:Directory_Structure), [File Types](https://community.bistudio.com/wiki/Arma_Reforger:File_Types)
+- [Startup Parameters](https://community.bistudio.com/wiki/Arma_Reforger:Startup_Parameters), [Development Executables](https://community.bistudio.com/wiki/Arma_Reforger:Development_Executables)
+
+**메인 창과 Resource Browser**(2·3장)
+
+- [Resource Manager](https://community.bistudio.com/wiki/Arma_Reforger:Resource_Manager): 위키는 메인 창을 Resource Manager라고 부릅니다.
+- [Resource Manager: Options](https://community.bistudio.com/wiki/Arma_Reforger:Resource_Manager:_Options): 이 문서가 Game Project 탭으로 설명하는 프로젝트 설정은 화면에서는 **File > Project Settings...** 창에 있습니다(부록 C).
+- [Data Modding Basics](https://community.bistudio.com/wiki/Arma_Reforger:Data_Modding_Basics): 기본 게임 파일을 덮어쓰기(Override), 복제(Duplicate), 상속(Inherit)하는 방법
+- [Workbench Metadata](https://community.bistudio.com/wiki/Arma_Reforger:Workbench_Metadata), [Workbench Links](https://community.bistudio.com/wiki/Arma_Reforger:Workbench_Links)
+
+**Script Editor**(4·5장)
+
+- [Script Editor](https://community.bistudio.com/wiki/Arma_Reforger:Script_Editor): 창, 찾기, 단축키, 디버거
+- [Script Editor Plugin](https://community.bistudio.com/wiki/Arma_Reforger:Script_Editor_Plugin), [Script Editor: Create New Script Plugin](https://community.bistudio.com/wiki/Arma_Reforger:Script_Editor:_Create_New_Script_Plugin), [Script Editor: Autocomplete Plugin](https://community.bistudio.com/wiki/Arma_Reforger:Script_Editor:_Autocomplete_Plugin)
+
+**World Editor와 데이터**(6~9장)
+
+- [World Editor](https://community.bistudio.com/wiki/Arma_Reforger:World_Editor), [World Editor Tool](https://community.bistudio.com/wiki/Arma_Reforger:World_Editor_Tool)
+- [Prefabs Basics](https://community.bistudio.com/wiki/Arma_Reforger:Prefabs_Basics)
+- [Resource Manager: Config Editor](https://community.bistudio.com/wiki/Arma_Reforger:Resource_Manager:_Config_Editor), [Create a Config Class](https://community.bistudio.com/wiki/Arma_Reforger:Create_a_Config_Class)
+
+**레이아웃과 문자열 테이블**(10장)
+
+- [Layout Creation](https://community.bistudio.com/wiki/Arma_Reforger:Layout_Creation), [Resource Manager: Layout Editor](https://community.bistudio.com/wiki/Arma_Reforger:Resource_Manager:_Layout_Editor)
+- [String Editor](https://community.bistudio.com/wiki/Arma_Reforger:String_Editor), [Mod Localisation](https://community.bistudio.com/wiki/Arma_Reforger:Mod_Localisation)
+
+**Play와 시험**(11·12장)
+
+- [Diag Menu](https://community.bistudio.com/wiki/Arma_Reforger:Diag_Menu), [Script Profiling](https://community.bistudio.com/wiki/Arma_Reforger:Script_Profiling)
+- [Autotest Framework](https://community.bistudio.com/wiki/Arma_Reforger:Autotest_Framework)
+
+**플러그인**
+
+- [Workbench Plugin](https://community.bistudio.com/wiki/Arma_Reforger:Workbench_Plugin), [Workbench Plugin Tutorial](https://community.bistudio.com/wiki/Arma_Reforger:Workbench_Plugin_Tutorial): **Plugins** 메뉴와 World Editor **Tools** 메뉴의 항목을 스크립트로 만드는 방법
+
+## Workbench 동봉 엔진 문서
+
+Arma Reforger Tools 설치 폴더의 `Workbench/docs` 아래에는 Enfusion Script API 문서가 들어 있고, 그 안에 엔진 해설 페이지(Pages)가 함께 실려 있습니다. Workbench와 관련된 페이지와 이 책이 인용한 페이지는 다음과 같습니다.
+
+- Command line interface (CLI): Workbench와 게임 실행 파일의 시작 매개변수(5장)
+- File Types and Extensions: 파일 확장자와 그 파일을 다루는 편집기
+- Language Server Protocol, Features, Visual Studio Code configuration, Neovim configuration: Script Editor의 언어 서버와 외부 편집기 연결(4장)
+- Menu System: 메뉴 프리셋 항목의 칸(9장)
+- Replication: 같은 PC에서 여러 게임 인스턴스를 띄울 때의 주의(12장)
+- Replicating entities, components and hierarchies: `RplComponent`의 Recursive 속성(7장)
+
+## 공식 저장소
+
+Bohemia Interactive가 GitHub에 공개한 저장소입니다.
+
+- [BohemiaInteractive/Arma-Reforger-Script-Diff](https://github.com/BohemiaInteractive/Arma-Reforger-Script-Diff): 게임 스크립트 전체입니다. Workbench 플러그인과 World Editor의 스크립트 도구도 여기에 있습니다. 예를 들어 1.8.0.13 버전에서 Script Editor의 **Create New Script** 플러그인은 `scripts/WorkbenchGame/ScriptEditor/SCR_NewScriptPlugin.c`, Peer Tool은 `scripts/WorkbenchGameCommon/PeerTool.c`, World Editor의 **Autotest Tool**은 `scripts/Autotest/WorkbenchGame/TestFramework/SCR_AutotestTool.c`에 있습니다.
+- [BohemiaInteractive/Arma-Reforger-Samples](https://github.com/BohemiaInteractive/Arma-Reforger-Samples): 공식 샘플 모드입니다. 받은 프로젝트를 런처 목록에 더하는 방법은 1장에 있습니다.
+
+## Script 책
+
+같은 저자의 《Enforce Script 가이드》(이 책에서는 Script 책)는 Arma Reforger 스크립트 언어 Enforce Script의 문법과 API를 다룹니다. 이 책이 Workbench의 화면과 절차를 맡고, 스크립트가 무엇을 하는지는 Script 책이 맡습니다. Workbench 작업과 특히 가까운 Script 책의 장은 다음과 같습니다.
+
+- 1장 Enforce Script 시작하기: 애드온 프로젝트와 `addon.gproj`, 외부 편집기와 공식 LSP
+- 10장 엔티티, 컴포넌트, 프리팹: `[Attribute]`가 속성 창에 만드는 칸
+- 12장 modded 클래스와 모딩 작업 흐름: 기본 게임 데이터를 모드에서 고치는 방법
+- 13장 UI 스크립팅 기초: 레이아웃과 메뉴 등록
+- 14장 멀티플레이어와 리플리케이션: Peer Tool로 시험하기
+- 15장 디버깅, 테스트, 성능: 디버거, Diag Menu, 자동 테스트
+- 16장 실전 프로젝트
+
+공식 API 레퍼런스와 커뮤니티 자료는 Script 책 부록 F에 모아 두었습니다.

@@ -1,0 +1,96 @@
+{
+  "name": "enforce",
+  "displayName": "Enforce Script",
+  "scopeName": "source.enforce",
+  "aliases": ["enfusion", "enscript"],
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#preprocessor" },
+    { "include": "#attribute" },
+    { "include": "#strings" },
+    { "include": "#numbers" },
+    { "include": "#storage" },
+    { "include": "#control" },
+    { "include": "#types" },
+    { "include": "#language-constants" },
+    { "include": "#function-call" },
+    { "include": "#constant-names" },
+    { "include": "#type-names" },
+    { "include": "#operators" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        { "name": "comment.block.documentation.enforce", "begin": "/\\*\\*(?!/)", "end": "\\*/" },
+        { "name": "comment.block.enforce", "begin": "/\\*", "end": "\\*/" },
+        { "name": "comment.line.documentation.enforce", "match": "//!.*$" },
+        { "name": "comment.line.double-slash.enforce", "match": "//.*$" }
+      ]
+    },
+    "preprocessor": {
+      "match": "^\\s*(#\\s*(?:ifdef|ifndef|else|endif|define|undef|include|if))\\b(.*)$",
+      "captures": {
+        "1": { "name": "keyword.control.directive.enforce" },
+        "2": { "name": "entity.name.function.preprocessor.enforce" }
+      }
+    },
+    "attribute": {
+      "match": "^\\s*\\[\\s*([A-Za-z_][A-Za-z0-9_]*)\\s*(?=\\(|\\])",
+      "captures": {
+        "1": { "name": "entity.name.function.decorator.enforce" }
+      }
+    },
+    "strings": {
+      "name": "string.quoted.double.enforce",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        { "name": "constant.character.escape.enforce", "match": "\\\\." },
+        { "name": "constant.other.placeholder.enforce", "match": "%[0-9]+" }
+      ]
+    },
+    "numbers": {
+      "name": "constant.numeric.enforce",
+      "match": "\\b(?:0[xX][0-9A-Fa-f]+|[0-9]+(?:\\.[0-9]*)?(?:[eE][+-]?[0-9]+)?)\\b"
+    },
+    "storage": {
+      "patterns": [
+        { "name": "storage.type.enforce", "match": "\\b(class|enum|typedef)\\b" },
+        {
+          "name": "storage.modifier.enforce",
+          "match": "\\b(modded|sealed|extends|override|static|const|private|protected|proto|native|external|volatile|owned|ref|autoptr|out|inout|notnull|event|reference)\\b"
+        }
+      ]
+    },
+    "control": {
+      "name": "keyword.control.enforce",
+      "match": "\\b(if|else|for|foreach|while|switch|case|default|break|continue|return|new|delete|thread|debug)\\b"
+    },
+    "types": {
+      "name": "support.type.primitive.enforce",
+      "match": "\\b(void|int|float|bool|string|vector|typename|auto|func|array|set|map)\\b"
+    },
+    "language-constants": {
+      "name": "constant.language.enforce",
+      "match": "\\b(true|false|null|NULL|this|super|vanilla)\\b"
+    },
+    "function-call": {
+      "match": "\\b([A-Za-z_][A-Za-z0-9_]*)\\s*(?=\\()",
+      "captures": {
+        "1": { "name": "entity.name.function.enforce" }
+      }
+    },
+    "constant-names": {
+      "name": "variable.other.constant.enforce",
+      "match": "\\b[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+\\b|\\b[A-Z]{2,}[0-9]*\\b"
+    },
+    "type-names": {
+      "name": "entity.name.type.enforce",
+      "match": "\\b[A-Z][A-Za-z0-9_]*\\b"
+    },
+    "operators": {
+      "name": "keyword.operator.enforce",
+      "match": "<<=|>>=|&&|\\|\\||==|!=|<=|>=|\\+\\+|--|\\+=|-=|\\*=|/=|%=|&=|\\|=|\\^=|<<|>>|[-+*/%=<>!&|^~?:]"
+    }
+  }
+}

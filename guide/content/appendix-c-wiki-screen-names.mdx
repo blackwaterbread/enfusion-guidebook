@@ -1,0 +1,72 @@
+---
+title: 위키 이름과 화면 이름
+description: 위키와 엔진 문서가 쓰는 메뉴·창·버튼 이름 가운데 화면과 다른 것을 모아, 화면에서 찾을 이름과 다루는 장을 적었습니다.
+---
+
+위키와 엔진 문서에는 화면과 다른 이름이 나오는 곳이 있습니다. 문서를 보며 따라 하다가 메뉴나 버튼을 찾지 못하면 이 표에서 화면 이름을 찾으세요. 이 책의 본문은 화면 이름을 쓰고, 위키 이름은 처음 한 번만 함께 적습니다. 이 부록은 Arma Reforger Tools 1.8.0.13 화면을 기준으로 합니다.
+
+첫 열의 괄호 안은 그 이름이 나오는 위키 문서입니다. 엔진 문서(Workbench에 들어 있는 문서, 부록 D)에서 온 이름은 "엔진 문서"를 붙였습니다.
+
+## 런처와 프로젝트 설정
+
+| 위키의 이름 | 화면 이름 | 장 |
+|---|---|---|
+| Create New 버튼(Mod Project Setup) | **Add Project** ▾ 메뉴의 **Create New Project** | 1장 |
+| Add Existing 버튼(Mod Project Setup) | **Add Project** ▾ 메뉴의 **Add Existing Project** | 1장 |
+| 프로젝트를 만드는 OK(Mod Project Setup) | **New Project** 창의 **Create**(옆에 **Cancel**) | 1장 |
+| Workbench > Options의 Game Project 탭(Resource Manager: Options) | **File > Project Settings...** 창. **ID**, **GUID**, **TITLE**, **Dependencies**와 구성별 설정이 여기 있고 **File > Options...** 창에는 없음 | 1·2장 |
+| 문자열 테이블을 등록하는 Workbench → Options의 Widget Manager Settings > String Tables(Mod Localisation) | **File > Project Settings...** 창의 **Modules** > **Widget Manager Settings** > **String Tables** | 10장 |
+
+## 메인 창
+
+| 위키의 이름 | 화면 이름 | 장 |
+|---|---|---|
+| Resource Manager(Resource Manager, Mod Project Setup, Prefabs Basics 등) | Workbench 메인 창. 창 제목은 `Enfusion Workbench - ` 뒤에 프로젝트의 TITLE이 붙고, 창 제목과 메뉴 막대에 이 이름은 없음 | 2장 |
+| Workbench 메뉴(Resource Manager) | **File** 메뉴 | 2장 |
+| Workbench > Options(Resource Manager: Options, Script Editor) | **File > Options...** | 2장 |
+| Options의 Workbench 탭(Resource Manager: Options) | **File > Options...** 창의 **General** 범주. SVN, 스크립트 자동 다시 빌드, FPS 제한, Net API 같은 항목이 여기 있고, **Register "enfusion://" Protocol**과 **Export All Settings**는 창 왼쪽 아래의 버튼 | 2장 |
+| Workbench 메뉴의 Login/Logout, Publish Project(Resource Manager) | **File** 메뉴에 이 이름은 없음. **Workshop Member Area** 묶음에 **User Profile**, **Publish to Workshop**, **Remove from Workshop**, **Check Pending Invitations**가 있음 {/* 확인 대기: 위키의 두 이름과 같은 기능인지 */} | — |
+| Resource Manager 시작 화면의 Script Editor 버튼(Script Editor) | 메인 창 시작 화면 **QUICK LAUNCH**의 **Script Editor** | 2·4장 |
+| Window 메뉴의 Close Current Tab, Undo Close Tab(Resource Manager) | **Close Tab**, **Reopen Closed Tab**. 메뉴에 적힌 단축키는 위키와 같음 | 2장 |
+| Config Editor(Resource Manager: Config Editor, File Types) | `.conf`는 메인 창의 탭으로 열림. 탭 이름은 파일 이름이고 상태 줄의 파일 종류는 `Config file` | 2·9장 |
+| Layout Editor(Layout Creation, Resource Manager: Layout Editor, File Types) | `.layout`은 메인 창의 탭으로 열림. 탭 오른쪽에 **Hierarchy** 창이 있고 메뉴 막대 끝에 **Preview** 메뉴가 더해짐 | 10장 |
+| `.et`와 `.ct`를 여는 편집기 World Editor(File Types) | 메인 창의 탭. `.et` 탭의 **Edit Prefab** 버튼을 누르면 World Editor의 프리팹 편집 모드(창 제목 `World Editor - Prefab edit mode`)가 열림 | 2·8장 |
+
+메인 창의 창 제목과 메뉴에는 Resource Manager라는 이름이 없지만, Resource Browser의 오른쪽 클릭 메뉴에는 이 이름이 들어간 항목이 있습니다. World Editor 창의 Resource Browser에서 설정 파일(`.conf`)이나 프리팹(`.et`)을 오른쪽 클릭한 메뉴 끝, **Custom** 묶음의 **Open in Resource Manager**입니다. 누르면 그 파일이 메인 창의 탭으로 열립니다.
+
+## Resource Browser
+
+| 위키의 이름 | 화면 이름 | 장 |
+|---|---|---|
+| 오른쪽 클릭 메뉴의 Replacement(Data Modding Basics) | 이 항목은 없음. **Addons** 묶음은 **Override in '…'**, **Duplicate to '…'**, **Inherit in '…'**(따옴표 안은 작업 중인 프로젝트의 ID). 소리 파일(`.wav`)과 소리 프로젝트(`.acp`)의 메뉴에는 <strong>Inherit in '…'</strong>이 없음 | 3장 |
+| Override to "…", Override in "Addon1"(Data Modding Basics) | **Override in '…'** | 3·8장 |
+| Create Inherited File(Data Modding Basics) | 이 이름의 항목은 없음. 있는 항목은 **Common** 묶음의 **Inherit**, **Addons** 묶음의 **Inherit in '…'**. <strong>Inherit in '…'</strong>을 누르면 새 파일의 이름을 묻는 **Create inherited file** 창이 뜸 | 3·8장 |
+
+## Script Editor
+
+| 위키의 이름 | 화면 이름 | 장 |
+|---|---|---|
+| Windows 메뉴(Script Editor) | **Window** 메뉴 | 4장 |
+| Console 창(Script Editor) | **Remote Console** | 5장 |
+| Text Editor(Script Editor) | 가운데의 편집 영역. **Window** 메뉴의 창 목록에는 이 이름이 없음 | 4장 |
+| Find in Files 창(Script Editor) | **Text Search** 창. **Edit > Find in Files**를 고르면 이 창이 찾을 범위 **Entire Solution**으로 열림 | 4장 |
+| Compile and Reload Scripts(Script Editor) | **Build > Validate and Reload Scripts** | 4장 |
+| 단축키 표의 Compile(Script Editor) | **Build > Validate Scripts** | 4장 |
+| 단축키 표의 Compile current file on host (game)(Script Editor) | **Debug > Recompile File on Host** | 5장 |
+| 단축키 표의 Insert Breakpoint(Script Editor) | **Debug > Toggle Breakpoint** | 5장 |
+| 단축키 표의 Find Files, Find Symbols, Find Previous(Script Editor) | **Edit** 메뉴의 **Find File**, **Find Symbol**, **Find Prev**. 메뉴에 적힌 단축키는 위키와 같음 | 4장 |
+| Debug 메뉴의 Debug Client(Script Editor) | 이 이름은 없음. **Debug Game**, **Debug Workbench**, **Debug Custom**, **Debug Disabled**가 있음 | 5장 |
+| VME 대화상자의 Stop(Script Editor) | 대화상자의 버튼은 **Debug**, **Ignore**, **Ignore All**, **Show Details...** | 5장 |
+
+## World Editor와 데이터
+
+| 위키의 이름 | 화면 이름 | 장 |
+|---|---|---|
+| `RplComponent`의 Recursive 속성(엔진 문서 Replicating entities, components and hierarchies) | 속성 목록에 이 이름은 없음. 목록은 **Enabled**, **Self Insert**, **Rpl State Override**, **Parent Node From Parent Entity**, **Spatial Relevancy**, **Streamable**, **Auto Hierarchy**, **Runtime Only** {/* 확인 대기: Auto Hierarchy와 같은 것인지 */} | 7장 |
+
+## Play와 Diag Menu
+
+| 위키의 이름 | 화면 이름 | 장 |
+|---|---|---|
+| Diag Menu의 `UI > Disable > Disable Loc`(Mod Localisation) | `UI > Disable Loc`. `UI` 메뉴의 셋째 줄이고 `Disable` 하위 메뉴는 없음 | 10·11장 |
+| `Statistics > Script Profiler`의 값 `frame`, `continuous`(Script Profiling) | `Statistics > Script profiler`의 값 `off`, `frame`, `average`, `memory` | 11장 |

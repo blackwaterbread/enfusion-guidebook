@@ -1,0 +1,177 @@
+/* 그림이 있는 책(Workbench 가이드)에서 book.css 뒤에 읽는 스타일: 그림·캡션(<Figure>), 번호 원 */
+
+/* 표지 코드(설정 cover.code)를 생략하면 아래 띠를 표지 바닥에 둔다(book.css에서는 코드 상자의 위 여백 auto가 밀어 줌) */
+.cover-main + .cover-bottom { margin-top: auto; }
+
+figure.fig { margin: 1em 0 1.2em; break-inside: avoid; }
+.fig-img { position: relative; display: block; max-width: 100%; margin: 0 auto; }
+.fig-full .fig-img { width: 100%; }
+.fig-half .fig-img { width: 50%; }
+.fig-img img { display: block; width: 100%; height: auto; }
+.fig figcaption { margin-top: 2mm; font-size: 8.5pt; line-height: 1.55; color: var(--muted); text-align: center; }
+.fig figcaption > p { display: inline; margin: 0; }
+.fig-no { margin-right: 0.6em; font-weight: 700; color: var(--accent-2); }
+.fig-mark {
+  position: absolute;
+  width: 5mm;
+  height: 5mm;
+  margin: -2.5mm 0 0 -2.5mm;
+  border-radius: 50%;
+  background: var(--accent-2);
+  color: #fff;
+  font-size: 7.5pt;
+  font-weight: 700;
+  line-height: 5mm;
+  text-align: center;
+}
+
+/* 왼쪽 머리글: book.css의 "Enforce Script 가이드"를 가이드 제목으로 덮는다(뒤 규칙이 이김) */
+@page {
+  @top-left { content: "Enfusion Workbench 가이드"; }
+}
+
+/* ================================================================== 형제 책 스타일
+   판형·여백·글꼴·본문·코드·표의 짜임은 book.css(Script 책)를 그대로 쓰고,
+   배색(청록 + 하늘색)과 표지·장 머리·절 제목·부 표지·상자 모양만 바꾼다. */
+
+:root {
+  --accent: #0f766e;       /* 초록 쪽 청록: 절 번호, 링크, 차례의 부(Script 책 #0d5674와 구별) */
+  --accent-soft: #e7f6f3;
+  --accent-2: #0284c7;     /* 하늘색: 장 번호, 그림 번호, 부 번호 */
+  --teal-line: #b5e0d8;
+}
+
+/* ---------------------------------------------------------------- 쪽 머리글·쪽 번호 */
+@page {
+  @top-left { color: var(--accent); font-weight: 600; }
+  @bottom-center { color: var(--accent); font-weight: 700; }
+}
+
+/* ---------------------------------------------------------------- 표지 */
+.cover {
+  background-color: #0a1a22;
+  background-image: radial-gradient(rgba(125, 211, 252, 0.13) 0.55px, transparent 0.75px);
+  background-size: 6mm 6mm;
+}
+/* 왼쪽 세로 띠 대신 위쪽 가로 띠 */
+.cover::before {
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: auto;
+  width: auto;
+  height: 7mm;
+  background: linear-gradient(90deg, #0e7490 0%, #0284c7 55%, #38bdf8 100%);
+}
+/* 코드 상자 대신 Workbench 창 모양: 제목 막대(점 셋)와 메뉴 막대(1.8.0.13 메인 창의 메뉴 여덟 개), 패널 경계선,
+   패널 안쪽은 글자 없는 막대 그림 guide-cover.svg(경로는 글꼴처럼 dist/의 HTML 기준) */
+.cover::after {
+  content: "File      Editors      View      Edit      Window      Utilities      Plugins      Help";
+  position: absolute;
+  left: 22mm;
+  right: 22mm;
+  top: 156mm;
+  height: 70mm;
+  box-sizing: border-box;
+  padding: 8.6mm 0 0 6mm;
+  border: 1px solid rgba(125, 211, 252, 0.3);
+  border-radius: 7px;
+  background:
+    url('../styles/guide-cover.svg') 0 14.5mm / 100% calc(100% - 14.5mm) no-repeat,
+    radial-gradient(circle at 6mm 4mm, #38bdf8 1.05mm, transparent 1.15mm),
+    radial-gradient(circle at 10.5mm 4mm, rgba(125, 211, 252, 0.6) 1.05mm, transparent 1.15mm),
+    radial-gradient(circle at 15mm 4mm, rgba(125, 211, 252, 0.35) 1.05mm, transparent 1.15mm),
+    linear-gradient(rgba(125, 211, 252, 0.12), rgba(125, 211, 252, 0.12)) 0 0 / 100% 8mm no-repeat,
+    linear-gradient(rgba(125, 211, 252, 0.06), rgba(125, 211, 252, 0.06)) 0 8mm / 100% 6.5mm no-repeat,
+    linear-gradient(90deg, transparent 31%, rgba(125, 211, 252, 0.3) 31%, rgba(125, 211, 252, 0.3) calc(31% + 1px), transparent calc(31% + 1px)) 0 14.5mm / 100% calc(100% - 14.5mm) no-repeat,
+    linear-gradient(transparent 0, transparent 70%, rgba(125, 211, 252, 0.3) 70%, rgba(125, 211, 252, 0.3) calc(70% + 1px), transparent calc(70% + 1px)) 0 14.5mm / 100% calc(100% - 14.5mm) no-repeat,
+    #0d1f28;
+  color: rgba(195, 216, 226, 0.6);
+  font-family: var(--sans);
+  font-size: 7.4pt;
+  letter-spacing: 0.04em;
+  white-space: pre;
+}
+.cover-top { color: #9cc6d4; }
+.cover-top .dot { background: #38bdf8; }
+.cover-main { margin-top: 44mm; }
+.cover-kicker { color: #7dd3fc; border-color: rgba(125, 211, 252, 0.5); }
+.cover-title span { color: #7dd3fc; }
+.cover-subtitle { color: #c3d8e2; }
+.cover-bottom { color: #9cc6d4; border-top-color: rgba(125, 211, 252, 0.2); }
+.cover-label { color: #7dd3fc; }
+.cover-author-link { color: #67e8f9; }
+
+/* ---------------------------------------------------------------- 차례 */
+.toc-heading { color: var(--accent); }
+.toc-part > a .leader { border-bottom-color: var(--teal-line); }
+
+/* ---------------------------------------------------------------- 부 표지: 왼쪽 막대 대신 위쪽 굵은 줄 */
+.part-inner { border-left: 0; padding-left: 0; border-top: 6px solid var(--accent); padding-top: 9mm; }
+.part-num { color: var(--accent-2); }
+.part-name { color: #0a1a22; }
+
+/* ---------------------------------------------------------------- 장 머리: 장 번호를 알약 모양으로, 아래 줄은 굵은 청록 */
+.chapter-head { border-bottom: 3px solid var(--accent); }
+.chapter-head::before { color: #e2f3ef; }
+.chapter-num {
+  display: inline-block;
+  font-size: 9.5pt;
+  letter-spacing: 0.04em;
+  color: #fff;
+  background: var(--accent-2);
+  border-radius: 99px;
+  padding: 0.5mm 3mm;
+  margin-bottom: 3mm;
+}
+.front-head { border-bottom: 3px solid var(--accent); }
+/* 저자 인사말: 큰 따옴표는 장 머리의 흐린 장 번호와 같은 색, 제목 아래 선은 장 머리 줄처럼 굵은 청록 */
+.front-note::before { color: #e2f3ef; }
+.front-note .front-head::after { height: 3px; background: var(--accent); }
+
+/* ---------------------------------------------------------------- 절 제목: Script 책과 같은 밑줄, 색만 청록 */
+.chapter-body h3 { border-bottom-color: var(--teal-line); }
+.chapter-body h4::before {
+  content: "";
+  display: inline-block;
+  width: 2.2mm;
+  height: 2.2mm;
+  margin-right: 2mm;
+  border-radius: 1px;
+  background: var(--accent-2);
+  vertical-align: 0.12em;
+}
+
+/* ---------------------------------------------------------------- 표 머리 칸 */
+th { background: #e9f6f3; color: #0a2a33; }
+
+/* ---------------------------------------------------------------- 학습 상자: 라벨을 알약 모양으로, 네 변이 같은 얇은 테두리
+   한쪽만 굵은 색 막대는 쓰지 않는다(둥근 모서리를 따라 색이 휘어 보인다). 학습 목표·정리 상자도 같다. */
+.box {
+  border: 1px solid var(--bd, #dde3e8);
+  border-radius: 6px;
+}
+.box-label {
+  color: #fff;
+  background: var(--c);
+  border-radius: 99px;
+  padding: 0.2mm 2.2mm;
+  font-size: 7.4pt;
+}
+.box-note { --bd: #cddcf8; }
+.box-tip { --bd: #c5eadb; }
+.box-warning { --bd: #f6dfb5; }
+.box-pitfall { --bd: #f6cfcb; }
+.box-compare { --bd: #ddd3fb; }
+.box-tryit { --c: #0e7490; --bg: #ecf7fa; --bd: #bfe1e9; }
+
+.objectives { border-color: var(--teal-line); }
+.summary { border: 1px solid var(--teal-line); border-radius: 6px; background: #eff8f6; }
+.objectives-head, .summary-head {
+  display: inline-block;
+  color: #fff;
+  background: var(--accent);
+  border-radius: 99px;
+  padding: 0.2mm 2.4mm;
+  margin-bottom: 2mm;
+}

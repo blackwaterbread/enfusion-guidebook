@@ -1,0 +1,588 @@
+---
+title: 클래스와 객체
+description: 클래스를 선언하고 객체를 만들어 쓰는 방법을 배웁니다. 생성자와 소멸자, 접근 제한자, 정적 멤버와 상수, null 검사까지 다룹니다.
+---
+
+<Objectives>
+
+- `class`로 클래스를 선언하고 `new`로 객체를 만들어 쓸 수 있다.
+- 생성자와 소멸자의 이름 규칙을 알고, 매개변수가 있는 생성자를 만들 수 있다.
+- 기본 공개 범위와 `protected`, `private`를 구분해 멤버를 감출 수 있다.
+- `static` 멤버와 `const` 상수를 선언하고 클래스 이름으로 사용할 수 있다.
+- 객체 변수가 null인지 검사하는 관용구를 쓸 수 있다.
+
+</Objectives>
+
+4장까지는 변수와 함수를 하나씩 만들었습니다. 이 장에서는 데이터와 그 데이터를 다루는 함수를 하나로 묶는 **클래스**를 배웁니다. Enforce Script에서 클래스는 선택 사항이 아니라 기본 단위입니다. 엔진 문서는 Enforce 코드가 클래스와 함수로 이루어진다고 설명하며, Arma Reforger의 엔티티와 컴포넌트, 게임 모드도 모두 클래스입니다.
+
+Python이나 JavaScript의 클래스를 써 봤다면 개념은 익숙할 것입니다. 다만 멤버를 타입과 함께 미리 선언해야 하고, 생성자 이름이 클래스 이름과 같습니다. C#에 익숙하다면 멤버의 기본 공개 범위가 private이 아니라 public이라는 점도 기억해 두세요. 상속은 6장, 객체의 수명과 메모리는 7장에서 이어서 다룹니다.
+
+## 클래스 선언과 객체 만들기
+
+### 첫 클래스
+
+클래스는 `class` 키워드와 이름, 그리고 중괄호로 감싼 본문으로 선언합니다. 본문에는 **멤버 변수**와 **메서드**를 둡니다. 다음은 병사 한 명의 이름과 체력을 담는 클래스입니다.
+
+```enforce title="Scripts/Game/TAG_Soldier.c"
+class TAG_Soldier
+{
+	string m_sName;
+	int m_iHealth = 100;
+
+	void TakeDamage(int amount)
+	{
+		m_iHealth -= amount;
+	}
+
+	bool IsAlive()
+	{
+		return m_iHealth > 0;
+	}
+}
+```
+
+`m_sName`과 `m_iHealth`는 멤버 변수입니다. 객체마다 따로 값을 가집니다. `m_iHealth = 100`처럼 선언과 함께 초기값을 줄 수 있고, 초기값을 주지 않은 멤버는 타입의 기본값(`string`은 빈 문자열)으로 채워집니다. `TakeDamage`와 `IsAlive`는 메서드입니다. 메서드 안에서는 같은 객체의 멤버를 이름만으로 씁니다.
+
+이름은 1장에서 본 컨벤션을 따릅니다. 직접 만드는 클래스에는 `TAG_` 접두사를 붙이고, 멤버 변수는 `m_` 뒤에 타입 접두사(`s`는 문자열, `i`는 정수)를 붙입니다. 닫는 중괄호 뒤의 세미콜론은 붙여도 되고 생략해도 됩니다. 공식 코드에는 두 형태가 섞여 있으며 이 책은 생략합니다.
+
+이 장은 `TAG_Soldier`를 단계마다 조금씩 바꿔 가며 다시 정의합니다. 직접 실행해 볼 때는 프로젝트에 가장 최근에 본 정의 하나만 남겨 두세요.
+
+### new로 객체 만들기
+
+클래스는 설계도이고, 실제로 쓰는 것은 클래스로 만든 **객체**(인스턴스)입니다. 객체는 `new`로 만듭니다. 다음 코드는 병사 객체를 하나 만들어 피해를 준 뒤 상태를 출력합니다.
+
+```enforce title="Scripts/Game/TAG_SoldierDemo.c"
+class TAG_SoldierDemo
+{
+	static void Run()
+	{
+		TAG_Soldier soldier = new TAG_Soldier();
+		soldier.m_sName = "Alpha";
+		soldier.TakeDamage(30);
+
+		PrintFormat("%1 health: %2", soldier.m_sName, soldier.m_iHealth);
+		if (soldier.IsAlive())
+			Print("Still standing");
+	}
+}
+```
+
+실행 결과는 다음과 같습니다.
+
+```text
+Alpha health: 70
+Still standing
+```
+
+멤버와 메서드에는 점(`.`)으로 접근합니다. `Run` 앞의 `static`은 객체를 만들지 않고 `TAG_SoldierDemo.Run()`처럼 호출할 수 있게 하는 키워드입니다. 이 장 뒤에서 자세히 설명하니 지금은 예제를 실행하는 입구라고만 생각하세요. `new TAG_Soldier`처럼 괄호를 생략할 수도 있지만, 공식 컨벤션은 괄호를 붙인 형태를 권합니다.
+
+직접 실행해 보려면 `TAG_Soldier.c`와 `TAG_SoldierDemo.c`를 애드온 프로젝트의 `Scripts/Game` 폴더에 만들어 컴파일한 뒤, 1장에서처럼 **Remote Console**에서 `TAG_SoldierDemo.Run();`을 실행하고 **Output** 창에서 결과를 확인합니다.
+
+### 객체 변수는 참조입니다
+
+`int`나 `string` 변수는 값을 직접 담지만, 클래스 타입 변수는 객체를 가리키는 **참조**를 담습니다. 그래서 객체 변수를 다른 변수에 대입하면 객체가 복사되지 않고 같은 객체를 함께 가리킵니다.
+
+```enforce
+TAG_Soldier first = new TAG_Soldier();
+TAG_Soldier second = first;   // 같은 객체를 가리킵니다
+second.m_iHealth = 50;        // first.m_iHealth도 50입니다
+
+bool same = (first == second); // true: 같은 객체인지 비교합니다
+```
+
+객체에 쓰는 `==`는 두 변수가 **같은 객체**를 가리키는지 비교합니다. 내용이 같은지 비교하지 않습니다. 객체를 만들지 않고 선언만 한 변수에는 `null`이 들어 있습니다. 기본 타입의 값 전달과 참조 전달은 2장에서, 참조가 객체의 수명에 미치는 영향은 7장에서 다룹니다.
+
+### this
+
+메서드 안에서 `this`는 메서드를 실행 중인 객체 자신을 가리킵니다. 같은 객체의 메서드를 부를 때 `TakeDamage(10)`과 `this.TakeDamage(10)`은 같은 뜻이므로 보통 `this`를 생략합니다. `this`가 꼭 필요한 곳은 자기 자신을 다른 객체에 넘길 때입니다.
+
+```enforce
+class TAG_Soldier
+{
+	string m_sName;
+	TAG_Soldier m_Buddy; // 짝을 이룬 병사
+
+	void PairWith(TAG_Soldier other)
+	{
+		m_Buddy = other;
+		other.m_Buddy = this; // 상대의 짝을 '나'로 설정합니다
+	}
+}
+```
+
+`m_Buddy`처럼 다른 객체를 가리키는 멤버는 타입 접두사 없이 `m_` 뒤에 이름을 씁니다. 이런 멤버가 객체의 수명을 붙잡는지(강한 참조인지)는 7장의 핵심 주제입니다.
+
+<Compare title="클래스 선언 비교">
+
+```python
+class Soldier:
+    def __init__(self, name):
+        self.name = name
+        self.health = 100
+
+    def take_damage(self, amount):
+        self.health -= amount
+```
+
+```javascript
+class Soldier {
+  constructor(name) {
+    this.name = name;
+    this.health = 100;
+  }
+  takeDamage(amount) {
+    this.health -= amount;
+  }
+}
+```
+
+```enforce
+class TAG_Soldier
+{
+	protected string m_sName;
+	protected int m_iHealth = 100;
+
+	void TAG_Soldier(string name) // 생성자: 클래스 이름과 같은 void 메서드
+	{
+		m_sName = name;
+	}
+
+	void TakeDamage(int amount)
+	{
+		m_iHealth -= amount;
+	}
+}
+// 사용: TAG_Soldier soldier = new TAG_Soldier("Alpha");
+```
+
+</Compare>
+
+Enforce Script에서는 멤버를 타입과 함께 본문에 미리 선언합니다. 실행 중에 새 멤버를 덧붙일 수 없고, 메서드 안에서 `self`나 `this`를 붙이지 않아도 멤버에 접근합니다.
+
+## 생성자와 소멸자
+
+### 생성자
+
+**생성자**(constructor)는 객체가 만들어질 때 자동으로 호출되는 메서드입니다. 이름은 클래스 이름과 같고 반환 타입은 `void`입니다. 매개변수를 받을 수 있으며, `new`에 넘긴 인수가 생성자로 전달됩니다.
+
+```enforce title="Scripts/Game/TAG_Soldier.c"
+class TAG_Soldier
+{
+	protected string m_sName;
+	protected int m_iHealth;
+
+	//------------------------------------------------------------------------------------------------
+	void TAG_Soldier(string name, int health = 100)
+	{
+		m_sName = name;
+		m_iHealth = health;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	string GetName()
+	{
+		return m_sName;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	int GetHealth()
+	{
+		return m_iHealth;
+	}
+}
+```
+
+이제 `new TAG_Soldier("Alpha")`는 체력 100인 병사를, `new TAG_Soldier("Bravo", 60)`은 체력 60인 병사를 만듭니다. 생성자가 인수를 요구하면 `new TAG_Soldier()`처럼 인수 없이 만들 수 없습니다.
+
+한 클래스에는 생성자를 **하나만** 둘 수 있습니다. C#과 달리 매개변수 목록이 다른 생성자를 여러 개 둘 수 없으므로, 선택적인 값은 위 예제의 `health = 100`처럼 기본값 매개변수로 처리합니다. 여러 방식으로 객체를 만들어야 한다면 이 장 뒤에서 볼 정적 팩토리 메서드를 씁니다.
+
+예제의 `//---...` 줄은 공식 스크립트가 메서드마다 위에 붙이는 구분선입니다. 꼭 필요한 문법은 아니지만 공식 코드를 읽을 때 자주 보게 됩니다.
+
+### 소멸자
+
+**소멸자**(destructor)는 객체가 파괴될 때 자동으로 호출됩니다. 이름은 클래스 이름 앞에 `~`를 붙이고, 반환 타입은 `void`이며, 매개변수를 받을 수 없습니다. 다음 무전기 클래스는 생성자와 소멸자에서 로그를 남깁니다.
+
+```enforce title="Scripts/Game/TAG_Radio.c"
+class TAG_Radio
+{
+	protected string m_sChannel;
+
+	void TAG_Radio(string channel)
+	{
+		m_sChannel = channel;
+		PrintFormat("Radio on: %1", m_sChannel);
+	}
+
+	void ~TAG_Radio()
+	{
+		PrintFormat("Radio off: %1", m_sChannel);
+	}
+}
+
+class TAG_RadioDemo
+{
+	static void Run()
+	{
+		TAG_Radio radio = new TAG_Radio("Alpha");
+		Print("Talking...");
+	} // 함수가 끝나면 지역 변수 radio가 사라지고, 객체도 파괴됩니다
+}
+```
+
+실행 결과는 다음과 같습니다.
+
+```text
+Radio on: Alpha
+Talking...
+Radio off: Alpha
+```
+
+Enforce Script에는 가비지 컬렉터가 없습니다. 객체를 가리키는 강한 참조가 모두 사라지면 그 즉시 객체가 파괴되고 소멸자가 실행됩니다. 위 예제에서는 함수가 끝나면서 지역 변수 `radio`가 사라졌기 때문에 바로 소멸자가 불렸습니다. 이 규칙을 **참조 카운팅**이라고 하며 7장에서 자세히 설명합니다.
+
+<Pitfall title="생성자를 두 개 만들기">
+
+C#이나 Java에 익숙하면 생성자를 여러 개 만들고 싶어집니다. Enforce Script의 클래스는 생성자를 하나만 가질 수 있습니다. 기본값 매개변수(`int health = 100`)로 선택 인수를 처리하거나, `Create...` 같은 정적 메서드를 따로 만드세요.
+
+</Pitfall>
+
+## 접근 제한자
+
+### public, protected, private
+
+**접근 제한자**(access modifier)는 멤버를 어디서 쓸 수 있는지 정합니다. 엔진 문서에 따르면 Enforce Script의 멤버는 아무것도 붙이지 않으면 **public**입니다. 키워드 목록에 `public`은 없으며 공식 코드도 이 단어를 쓰지 않습니다.
+
+| 제한자 | 같은 클래스 안 | 자식 클래스 안 | 클래스 밖 |
+|---|---|---|---|
+| 없음(public) | 사용 가능 | 사용 가능 | 사용 가능 |
+| `protected` | 사용 가능 | 사용 가능 | 사용 불가 |
+| `private` | 사용 가능 | 사용 불가 | 사용 불가 |
+
+허용되지 않는 곳에서 멤버를 쓰면 컴파일 오류가 납니다. 자식 클래스는 6장에서 다룹니다. modded 클래스가 `private` 멤버를 어디까지 다룰 수 있는지는 12장에서 설명합니다.
+
+### 멤버를 감추고 메서드로 다루기
+
+공식 컨벤션은 멤버 변수를 `protected`로 감추고, 바깥에서는 값을 읽는 **게터**(getter)와 값을 바꾸는 **세터**(setter) 메서드로 다루라고 권합니다. 이렇게 하면 값을 바꿀 때 검사를 넣을 수 있습니다. 다음 차량 클래스는 연료가 0보다 작거나 탱크 용량보다 커지지 않게 막습니다.
+
+```enforce title="Scripts/Game/TAG_Vehicle.c"
+class TAG_Vehicle
+{
+	protected float m_fFuel;
+
+	const float MAX_FUEL = 60;
+
+	//------------------------------------------------------------------------------------------------
+	float GetFuel()
+	{
+		return m_fFuel;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	void SetFuel(float fuel)
+	{
+		m_fFuel = Math.Clamp(fuel, 0, MAX_FUEL);
+	}
+}
+```
+
+`Math.Clamp(value, min, max)`는 값을 범위 안으로 잘라 줍니다(9장). 바깥 코드에서는 다음처럼 씁니다.
+
+```enforce
+TAG_Vehicle car = new TAG_Vehicle();
+car.SetFuel(80);            // 60으로 잘립니다
+float fuel = car.GetFuel(); // 60
+car.m_fFuel = 80;           // 컴파일 오류: protected 멤버입니다
+```
+
+게터와 세터를 거치면 나중에 내부 구현을 바꿔도 바깥 코드는 그대로 둘 수 있습니다. 위키의 객체 지향 문서도 체력 하나를 머리와 몸통 체력 두 개로 나누는 예를 들며 같은 이유를 설명합니다. 공식 컨벤션은 모딩을 고려해 `private`보다 `protected`를 쓰라고 권합니다. 이 책의 예제도 기본적으로 `protected`를 씁니다.
+
+<Tip title="공개 멤버가 필요할 때">
+
+모든 멤버를 감출 필요는 없습니다. 단순히 값을 모아 두는 작은 데이터 클래스라면 공개 멤버로 두기도 합니다. 공식 컨벤션의 예제에도 공개 멤버(`float m_fSomethingPublic`)가 있습니다. 다만 다른 사람이 쓰거나 모딩할 클래스라면 `protected`와 게터·세터가 안전합니다.
+
+</Tip>
+
+## 정적 멤버와 상수
+
+### static 변수와 메서드
+
+`static`을 붙인 멤버는 객체가 아니라 **클래스**에 속합니다. 정적 변수는 객체를 몇 개 만들든 하나만 존재하고, 정적 메서드는 객체 없이 `클래스이름.메서드()`로 호출합니다. 정적 변수 이름에는 `m_` 대신 `s_`를 붙입니다.
+
+다음 예제는 살아 있는 병사 수를 정적 변수로 셉니다. 생성자에서 1을 더하고 소멸자에서 1을 뺍니다.
+
+```enforce title="Scripts/Game/TAG_Soldier.c"
+class TAG_Soldier
+{
+	protected string m_sName;
+
+	protected static int s_iAliveCount;
+
+	//------------------------------------------------------------------------------------------------
+	void TAG_Soldier(string name)
+	{
+		m_sName = name;
+		s_iAliveCount++;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	void ~TAG_Soldier()
+	{
+		s_iAliveCount--;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	static int GetAliveCount()
+	{
+		return s_iAliveCount;
+	}
+}
+```
+
+```enforce
+class TAG_SoldierCountDemo
+{
+	static void Run()
+	{
+		TAG_Soldier alpha = new TAG_Soldier("Alpha");
+		TAG_Soldier bravo = new TAG_Soldier("Bravo");
+		PrintFormat("alive: %1", TAG_Soldier.GetAliveCount());
+
+		bravo = null; // Bravo를 가리키던 마지막 참조가 사라집니다
+		PrintFormat("alive: %1", TAG_Soldier.GetAliveCount());
+	}
+}
+```
+
+실행 결과는 다음과 같습니다.
+
+```text
+alive: 2
+alive: 1
+```
+
+`bravo = null`로 Bravo를 가리키던 유일한 참조를 지우자 객체가 파괴되면서 소멸자가 카운터를 줄였습니다. 정적 메서드 안에서는 정적 멤버와 상수(`const`)만 쓸 수 있습니다. 객체가 없으므로 `m_sName` 같은 인스턴스 멤버에는 접근할 수 없습니다(위키에 따르면 1.1.0부터 정적 메서드 안의 `this`는 객체가 아니라 현재 클래스를 가리킵니다).
+
+```enforce
+static int GetAliveCount()
+{
+	Print(m_sName);        // 컴파일 오류: 정적 메서드에서 인스턴스 멤버를 쓸 수 없습니다
+	return s_iAliveCount;  // OK
+}
+```
+
+정적 메서드는 `alpha.GetAliveCount()`처럼 객체 변수로 불러도 동작하지만, 클래스에 속한 기능이라는 점이 드러나도록 클래스 이름으로 부르는 편이 읽기 쉽습니다.
+
+<Note title="정적 상태는 아껴 쓰기">
+
+정적 변수는 어디서나 접근할 수 있는 전역 상태와 비슷합니다. 공식 컨벤션은 모딩 관점에서도 정적 변수와 메서드를 꼭 필요할 때만 쓰라고 권합니다. 이유는 12장에서 다룹니다.
+
+</Note>
+
+### const 상수
+
+`const`를 붙인 값은 선언할 때 정한 뒤 바꿀 수 없습니다. 클래스 안의 상수는 이름을 대문자와 밑줄로 쓰고, `m_`이나 `s_` 접두사를 붙이지 않습니다.
+
+```enforce
+class TAG_Soldier
+{
+	const int MAX_HEALTH = 100;
+	static const float RESPAWN_DELAY = 10;
+}
+```
+
+공식 스크립트에는 `const`만 붙인 상수와 `static const` 상수가 모두 많습니다. 두 형태 모두 `TAG_Soldier.MAX_HEALTH`처럼 클래스 이름으로 읽을 수 있습니다. 실제로 공식 코드는 `const`만 붙여 선언한 `SCR_AmbientSoundsComponent`의 `WINDSPEED_MIN` 상수를 다른 클래스에서 `SCR_AmbientSoundsComponent.WINDSPEED_MIN`으로 읽습니다.
+
+객체에 `const`를 붙이면 **참조만** 고정됩니다. 다음 배열 상수는 다른 배열로 바꿀 수 없지만, 배열 안의 내용은 바뀔 수 있습니다. 공식 스크립트도 이런 형태로 고정된 목록을 정의합니다. `ref`는 7장, 배열은 8장에서 설명합니다.
+
+```enforce
+class TAG_Ranks
+{
+	static const ref array<string> NAMES = {"Private", "Corporal", "Sergeant"};
+}
+```
+
+### 정적 팩토리 메서드
+
+생성자를 `protected`로 감추고 객체를 만드는 정적 메서드를 따로 두면, 객체를 만들기 전에 값을 검사할 수 있습니다. 공식 스크립트의 `SCR_PlayerFactionInfo`도 생성자를 `protected`로 두고 `static SCR_PlayerFactionInfo Create(int playerId)`로만 객체를 만듭니다.
+
+```enforce title="Scripts/Game/TAG_Squad.c"
+class TAG_Squad
+{
+	protected string m_sCallsign;
+
+	//------------------------------------------------------------------------------------------------
+	protected void TAG_Squad()
+	{
+	}
+
+	//------------------------------------------------------------------------------------------------
+	//! 호출 부호가 비어 있으면 null을 반환합니다.
+	static TAG_Squad Create(string callsign)
+	{
+		if (callsign.IsEmpty())
+			return null;
+
+		TAG_Squad squad = new TAG_Squad();
+		squad.m_sCallsign = callsign;
+		return squad;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	string GetCallsign()
+	{
+		return m_sCallsign;
+	}
+}
+```
+
+바깥 코드에서 `new TAG_Squad()`를 쓰면 생성자가 `protected`라서 컴파일 오류가 납니다. 반면 `Create`는 같은 클래스의 메서드이므로 생성자를 부를 수 있고, 새로 만든 객체의 `protected` 멤버 `m_sCallsign`에도 값을 넣을 수 있습니다. 공식 `SCR_PlayerFactionInfo.Create`도 같은 방식으로 새 객체의 `protected` 멤버를 채웁니다.
+
+## 게터와 세터, 파일 구성
+
+공식 컨벤션이 정한 클래스 구성 규칙을 정리하면 다음과 같습니다.
+
+- **파일 하나에 클래스 하나**를 두고, 파일 이름을 클래스 이름과 같게 합니다(`TAG_Soldier.c`). 같은 시스템에서만 쓰는 작은 클래스나 열거형은 한 파일에 묶어도 됩니다.
+- 스크립트 파일은 애드온의 `Scripts/Game` 폴더 아래에 둡니다. 관련 클래스는 하위 폴더로 묶습니다.
+- 공식 예제처럼 멤버 변수를 먼저 선언하고 메서드를 뒤에 둡니다. 변수는 어트리뷰트가 붙은 멤버, 일반 멤버 변수, 정적 변수, 상수 순서로 둡니다.
+- 멤버 변수는 `protected`로 두고 게터(`GetHealth`)와 세터(`SetHealth`)로 다룹니다. `bool` 값의 게터는 `IsAlive`, `HasAmmo`처럼 이름을 짓는 경우가 많습니다.
+- 클래스와 공개 메서드 위에는 `//!`로 시작하는 문서 주석을 답니다. Enfusion은 Doxygen 형식을 씁니다.
+
+이름 규칙 전체는 부록 A와 12장에 표로 정리되어 있습니다.
+
+## 객체 null 검사
+
+객체 변수에는 언제든 `null`이 들어 있을 수 있습니다. 아직 `new`로 만들지 않았거나, 다른 코드가 객체를 파괴했거나, 찾는 대상이 없어서 함수가 `null`을 돌려준 경우입니다. `null`인 변수의 멤버나 메서드에 접근하면 엔진 문서가 말하는 VM 예외(Virtual Machine Exception)가 발생합니다.
+
+그래서 객체를 쓰기 전에 null인지 확인하는 습관이 중요합니다. 객체는 조건식에서 그대로 참·거짓으로 쓸 수 있습니다. `null`이면 거짓, 객체가 있으면 참입니다.
+
+```enforce
+void Report(TAG_Soldier soldier)
+{
+	if (!soldier)
+	{
+		Print("No soldier to report", LogLevel.WARNING);
+		return;
+	}
+
+	PrintFormat("%1: %2", soldier.GetName(), soldier.GetHealth());
+}
+```
+
+함수 첫머리에서 null을 확인하고 바로 `return`하는 형태를 **조기 반환**이라고 합니다. 공식 스크립트에서 아주 자주 보이는 관용구입니다. 3장에서 본 것처럼 `if (soldier)`로 반대 조건을 쓸 수도 있고, `soldier == null`이나 `soldier != null`로 비교해도 됩니다.
+
+`string`은 null이 될 수 없습니다. 기본값은 빈 문자열이므로 문자열은 `IsEmpty()`로 확인합니다. 매개변수에 `notnull`을 붙이면 null이 넘어올 때 메서드가 실행되지 않고 VM 예외가 납니다. 이 키워드는 4장에서 다뤘습니다.
+
+<Pitfall title="new를 빼먹은 객체 변수">
+
+```enforce
+TAG_Soldier soldier;     // 선언만 했으므로 null입니다
+soldier.TakeDamage(10);  // 실행 중 VM 예외
+```
+
+Python이나 JavaScript에서는 변수 선언과 객체 생성이 한 줄로 붙어 다니지만, Enforce Script에서는 타입만 선언하고 객체를 만들지 않는 실수가 흔합니다. 클래스 타입 변수를 선언했다면 `new`로 만들었는지, 또는 다른 곳에서 받은 객체를 null 검사했는지 확인하세요.
+
+</Pitfall>
+
+## 정리
+
+<Summary>
+
+- 클래스는 `class 이름` 다음 중괄호 안에 멤버 변수와 메서드를 선언합니다. 객체는 `new`로 만들고, 점(`.`)으로 멤버에 접근합니다.
+- 클래스 타입 변수는 객체를 가리키는 참조입니다. 대입하면 같은 객체를 함께 가리키고, `==`는 같은 객체인지 비교합니다.
+- 생성자는 클래스와 이름이 같은 `void` 메서드이고, 소멸자는 이름 앞에 `~`를 붙이며 매개변수가 없습니다. 생성자는 클래스마다 하나만 둘 수 있습니다.
+- 객체는 강한 참조가 모두 사라지는 즉시 파괴되고 소멸자가 실행됩니다(7장).
+- 멤버는 기본이 public입니다. `protected`는 자식 클래스까지, `private`은 같은 클래스 안에서만 쓸 수 있으며, 공식 컨벤션은 `protected`와 게터·세터를 권합니다.
+- `static` 멤버는 클래스에 속하고 클래스 이름으로 씁니다. 정적 메서드에서는 인스턴스 멤버를 쓸 수 없습니다.
+- 클래스 안의 `const`와 `static const` 상수는 모두 클래스 이름으로 읽을 수 있습니다. 객체 상수는 참조만 고정됩니다.
+- 객체를 쓰기 전에 `if (!obj) return;`처럼 null을 확인합니다. 문자열은 null이 될 수 없으므로 `IsEmpty()`로 확인합니다.
+
+</Summary>
+
+**더 읽을거리**
+
+- [Object Oriented Programming Basics](https://community.bistudio.com/wiki/Arma_Reforger:Object_Oriented_Programming_Basics)
+- [Scripting: Conventions](https://community.bistudio.com/wiki/Arma_Reforger:Scripting:_Conventions)
+- [Scripting: Values](https://community.bistudio.com/wiki/Arma_Reforger:Scripting:_Values)
+
+## 연습문제
+
+<Exercise id="5-1" level="기초" title="카운터 클래스">
+
+정수 값을 하나 가진 `TAG_Counter` 클래스를 만드세요. 값은 바깥에서 직접 바꿀 수 없어야 하고, 다음 세 메서드를 제공해야 합니다.
+
+- `Increment()`: 값을 1 늘립니다.
+- `Reset()`: 값을 0으로 되돌립니다.
+- `GetValue()`: 현재 값을 반환합니다.
+
+객체를 하나 만들어 `Increment()`를 세 번 호출한 뒤 값을 출력하는 정적 메서드 `Run()`도 함께 작성하세요.
+
+</Exercise>
+
+<Exercise id="5-2" level="기초" title="오류 찾기">
+
+다음 코드에서 컴파일 오류가 나는 줄과 실행 중 오류가 나는 줄을 찾고, 각각 이유를 설명하세요.
+
+```enforce
+class TAG_Medic
+{
+	protected int m_iKits = 3;
+
+	static void ResetKits()
+	{
+		m_iKits = 3;
+	}
+}
+
+class TAG_MedicDemo
+{
+	static void Run()
+	{
+		TAG_Medic medic;
+		medic.m_iKits = 5;
+	}
+}
+```
+
+</Exercise>
+
+<Exercise id="5-3" level="응용" title="탄약 상자">
+
+다음 조건을 만족하는 `TAG_AmmoBox` 클래스를 작성하세요.
+
+- 생성자는 탄 종류 이름(`string`)과 처음 탄 수(`int`)를 받습니다. 처음 탄 수는 생략할 수 있고, 생략하면 0입니다.
+- 상자에 들어가는 최대 탄 수는 상수 `MAX_ROUNDS = 120`입니다. 처음 탄 수와 추가한 탄 수는 이 값을 넘지 않게 잘라야 합니다.
+- `AddRounds(int count)`는 실제로 늘어난 탄 수를 반환합니다.
+- 탄을 가득 채운 상자를 만드는 정적 메서드 `CreateFull(string caliber)`를 제공합니다.
+
+</Exercise>
+
+<Exercise id="5-4" level="응용" title="출력 예측하기">
+
+본문의 `TAG_Radio` 클래스를 그대로 쓴다고 할 때, 다음 `Run()`의 출력을 순서대로 적고 이유를 설명하세요.
+
+```enforce
+class TAG_RadioQuiz
+{
+	static void Run()
+	{
+		TAG_Radio a = new TAG_Radio("A");
+		TAG_Radio b = a;
+		a = new TAG_Radio("B");
+		Print("swap done");
+		b = null;
+		Print("end of Run");
+	}
+}
+```
+
+</Exercise>
+
+<Exercise id="5-5" level="도전" title="검사하는 팩토리">
+
+플레이어 프로필을 나타내는 `TAG_PlayerProfile` 클래스를 만드세요.
+
+- 생성자는 `protected`로 감춥니다.
+- `static TAG_PlayerProfile Create(string name)`은 이름 앞뒤 공백을 제거한 결과가 비어 있으면 `null`을 반환하고, 그렇지 않으면 공백을 제거한 이름으로 프로필을 만듭니다. 문자열의 앞뒤 공백은 `Trim()`으로 제거한 새 문자열을 얻을 수 있습니다(9장).
+- 지금까지 만들어진 프로필 수를 정적 메서드 `GetCreatedCount()`로 알 수 있어야 합니다.
+- `Run()`에서 `"  Alpha "`와 `"   "`로 각각 `Create`를 호출하고, 결과가 null인지 검사해 이름 또는 경고를 출력하세요.
+
+</Exercise>

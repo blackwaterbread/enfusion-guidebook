@@ -1,0 +1,221 @@
+<Answer id="14-1">
+
+본문의 라우팅 표(`Core/generated/Replication/RplRcver.c`)를 그대로 적용합니다. 월드에 배치된 엔티티는 서버가 소유하므로 서버는 "소유자", 클라이언트는 "소유자 아님"입니다.
+
+1. **관련 클라이언트들에서 실행됩니다.** 서버에서 보낸 `Broadcast`는 그 엔티티를 스트리밍받은 클라이언트로 전송되고, 데디케이티드 서버 자신에서는 실행되지 않습니다.
+2. **버려집니다.** 소유자가 아닌 클라이언트의 `Server` RPC는 전송되지 않습니다. 오류 메시지도 나오지 않습니다.
+3. **그 클라이언트에서만 직접 실행됩니다.** 클라이언트의 `Broadcast`는 다른 기계로 가지 않습니다.
+4. **서버(호스트)에서 직접 실행됩니다.** 서버가 소유자이므로 `Owner` RPC는 그 자리에서 평범한 호출처럼 실행됩니다.
+
+2번과 3번이 특히 헷갈리기 쉽습니다. 클라이언트에서 "모두에게 알리기"를 하려면 먼저 소유한 객체를 거쳐 서버에 요청하고, 서버가 브로드캐스트해야 합니다.
+
+</Answer>
+
+<Answer id="14-2">
+
+원인은 두 가지입니다.
+
+1. `m_iScore`에 `[RplProp]`이 없어 복제 대상이 아닙니다. 콜백을 받으려면 `onRplName`도 지정해야 합니다.
+2. 값을 바꾼 뒤 `Replication.BumpMe()`를 부르지 않았습니다. 리플리케이션은 변경을 스스로 찾지 않습니다.
+
+```enforce title="Scripts/Game/TAG_ScoreBoardComponent.c"
+[ComponentEditorProps(category: "TAG/Tutorial", description: "점수판")]
+class TAG_ScoreBoardComponentClass : ScriptComponentClass
+{
+}
+
+class TAG_ScoreBoardComponent : ScriptComponent
+{
+	[RplProp(onRplName: "OnScoreChanged")]
+	protected int m_iScore;
+
+	void AddScore(int amount)
+	{
+		m_iScore += amount;
+		Replication.BumpMe();
+	}
+
+	protected void OnScoreChanged()
+	{
+		PrintFormat("현재 점수: %1", m_iScore);
+	}
+}
+```
+
+이 상태로는 아직 권한자에서 점수가 출력되지 않는데, 이 문제는 연습문제 14-3에서 고칩니다.
+
+</Answer>
+
+<Answer id="14-3">
+
+`onRplName` 콜백은 프록시에서만 불리므로, 권한자는 값을 바꾼 뒤 같은 메서드를 직접 부릅니다. 또 프록시에서 값을 바꾸는 일이 없도록 `RplComponent`로 역할을 확인합니다.
+
+```enforce title="Scripts/Game/TAG_ScoreBoardComponent.c"
+[ComponentEditorProps(category: "TAG/Tutorial", description: "점수판")]
+class TAG_ScoreBoardComponentClass : ScriptComponentClass
+{
+}
+
+class TAG_ScoreBoardComponent : ScriptComponent
+{
+	[RplProp(onRplName: "OnScoreChanged")]
+	protected int m_iScore;
+
+	protected RplComponent m_RplComponent;
+
+	override void OnPostInit(IEntity owner)
+	{
+		m_RplComponent = RplComponent.Cast(owner.FindComponent(RplComponent));
+		if (!m_RplComponent)
+			Print("TAG_ScoreBoardComponent: RplComponent가 없습니다.", LogLevel.ERROR);
+	}
+
+	//! 권한자에서만 동작한다.
+	void AddScore(int amount)
+	{
+		if (!m_RplComponent || m_RplComponent.IsProxy())
+			return;
+
+		if (amount <= 0)
+			return;
+
+		m_iScore += amount;
+		Replication.BumpMe();
+		OnScoreChanged();	// 권한자에서는 직접 호출
+	}
+
+	int GetScore()
+	{
+		return m_iScore;
+	}
+
+	protected void OnScoreChanged()
+	{
+		PrintFormat("현재 점수: %1", m_iScore);
+	}
+}
+```
+
+이제 출력 코드는 `OnScoreChanged()` 한 곳에만 있습니다. 싱글플레이와 리슨 서버의 호스트는 `AddScore()` 안의 직접 호출로, 원격 클라이언트는 리플리케이션 콜백으로 같은 메서드를 실행합니다. 데디케이티드 서버의 로그에도 출력되지만 화면이 없으니 문제 되지 않습니다.
+
+`IsProxy()` 대신 `m_RplComponent.Role() != RplRole.Authority`로 검사해도 같은 결과입니다. `IsMaster()`는 소유자이기까지 해야 true이므로 여기에 쓰지 않습니다.
+
+</Answer>
+
+<Answer id="14-4">
+
+이 컴포넌트는 `PlayerController`에 붙어 있으므로 `GetOwner()`가 요청한 플레이어의 `PlayerController`입니다. 서버에서 그 플레이어가 조종 중인 엔티티를 얻어 거리를 잽니다.
+
+```enforce title="Scripts/Game/TAG_GeneratorRequestComponent.c"
+[ComponentEditorProps(category: "TAG/Tutorial", description: "발전기 조작 요청")]
+class TAG_GeneratorRequestComponentClass : ScriptComponentClass
+{
+}
+
+class TAG_GeneratorRequestComponent : ScriptComponent
+{
+	protected static const float MAX_USE_DISTANCE = 5;
+
+	void RequestSetRunning(notnull TAG_GeneratorComponent generator, bool running)
+	{
+		RplId generatorId = Replication.FindItemId(generator);
+		if (!generatorId.IsValid())
+			return;
+
+		Rpc(RpcAsk_SetRunning, generatorId, running);
+	}
+
+	[RplRpc(RplChannel.Reliable, RplRcver.Server)]
+	protected void RpcAsk_SetRunning(RplId generatorId, bool running)
+	{
+		TAG_GeneratorComponent generator = TAG_GeneratorComponent.Cast(Replication.FindItem(generatorId));
+		if (!generator)
+			return;
+
+		PlayerController playerController = PlayerController.Cast(GetOwner());
+		if (!playerController)
+			return;
+
+		IEntity controlled = playerController.GetControlledEntity();
+		if (!controlled)
+			return;	// 조종 중인 캐릭터가 없으면(예: 사망 직후) 거절
+
+		float distance = vector.Distance(controlled.GetOrigin(), generator.GetOwner().GetOrigin());
+		if (distance > MAX_USE_DISTANCE)
+			return;
+
+		generator.SetRunning(running);
+	}
+}
+```
+
+핵심은 검사를 **서버 쪽 메서드 안에서** 한다는 점입니다. 클라이언트의 `RequestSetRunning()`에서 거리를 재는 것은 사용자 편의(버튼을 숨기는 등)로는 의미가 있지만, 조작된 클라이언트는 그 검사를 건너뛸 수 있습니다. 요청한 플레이어도 클라이언트가 보낸 값이 아니라 서버가 아는 `PlayerController`에서 얻습니다.
+
+1.8.0.13에서 시험해 보면 캐릭터를 죽인 직후 같은 프레임에서는 `GetControlledEntity()`가 아직 null이 아니었습니다. 시험한 게임 모드는 2초 안에 다시 스폰해서, 그 사이에 null이 되는지는 가르지 못했습니다.
+
+</Answer>
+
+<Answer id="14-5">
+
+경보가 "울렸다"는 것은 한 번 일어나고 끝나는 사건이고, "몇 번 울렸다"는 유지되는 상태입니다. 그래서 사건은 브로드캐스트 RPC로, 횟수는 `[RplProp]`으로 보냅니다.
+
+```enforce title="Scripts/Game/TAG_AlarmComponent.c"
+[ComponentEditorProps(category: "TAG/Tutorial", description: "경보 장치")]
+class TAG_AlarmComponentClass : ScriptComponentClass
+{
+}
+
+class TAG_AlarmComponent : ScriptComponent
+{
+	[RplProp(onRplName: "OnAlarmCountChanged")]
+	protected int m_iAlarmCount;
+
+	protected RplComponent m_RplComponent;
+
+	override void OnPostInit(IEntity owner)
+	{
+		m_RplComponent = RplComponent.Cast(owner.FindComponent(RplComponent));
+	}
+
+	//! 권한자에서만 동작한다.
+	void TriggerAlarm()
+	{
+		if (!m_RplComponent || m_RplComponent.IsProxy())
+			return;
+
+		// 상태: 횟수를 복제한다
+		m_iAlarmCount++;
+		Replication.BumpMe();
+		OnAlarmCountChanged();
+
+		// 사건: 서버에서 직접 실행하고, 클라이언트에는 브로드캐스트한다
+		DoAlarmEffect();
+		Rpc(RpcDo_Alarm);
+	}
+
+	[RplRpc(RplChannel.Reliable, RplRcver.Broadcast)]
+	protected void RpcDo_Alarm()
+	{
+		DoAlarmEffect();
+	}
+
+	protected void DoAlarmEffect()
+	{
+		Print("경보!");
+	}
+
+	protected void OnAlarmCountChanged()
+	{
+		PrintFormat("누적 경보 횟수: %1", m_iAlarmCount);
+	}
+}
+```
+
+설계 이유는 다음과 같습니다.
+
+- **"경보!"는 RPC**: 사건은 그 순간 그 자리에 있던 플레이어에게만 의미가 있습니다. 서버의 `Broadcast`는 서버 자신에서는 실행되지 않으므로 `DoAlarmEffect()`를 서버에서 직접 한 번 부르고, 클라이언트에는 `Rpc(RpcDo_Alarm)`로 보냅니다. 이렇게 해야 리슨 서버의 호스트와 싱글플레이에서도 출력됩니다.
+- **횟수는 `[RplProp]`**: 브로드캐스트는 그 엔티티를 스트리밍받은 클라이언트에만 닿고, 나중에 접속한 클라이언트는 받지 못합니다. 횟수를 복제 속성으로 두면 중도 참가자도 스트리밍될 때 현재 값을 받고, 그때 `OnAlarmCountChanged()`가 불립니다.
+
+엄밀히 말하면 "모든 플레이어"는 경보 장치를 스트리밍받고 있는 플레이어입니다. 아주 멀리 있어 장치가 스트리밍되지 않은 플레이어에게까지 알려야 한다면, 경보 장치가 아닌 다른 경로(예: 모든 플레이어의 `PlayerController`에 붙인 컴포넌트)를 설계해야 합니다.
+
+</Answer>

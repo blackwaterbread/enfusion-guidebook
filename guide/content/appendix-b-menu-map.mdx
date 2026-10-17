@@ -1,0 +1,121 @@
+---
+title: 메뉴 지도
+description: 런처, 메인 창, Resource Browser, Script Editor, World Editor, String Editor, Diag Menu의 메뉴 항목을 화면 이름 그대로 모으고, 그 항목을 다루는 장을 적었습니다.
+---
+
+이 부록은 Arma Reforger Tools 1.8.0.13 화면을 기준으로 메뉴 항목을 화면 이름 그대로 모은 것입니다. 항목은 메뉴에 나오는 순서대로 적었고, 메뉴 안의 구분선은 ` / `로 나타냈습니다. ▸는 하위 메뉴가 있는 항목이고, 하위 메뉴의 항목은 싣지 않았습니다. 흐리게 표시되는 항목도 함께 적었습니다.
+
+**다루는 장** 열의 "—"는 이 책에서 다루지 않는 항목입니다. 항목 열이 "—"인 메뉴는 이 부록에 항목을 싣지 않은 메뉴입니다. 메뉴 옆의 단축키는 부록 A에 있습니다.
+
+## 런처
+
+| 메뉴 | 항목 | 다루는 장 |
+|---|---|---|
+| **Add Project** ▾ | **Create New Project**, **Add Existing Project**, **Scan for Projects** | 1장 |
+
+## 메인 창
+
+메뉴 막대에는 **File**, **Editors**, **View**, **Edit**, **Window**, **Utilities**, **Plugins**, **Help** 여덟 개가 있습니다. 레이아웃 탭이 앞에 있으면 메뉴 막대 끝에 **Preview** 메뉴가 더해집니다(10장).
+
+| 메뉴 | 항목 | 다루는 장 |
+|---|---|---|
+| **File** | **Save**, **Save All** / **Project Settings...**, **Options...** / **Workshop Member Area** 묶음: **User Profile**, **Publish to Workshop**, **Remove from Workshop**, **Check Pending Invitations** / 최근에 연 파일 / **Exit** | 2장(Project Settings...는 1장에도) |
+| **Editors** | **World Editor**, **Particle Editor**, **Animation Editor**, **Script Editor**, **Audio Editor**, **String Editor**, **Procedural Animation Editor**, **Behavior Editor** | 2장(World Editor는 6장, Script Editor는 4장, String Editor는 10장) |
+| **View** | **Normal view**, **Text view**, **Hex View** ▸ | 2장 |
+| **Edit** | **Undo**, **Redo** / **Reimport Resource**, **Locate File in Resource Browser**, **Edit Prefab** | 2장(Edit Prefab은 8장) |
+| **Window** | **Layout** ▸, **Manage Layouts**, **Reset Default Layouts** / **Next Tab**, **Previous Tab**, **Cycle Tabs**, **Close Tab**, **Reopen Closed Tab** / **Toggle Fullscreen Mode** / **Log Console**, **Resource Browser**, **Resource Browser 2** | 2장(Log Console은 5장, Resource Browser는 3장) |
+| **Utilities** | **Generate GUID**, **File System Dump**, **Qt Introspection Tool**, **LSP Tests** ▸, **Resource Tests** ▸ | — |
+| **Plugins** | **Settings** ▸ / **Batch resource processor**, **Batch texture processor**, **Check Ruin Models and Usage**, **Data To Spreadsheet plugin**, **Find Linked Resources**, **Generate Class from Layout**, **Generate Controls Scheme**, **Image Set Generator**, **Localise Selected Files**, **Re-Save Meta Tool**, **Re-Save Tool**, **Run Tracy Profiler**, **Search Tool (XOBs)**, **Validate Behavior Trees** / **BIKI** ▸, **Bookmarks** ▸, **EBT Validation** ▸, **In-game Editor** ▸, **Prefabs** ▸, **QA** ▸, **Tools** ▸, **User Settings** ▸, **Version Control System** ▸ | — |
+| **Help** | **View Help**, **About** | — |
+| **Preview** | **Copy**, **Paste**, **Duplicate**, **Delete**, **Rename**, **Open prefab**, **Save as prefab** | 10장 |
+
+**File** 메뉴에는 프로젝트 설정(**Project Settings...**)과 Workbench 설정(**Options...**)이 따로 있습니다(<FigRef id="apb-main-file" />). 위키(Workbench Plugin)에 따르면 **Plugins** 메뉴의 항목은 스크립트로 만든 플러그인입니다. 위 표는 의존성이 Arma Reforger 하나인 프로젝트의 메뉴입니다.
+
+<Figure src="shared/main-file-menu.png" alt="메인 창의 File 메뉴" id="apb-main-file">메인 창의 File 메뉴</Figure>
+
+**Window** 메뉴의 위쪽은 창 배치와 탭, 아래쪽은 메인 창의 창 목록입니다(<FigRef id="apb-main-window" />).
+
+<Figure src="shared/main-window-menu.png" alt="메인 창의 Window 메뉴" id="apb-main-window">메인 창의 Window 메뉴</Figure>
+
+### 메뉴로 여는 창
+
+- **File > Project Settings...**: 위쪽에 **ID**, **GUID**, **TITLE**, **Dependencies**가 있고, 아래쪽에는 **Configuration** 펼침 목록에서 고른 구성의 설정이 **General**, **Engine**, **Modules** 같은 묶음으로 있습니다. 문자열 테이블 목록 **String Tables**는 **Modules** 아래 **Widget Manager Settings** 안에 있습니다. 1·2·10장에서 다룹니다.
+- **File > Options...**: 왼쪽 범주는 **General**, **World Editor**, **Animation Editor**, **Script Editor**, **Audio Editor**, **Behavior Editor**, **Shortcuts**입니다. **General** 범주에는 **Net API**, **Language Server Protocol**, **Autosave** 같은 묶음이 있고, 창 왼쪽 아래에는 **Register "enfusion://" Protocol**과 **Export All Settings** 버튼이 있습니다. 2장에서 다루고, **Language Server Protocol**은 4장에서 봅니다.
+
+열린 탭이 없을 때 메인 창 가운데에는 시작 화면이 있습니다. **QUICK LAUNCH**에 **Editors** 메뉴와 같은 편집기 버튼 여덟 개가 있고, 그 아래에 **LINKS**와 **NEWS**가 있습니다(2장).
+
+## Resource Browser
+
+메인 창과 World Editor의 Resource Browser 아래쪽에는 **Import** 버튼과 **Create** ▾ 버튼이 있습니다.
+
+| 메뉴 | 항목 | 다루는 장 |
+|---|---|---|
+| **Create** ▾ | **Create Folder** 묶음: **New Folder** / **Create Resource** 묶음: **Config file**, **Game material**, **GUI image set**, **GUI layout**, **GUI string table**, **GUI style**, **Material**, **Particle effect**, **Physics material**, **Ragdoll definition**, **Script**, **Vehicle contact surface** | 3장(Script는 4장, Config file은 9장, GUI layout과 GUI string table은 10장) |
+| 파일 오른쪽 클릭(기본 게임 프리팹) | **Open File in New Tab** / **Explore** 묶음: **Show in Explorer**, **Navigate to Folder** / **Common** 묶음: **Register**, **Register and Import**, **Reimport**, **Tags** ▸, **Duplicate**, **Inherit**, **Delete**, **Rename** / **Addons** 묶음: **Navigate to Original**, **Navigate to Ancestor**, **Navigate to Override**, **Override in '…'**, **Duplicate to '…'**, **Inherit in '…'** / **Utils** 묶음: **Copy Resource Name(s)**, **Copy Resource GUID(s)**, **Copy Link**, **Copy File Path(s)**, **Send to...** ▸, **Find References**, **Find Inherited Files**, **Refresh Thumbnail(s)**, **Edit Prefab(s)**, **Save Changes**, **Revert Changes** / **Script** 묶음: **Plugins** ▸ | 3장(Override in, Duplicate to, Inherit in은 8장에도) |
+
+**Addons** 묶음의 따옴표 안에는 작업 중인 프로젝트의 ID가 들어갑니다. 기본 게임 파일에서는 흐리게 표시되는 항목이 많습니다(<FigRef id="apb-rb-context" />). 작업 중인 프로젝트에 이미 덮어쓴 원본 파일에서는 <strong>Override in '…'</strong>이 없고 **Navigate to Override**를 고를 수 있습니다. 덮어쓴 파일 쪽의 메뉴에서는 **Addons** 묶음에 Navigate 세 항목만 남고, **Navigate to Original**과 **Navigate to Ancestor**를 고를 수 있습니다.
+
+메뉴의 항목은 파일 종류와 어느 창의 Resource Browser인지에 따라서도 다릅니다. 메인 창에서 프리팹과 모델(`.xob`)의 메뉴 끝에는 **Script** 묶음이 있고, 설정 파일과 레이아웃의 메뉴에는 없습니다. 모델의 **Addons** 묶음에는 Navigate 세 항목만 있고, 소리 파일(`.wav`)과 소리 프로젝트(`.acp`)에는 <strong>Inherit in '…'</strong>이 없습니다. World Editor 창의 Resource Browser에서는 맨 위의 **Open File in New Tab**과 **Utils** 묶음 끝의 **Save Changes**, **Revert Changes**가 없고, 설정 파일과 프리팹의 메뉴 끝에 **Custom** 묶음이 붙습니다(부록 C의 Resource Manager 항목).
+
+<Figure src="shared/rb-context-base-prefab.png" alt="기본 게임 프리팹의 오른쪽 클릭 메뉴" id="apb-rb-context">기본 게임 프리팹의 오른쪽 클릭 메뉴</Figure>
+
+## Script Editor
+
+메뉴 막대에는 **File**, **Edit**, **Build**, **Debug**, **Window**, **Bookmarks**, **Plugins**, **Help**가 있습니다.
+
+| 메뉴 | 항목 | 다루는 장 |
+|---|---|---|
+| **File** | **Save All** / **Options...** / 최근에 연 파일 / **Exit** | 4장 |
+| **Edit** | **Undo**, **Redo** / **Find**, **Find File**, **Find Symbol**, **Find Entity**, **Find Next**, **Find Prev**, **Find in Files**, **Find in Outline**, **Jump To Line**, **Find Stack Trace**, **Navigate Back**, **Navigate Forward**, **Copy Link** / **Duplicate Line**, **Comment Selection Toggle** | 4장 |
+| **Build** | **Validate Scripts**, **Validate and Reload Scripts**, **Reload Scripts** / **Configuration** 묶음: **WORKBENCH**, **PC**, **XBOX**, **PS4**, **PS5**, **ALL** | 4장 |
+| **Debug** | **Debug Game**, **Debug Workbench**, **Debug Custom**, **Debug Disabled** / **Continue**, **Step Into**, **Step Over**, **Step Out**, **Stop**, **Toggle Breakpoint** / **Dump Classes**, **Recompile File on Host**, **Console Execute** | 5장 |
+| **Window** | **Layout** ▸, **Manage Layouts**, **Reset Default Layouts** / **Move Tab to Other View**, **Switch Active View** / **Next Tab**, **Previous Tab**, **Cycle Tabs**, **Close Tab**, **Reopen Closed Tab**, **Navigate To File** / 창 열다섯 개(순서는 그림과 다를 수 있음): **Output**, **Errors**, **Find Symbol**, **Projects**, **Watch**, **Find Results**, **Callstack**, **Breakpoints**, **Text Search**, **Find File**, **Find Entity**, **Outline**, **Bookmarks**, **Remote Console**, **Debug** | 4장(Remote Console, Watch, Callstack, Breakpoints, Debug 창은 5장) |
+| **Bookmarks** | **Toggle Bookmark**, **Next Bookmark**, **Previous Bookmark** | 4장 |
+| **Plugins** | **Settings** ▸ / **AI Script Generator**, **Autocomplete**, **Autotest**, **Basic Code Formatter**, **Basic Code Formatter - forced**, **Class Renaming Plugin**, **Copy Class and Method Name**, **Create New Script**, **Debug Line Shortcut**, **Doxygen Filler**, **Fill from Template**, **Run Tracy Profiler** / **Version Control System** ▸ | 4장(Autotest는 12장) |
+| **Help** | **View Help** | 4장 |
+
+**Debug Workbench**에 체크 표시가 있을 때 **Debug > Stop**은 브레이크포인트에서 멈춘 동안과 편집 모드에서 흐리게 표시되고, Play가 멈추지 않고 도는 동안에는 켜져 있습니다. **Window** 메뉴 아래쪽에는 Script Editor의 창 열다섯 개가 나열되어 있습니다(<FigRef id="apb-se-window" />).
+
+<Figure src="shared/se-window-menu.png" alt="Script Editor의 Window 메뉴" id="apb-se-window">Script Editor의 Window 메뉴</Figure>
+
+## World Editor
+
+메뉴 막대에는 **File**, **Edit**, **View**, **Game**, **Tools**, **Window**, **Plugins**, **Entities**, **Help**가 있습니다. Play 중에는 **Game**과 **Window**를 뺀 메뉴가 흐리게 표시됩니다.
+
+| 메뉴 | 항목 | 다루는 장 |
+|---|---|---|
+| **File** | 월드를 편집할 때: **New World**, **Load World**, **Save World**, **Save with Options**, **Save World As**, **Force Save All**, **Go to World File** / **Options...** / 최근에 연 월드 / **Exit** | 6장 |
+| **File**(프리팹 편집 모드) | **New World**, **Load World**, **Save Prefabs**, **Save Prefabs with Options**, **Save World As**, **Force Save All**, **Go to World File** / **Options...** / 최근에 연 월드 / **Exit** | 8장 |
+| **Edit** | **Undo**, **Redo** / **Copy**, **Paste**, **Paste on Same Position**, **Duplicate**, **Cut** / **Open Material under Cursor**, **New Camera Keyframe**, **Edit Selected Prefab** | 6장 |
+| **Game** | **Exit game**, **Play Game Options** ▸, **Script Debug Mode**, **Reload Game Scripts**, **Save RDB Cache**, **Copy View Link** | 11장 |
+| **Tools** | **Ground Manipulation Tool**, **Move**, **Rotate**, **Scale**, **Vector Tool**, **Bounding Volume Tool**, **Measure Tool**, **Object Brush**, **Prefab Bone-Snapping Tool**, **Object Selection Brush**, **Prefab Destruction Setup Tool**, **Prefab Management Tool**, **Destructible Prefab Finder Tool**, **Bake MLOD Texture**, **Batch prefabs operations tool**, **Coords Tool**, **Shape Brush Tool**, **Destruction indices assign tool**, **Autotest Tool**, **Shape Area Tool**, **Entity Replacer**, **Windows Prefabs Generator Tool**, **Export Map data**, **Autospawner Tool**, **Parallel Shape Tool**, **Terrain Tool**, **RoadNetwork Tool**, **Navmesh Tool** | 6장(Autotest Tool은 12장) |
+| **View** | **Toggle Visualizers**, **Permanent Entity Visualizers**, **Transformation Gizmo** ▸, **World Bounds**, **Cycle Prefab Library** | — |
+| **Window** | **Layout** ▸, **Manage Layouts**, **Reset Default Layouts** / **Toggle Fullscreen Mode (F11)** / 창 열네 개: **Hierarchy**, **Create**, **Object Properties**, **Current Tool**, **Resource Browser**, **Resource Browser 2**, **Prefab Library**, **Log Console**, **Cinematic Timeline**, **Ragdoll Editor**, **Main Toolbar**, **Basic Tools**, **Scripted Tools**, **Terrain Minimap** | — |
+| **Plugins** | **Settings** ▸ / **Add selected Prefabs to selected entities**, **Autotest**, **Build shore map**, **Change absolute Y to relative**, **Dedicated Server Tool**, **Edit Selected Prefab(s)**, **Entity Flags Manager**, **FPS Diagnostic**, **Game Mode Setup**, **Generate projectile wind data**, **Import Shapefile**, **Map Exporter**, **Mark shapes editor only**, **Optimize Damage Area Shapes**, **Playmode Entity Spawner**, **Regenerate river flow-maps**, **Run Tracy Profiler**, **Run game with current world**, **Set camera orientation to entity**, **Set entity to view orientation**, **Verify Items**, **Verify Slot Entities**, **World Entities Statistics**, **Wrap Entities**, **BIKI** ▸, **Building Destruction** ▸, **Entity checks** ▸, **Import/Export** ▸, **In-game Editor** ▸, **Mass Processing** ▸, **Prefab Structure** ▸, **Terrain** ▸, **Tools** ▸, **Update** ▸, **World Setup** ▸ | 12장(Settings의 Peer Tool, Dedicated Server Tool) |
+| **Entities** | **Selection** 묶음: **Focus Selection** / **Select Parent**, **Select Children**, **Select Siblings**, **Select Prefab Instance Root**, **Select Prefab Instance Members**, **Select Layer** / **Resource** 묶음: **Open Prefab**, **Open Nested Prefab**, **Open Mesh in Material Editor** / **Locate Prefab**, **Locate Nested Prefab**, **Locate Prefab in Library** / **Entity** 묶음: **Rename**, **Copy Name**, **Delete** ▸ / **Create Prefab Instance**, **Break Prefab Instance**, **Apply Changes to Prefab**, **Add Child Prefab** ▸, **Replace with Prefab** ▸ / **Snap to Ground**, **Snap to Ground and Orient by Normal**, **Place Using Physics** / **Hide/Show**, **Hide All Except Selected**, **Unhide All** / **Set Parent**, **Remove from Parent** / **Set Layer** / **Jump to Script Definition** / **Validate Entities...** | — |
+| **Help** | **View Help** | — |
+| Play 목록(초록색 삼각형 모양인 Play 버튼 오른쪽의 ▾) | **Play inside Viewport**, **Play in Fullscreen** / **Play from Camera Position**, **Use Game Camera Position at Return**, **Skip Disabled Layers**, **Save Changes Before Playing** / **World Systems Config** ▸ / **Use Local Storage**, **Use Online Storage** / **Server localhost**, **Server localhost + PeerTool** | 11장(Server localhost + PeerTool은 12장) |
+
+월드를 바꾸지 않은 상태에서는 **File** 메뉴의 **Save World**가 흐리게 표시됩니다. 프리팹 편집 모드에서는 **Save World As**와 **Go to World File**이 흐리게 표시됩니다. 표의 **Game** 메뉴는 Play 중의 것이고, Play 중에는 **Play Game Options**, **Reload Game Scripts**, **Copy View Link**가 흐리게 표시됩니다. 편집 모드에서는 맨 위 항목이 **Exit game** 대신 **Play Game**(<Kbd>F5</Kbd>)이고, 모든 항목이 켜져 있습니다. **Tools** 메뉴는 도구 28개가 한 목록으로 이어져 있습니다(<FigRef id="apb-we-tools" />). **Window** 메뉴의 창 목록에는 열려 있는 창에 체크 표시가 있고, **Entities** 메뉴는 엔티티를 고르지 않은 상태에서는 대부분의 항목이 흐리게 표시됩니다.
+
+<Figure src="shared/we-tools-menu.png" alt="World Editor의 Tools 메뉴" id="apb-we-tools">World Editor의 Tools 메뉴</Figure>
+
+## String Editor
+
+| 메뉴 | 항목 | 다루는 장 |
+|---|---|---|
+| **File** | **New**, **Open**, **Save** / **Exit** | 10장 |
+| **Table** | **Insert Item**, **Delete Item** / **Import Table**, **Export Table** / **Build Runtime Table** | 10장 |
+
+String Editor의 메뉴 막대에는 **File**, **Edit**, **Table**, **Columns**, **Window**, **Plugins**, **Help**가 있습니다. 문자열 테이블을 열지 않은 상태에서는 **File > Save**와 **Table** 메뉴의 항목이 흐리게 표시됩니다.
+
+## Diag Menu
+
+Play 중에 <Kbd>Win</Kbd>+<Kbd>Alt</Kbd>로 여는 게임 안의 메뉴입니다. 메뉴 이름은 화면 글자 그대로 코드 글꼴로 적었습니다.
+
+| 메뉴 | 항목 | 다루는 장 |
+|---|---|---|
+| 맨 위 목록 | `Statistics`, `Render`, `Scene`, `World`, `Animation`, `Physics`, `Game`, `Sounds`, `Particles`, `Vehicles`, `GameCode`, `Cheats`, `Character`, `Serialization`, `AI`, `Platform`, `Systems`, `Notifications`, `Extras`, `UI`, `Input`, `Replication`, `GameMode`, `Editor`, `ScenarioFramework` | 11장 |
+| `Statistics` | 스크립트와 관련된 항목: `Slow script`, `Verbose script Print`, `Script profiler`, `Script prof. external` | 11장 |
+| `GameCode` | 하위 메뉴 `User Actions`(그 안에 `Log actions`, `Context position`), `Network`(그 안에 `Log ownership changes`) | 11장 |
+| `UI` | 셋째 줄 `Disable Loc` | 10·11장 |

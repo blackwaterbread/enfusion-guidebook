@@ -1,0 +1,311 @@
+---
+title: 자주 쓰는 API
+description: 스크립트를 쓰면서 자주 찾게 되는 클래스와 메서드를 분야별로 모았습니다. 시그니처, 한 줄 설명, 정의된 파일을 한눈에 봅니다.
+---
+
+모든 시그니처는 Arma Reforger 1.8.0.13 공식 스크립트에서 확인했습니다.
+
+표를 읽는 방법은 다음과 같습니다.
+
+- 메서드는 `반환타입 클래스.메서드(매개변수)` 꼴로 적었습니다. 정적 메서드에는 앞에 `static`을 붙였고, 엔진이 호출하는 이벤트 메서드는 설명에 "(이벤트)"라고 표시했습니다. 이벤트 메서드는 자식 클래스에서 `override`로 다시 정의해 씁니다.
+- 기본값이 있는 매개변수가 길게 이어지는 경우 뒤쪽을 `...`로 줄였습니다. 전체 선언은 정의 파일에서 확인하세요.
+- "정의 파일"은 공식 스크립트의 `scripts` 폴더를 기준으로 한 경로입니다. Script Editor의 **Projects** 창에서 열거나, **Find Symbol**로 이름을 검색해 찾을 수 있습니다.
+- 각 절 끝에 그 분야를 자세히 설명한 장을 적었습니다.
+
+## 게임과 월드
+
+| 시그니처 | 설명 | 정의 파일 |
+|---|---|---|
+| `ArmaReforgerScripted GetGame()` | 게임 객체를 반환하는 전역 함수. 대부분의 API 호출이 여기서 시작합니다. | `Game/game.c` |
+| `World Game.GetWorld()` | 현재 게임 월드 | `GameLib/generated/Game.c` |
+| `bool Game.InPlayMode()` | 플레이 모드이면 true. World Editor에서 편집 중이면 false | `GameLib/generated/Game.c` |
+| `ScriptCallQueue ArmaReforgerScripted.GetCallqueue()` | 게임의 콜 큐 | `Game/game.c` |
+| `PlayerController ChimeraGame.GetPlayerController()` | 이 기계의 플레이어 컨트롤러 | `Game/generated/ChimeraGame.c` |
+| `PlayerManager ChimeraGame.GetPlayerManager()` | 플레이어 정보 관리자. 공식 주석상 언제나 유효한 인스턴스를 반환 | `Game/generated/ChimeraGame.c` |
+| `BaseGameMode ChimeraGame.GetGameMode()` | 현재 게임 모드 엔티티 | `Game/generated/ChimeraGame.c` |
+| `float BaseWorld.GetWorldTime()` | 월드가 만들어진 뒤 흐른 시간(밀리초) | `Core/generated/World/BaseWorld.c` |
+| `WorldTimestamp BaseWorld.GetTimestamp()` | 월드의 현재 타임스탬프 | `Core/generated/World/BaseWorld.c` |
+| `bool BaseWorld.IsEditMode()` | Workbench 편집 모드나 게임 안 편집기에서 true | `Core/generated/World/BaseWorld.c` |
+| `IEntity BaseWorld.FindEntityByName(string name)` | 이름으로 엔티티를 찾음 | `Core/generated/World/BaseWorld.c` |
+| `bool BaseWorld.QueryEntitiesBySphere(vector center, float radius, QueryEntitiesCallback addEntity, ...)` | 구에 닿는 엔티티마다 콜백을 부름. 콜백이 false를 반환하면 질의를 멈춤 | `Core/generated/World/BaseWorld.c` |
+| `bool QueryEntitiesCallback(IEntity e)` | 엔티티 질의 콜백의 형식 | `Core/proto/EnWorld.c` |
+| `float WorldTimestamp.DiffMilliseconds(WorldTimestamp other)` | 두 타임스탬프의 차이(밀리초) | `Core/generated/World/WorldTimestamp.c` |
+| `static int System.GetTickCount(int prev = 0)` | 게임이 시작된 뒤 흐른 밀리초 | `Core/generated/System/System.c` |
+| `static int System.GetUnixTime()` | 1970-01-01 UTC 자정부터 흐른 초 | `Core/generated/System/System.c` |
+| `static bool System.GetCLIParam(string param, out string val)` | 명령줄 매개변수의 값을 읽음. 없으면 false | `Core/generated/System/System.c` |
+
+1장, 9장, 10장, 11장 참고.
+
+## 플레이어
+
+| 시그니처 | 설명 | 정의 파일 |
+|---|---|---|
+| `int PlayerManager.GetPlayers(out notnull array<int> outPlayers)` | 접속한 플레이어의 ID 목록을 채움 | `Game/generated/Network/PlayerManager.c` |
+| `string PlayerManager.GetPlayerName(int iPlayerId)` | 플레이어 이름. 찾지 못하면 빈 문자열 | `Game/generated/Network/PlayerManager.c` |
+| `IEntity PlayerManager.GetPlayerControlledEntity(int iPlayerId)` | 플레이어가 조종하는 엔티티 | `Game/generated/Network/PlayerManager.c` |
+| `int PlayerManager.GetPlayerIdFromControlledEntity(IEntity controlled)` | 엔티티를 조종하는 플레이어의 ID. 찾지 못하면 0 | `Game/generated/Network/PlayerManager.c` |
+| `PlayerController PlayerManager.GetPlayerController(int iPlayerId)` | 플레이어의 컨트롤러 | `Game/generated/Network/PlayerManager.c` |
+| `int PlayerController.GetPlayerId()` | 이 컨트롤러의 플레이어 ID | `Game/generated/Player/PlayerController.c` |
+| `IEntity PlayerController.GetControlledEntity()` | 조종 중인 엔티티 | `Game/generated/Player/PlayerController.c` |
+| `static int SCR_PlayerController.GetLocalPlayerId()` | 이 기계의 플레이어 ID. 로컬 컨트롤러가 없으면 0 | `Game/Player/SCR_PlayerController.c` |
+| `static IEntity SCR_PlayerController.GetLocalControlledEntity()` | 이 기계의 플레이어가 조종하는 엔티티 | `Game/Player/SCR_PlayerController.c` |
+
+14장, 16장 참고.
+
+## 엔티티와 변환
+
+| 시그니처 | 설명 | 정의 파일 |
+|---|---|---|
+| `vector IEntity.GetOrigin()` | 엔티티의 위치(원점) | `Core/generated/Entities/IEntity.c` |
+| `void IEntity.SetOrigin(vector orig)` | 위치를 정함 | `Core/generated/Entities/IEntity.c` |
+| `void IEntity.GetWorldTransform(out vector mat[])` | 월드 변환 행렬을 채움 | `Core/generated/Entities/IEntity.c` |
+| `bool IEntity.SetWorldTransform(vector mat[4])` | 월드 변환을 정함. 바뀐 것이 없으면 false | `Core/generated/Entities/IEntity.c` |
+| `vector IEntity.GetYawPitchRoll()` / `void SetYawPitchRoll(vector angles)` | 월드 공간의 방향(요, 피치, 롤)을 읽고 씀 | `Core/generated/Entities/IEntity.c` |
+| `vector IEntity.CoordToLocal(vector coord)` / `vector CoordToParent(vector coord)` | 월드 좌표를 로컬 좌표로, 로컬 좌표를 월드 좌표로. 자식 엔티티도 월드 좌표(10장) | `Core/generated/Entities/IEntity.c` |
+| `IEntity IEntity.GetParent()` / `IEntity GetRootParent()` | 부모(없으면 null) / 최상위 부모(자식이 아니면 자기 자신) | `Core/generated/Entities/IEntity.c` |
+| `IEntity IEntity.GetChildren()` / `IEntity GetSibling()` | 첫 자식 / 같은 단계의 다음 형제. 둘로 자식 목록을 돕니다. | `Core/generated/Entities/IEntity.c` |
+| `int IEntity.AddChild(notnull IEntity child, TNodeId pivot, EAddChildFlags flags = EAddChildFlags.AUTO_TRANSFORM)` | 자식으로 붙임. `pivot`이 -1이면 부모 중심. 기본 플래그면 붙기 전의 월드 위치를 로컬 위치로 써서 자식이 옮겨 감(10장). `RECALC_LOCAL_TRANSFORM`을 넘기면 제자리에 남음 | `Core/generated/Entities/IEntity.c` |
+| `void IEntity.RemoveChild(notnull IEntity child, bool keepTransform = false)` | 계층에서 뗌 | `Core/generated/Entities/IEntity.c` |
+| `BaseWorld IEntity.GetWorld()` | 엔티티가 속한 월드 | `Core/generated/Entities/IEntity.c` |
+| `string IEntity.GetName()` | 엔티티 이름 | `Core/generated/Entities/IEntity.c` |
+| `Managed IEntity.FindComponent(typename typeName)` | 해당 타입의 첫 컴포넌트. 원하는 타입으로 형변환해 씀 | `Core/generated/Entities/IEntity.c` |
+| `int IEntity.FindComponents(typename typeName, notnull array<Managed> outComponents)` | 해당 타입의 모든 컴포넌트를 채움 | `Core/generated/Entities/IEntity.c` |
+| `bool IEntity.IsDeleted()` | 삭제된 엔티티이면 true. 주석은 포인터가 그 프레임 끝까지 유효하다고 적지만, 1.8.0.13 싱글플레이 시험에서는 `DeleteEntityAndChildren`으로 지우면 그 엔티티를 가리키던 지역 변수와 `ref` 없는 멤버가 바로 null이 됨(범위는 10장) | `Core/generated/Entities/IEntity.c` |
+| `EntityFlags IEntity.SetFlags(EntityFlags flags, bool recursively = false)` / `ClearFlags(...)` | 엔티티 플래그를 켜고(OR) 끔 | `Core/generated/Entities/IEntity.c` |
+| `static void SCR_EntityHelper.DeleteEntityAndChildren(IEntity entity)` | 엔티티와 자식을 지움. `RplComponent.DeleteRplEntity(entity, false)`를 감싼 헬퍼 | `Game/Helpers/SCR_EntityHelper.c` |
+
+10장 참고.
+
+## 컴포넌트
+
+| 시그니처 | 설명 | 정의 파일 |
+|---|---|---|
+| `GenericEntity ScriptComponent.GetOwner()` | 컴포넌트가 붙은 엔티티 | `GameLib/generated/Components/ScriptComponent.c` |
+| `void OnPostInit(IEntity owner)` | (이벤트) 엔티티의 모든 컴포넌트가 초기화된 뒤 | `GameLib/generated/Components/ScriptComponent.c` |
+| `void EOnInit(IEntity owner)` | (이벤트) 초기화. `EntityEvent.INIT` 마스크 필요 | `GameLib/generated/Components/ScriptComponent.c` |
+| `void EOnFrame(IEntity owner, float timeSlice)` | (이벤트) 매 프레임. `EntityEvent.FRAME` 마스크 필요 | `GameLib/generated/Components/ScriptComponent.c` |
+| `void OnDelete(IEntity owner)` | (이벤트) 엔티티나 컴포넌트가 지워질 때 | `GameLib/generated/Components/ScriptComponent.c` |
+| `int GenericComponent.SetEventMask(notnull IEntity owner, int mask)` | 이벤트 마스크를 켬(기존 값과 OR) | `GameLib/generated/Components/GenericComponent.c` |
+| `int GenericComponent.ClearEventMask(notnull IEntity owner, int mask)` | 이벤트 마스크를 끔 | `GameLib/generated/Components/GenericComponent.c` |
+| `EntityComponentPrefabData GenericComponent.GetComponentData(notnull IEntity ent)` | 짝 클래스(`...ComponentClass`)의 프리팹 데이터 | `GameLib/generated/Components/GenericComponent.c` |
+| `void GenericComponent.Activate(IEntity owner)` / `Deactivate(IEntity owner)` | 컴포넌트를 활성화·비활성화 | `GameLib/generated/Components/GenericComponent.c` |
+| `Attribute(string defvalue = "", string uiwidget = "auto", string desc = "", string params = "", ...)` | 멤버 변수를 Workbench 속성으로 노출하는 어트리뷰트 | `Core/generated/Attributes/Attribute.c` |
+| `ComponentEditorProps(string category = "", string description = "", ...)` | 짝 클래스에 붙여 World Editor에 보일 분류와 설명을 정함 | `Core/generated/Attributes/ComponentEditorProps.c` |
+| `EntityEvent` (`INIT`, `FRAME`, `POSTFRAME`, `FIXEDFRAME` 등) | 이벤트 마스크 값 | `Core/generated/Entities/EntityEvent.c` |
+
+10장 참고.
+
+## 프리팹과 생성
+
+| 시그니처 | 설명 | 정의 파일 |
+|---|---|---|
+| `static ref Resource Resource.Load(ResourceName name)` | 리소스를 불러오거나 캐시에서 가져옴 | `Core/generated/Resources/Resource.c` |
+| `bool Resource.IsValid()` | 불러오기에 성공했으면 true | `Core/generated/Resources/Resource.c` |
+| `EntitySpawnParams` 필드 `TransformMode`, `Transform[4]`, `Parent`, `Scale` | 생성 위치, 부모, 크기를 담는 매개변수 객체 | `GameLib/gameLib.c` |
+| `ETransformMode` (`WORLD`, `LOCAL`, `OFFSET`) | `Transform`을 월드·로컬·오프셋 가운데 무엇으로 해석할지 | `GameLib/gameLib.c` |
+| `IEntity Game.SpawnEntityPrefab(notnull Resource templateResource, BaseWorld world = null, EntitySpawnParams params = null)` | 프리팹으로 엔티티를 생성. Arma Reforger는 기본적으로 서버에서만 허용 | `GameLib/generated/Game.c` |
+| `IEntity ChimeraGame.SpawnEntityPrefabLocal(notnull Resource templateResource, BaseWorld world = null, EntitySpawnParams params = null)` | 이 기계에만 존재하는 엔티티를 생성 | `Game/generated/ChimeraGame.c` |
+| `static void RplComponent.DeleteRplEntity(IEntity entity, bool releaseFromReplication)` | 복제되는 엔티티를 지움 | `Game/generated/Components/RplComponent.c` |
+
+10장, 14장 참고.
+
+## 이벤트와 콜 큐
+
+| 시그니처 | 설명 | 정의 파일 |
+|---|---|---|
+| `void ScriptInvokerBase<T>.Insert(T fn)` | 콜백을 등록 | `GameLib/tools.c` |
+| `void ScriptInvokerBase<T>.Remove(T fn)` | 등록한 콜백을 해제 | `GameLib/tools.c` |
+| `void ScriptInvokerBase<T>.Invoke(void param1 = NULL, ...)` | 등록된 콜백을 모두 호출 | `GameLib/tools.c` |
+| `typedef ScriptInvokerBase<func> ScriptInvoker` | 시그니처를 고정하지 않은 ScriptInvoker | `GameLib/tools.c` |
+| `ScriptInvokerVoid`, `ScriptInvokerInt`, `ScriptInvokerBool`, `ScriptInvokerFloat`, `ScriptInvokerString`, `ScriptInvokerEntity` | 자주 쓰는 시그니처를 미리 고정한 별칭 | `Game/Helpers/SCR_ScriptInvokerHelper.c` |
+| `void ScriptCallQueue.Call(func fn, void param1 = NULL, ...)` | 다음 틱에 호출하도록 예약 | `GameLib/tools.c` |
+| `void ScriptCallQueue.CallLater(func fn, int delay = 0, bool repeat = false, void param1 = NULL, ...)` | `delay`밀리초 뒤에 호출. `repeat`가 true면 반복 | `GameLib/tools.c` |
+| `void ScriptCallQueue.Remove(func fn)` | 예약한 호출을 취소 | `GameLib/tools.c` |
+
+11장 참고.
+
+## 리플리케이션
+
+| 시그니처 | 설명 | 정의 파일 |
+|---|---|---|
+| `RplProp(RplGroup group = RplGroup.Mandatory, string onRplName = "", ScriptCtx ctx = NULL, RplCondition condition = RplCondition.None, string customConditionName = "")` | 복제 속성 어트리뷰트. 이름 있는 인수로 씀 | `Core/proto/EnNetwork.c` |
+| `RplRpc(RplChannel channel, RplRcver rcver, RplCondition condition = RplCondition.None, string customConditionName = "")` | RPC 메서드 어트리뷰트 | `Core/proto/EnNetwork.c` |
+| `void Rpc(func method, void p0 = NULL, ..., void p7 = NULL)` | `protected`. RPC를 호출. 인수는 8개까지 | `GameLib/generated/Components/GenericComponent.c`, `GameLib/generated/Entities/GenericEntity.c` |
+| `static void Replication.BumpMe()` | 복제 속성이 바뀌었음을 알림 | `Core/generated/Replication/Replication.c` |
+| `static RplId Replication.FindItemId(Managed item)` | 아이템의 `RplId`. 검색 비용이 있으니 빠른 반복문에서 피함 | `Core/generated/Replication/Replication.c` |
+| `static Managed Replication.FindItem(RplId itemId)` | `RplId`로 아이템을 찾음 | `Core/generated/Replication/Replication.c` |
+| `static bool Replication.IsServer()` / `IsClient()` | 서버·클라이언트 여부. 공식 주석은 역할과 소유권을 쓰라고 경고 | `Core/generated/Replication/Replication.c` |
+| `static RplMode RplSession.Mode()` | 현재 세션 방식 | `GameLib/generated/RplSession.c` |
+| `RplMode` (`None`, `Client`, `Listen`, `Dedicated`) | 세션 방식 | `GameLib/generated/RplMode.c` |
+| `RplRole` (`Authority`, `Proxy`) | 노드의 역할 | `Core/generated/Replication/RplRole.c` |
+| `RplChannel` (`Reliable`, `Unreliable`) | RPC 채널. `Reliable`만 전달이 보장됨 | `Core/generated/Replication/RplChannel.c` |
+| `RplRcver` (`Server`, `Owner`, `Broadcast`) | RPC 수신자. 주석에 라우팅 표가 있음 | `Core/generated/Replication/RplRcver.c` |
+| `RplCondition` (`None`, `OwnerOnly`, `NoOwner`, `Custom`) | 복제·RPC 대상 조건 | `Core/generated/Replication/RplCondition.c` |
+| `RplRole BaseRplComponent.Role()` | 이 기계에서의 역할 | `GameLib/generated/Components/BaseRplComponent.c` |
+| `bool BaseRplComponent.IsProxy()` | 프록시이면 true | `GameLib/generated/Components/BaseRplComponent.c` |
+| `bool BaseRplComponent.IsOwner()` | 이 기계가 소유자이면 true | `GameLib/generated/Components/BaseRplComponent.c` |
+| `bool BaseRplComponent.IsMaster()` | 소유자이면서 권한자이면 true | `GameLib/generated/Components/BaseRplComponent.c` |
+| `bool BaseRplComponent.IsOwnerProxy()` / `IsRemoteProxy()` | 소유자인 프록시 / 소유자가 아닌 프록시 | `GameLib/generated/Components/BaseRplComponent.c` |
+| `void BaseRplComponent.Give(RplIdentity newOwner)` | 계층의 소유권을 넘김 | `GameLib/generated/Components/BaseRplComponent.c` |
+| `bool RplId.IsValid()` / `static RplId RplId.Invalid()` | 유효한 ID인지 / 무효 ID 값 | `Core/generated/Replication/RplId.c` |
+| `bool RplSave(ScriptBitWriter writer)` / `bool RplLoad(ScriptBitReader reader)` | (이벤트) 스트리밍될 때 권한자가 쓰고 프록시가 읽는 추가 데이터 | `GameLib/generated/Components/ScriptComponent.c` |
+| `void ScriptBitWriter.WriteInt(int val)`, `WriteBool`, `WriteFloat`, `WriteVector`, `WriteString` | 비트 스트림에 값을 씀 | `Core/proto/EnNetwork.c` |
+| `bool ScriptBitReader.ReadInt(out int val)`, `ReadBool`, `ReadFloat`, `ReadVector`, `ReadString` | 쓴 순서대로 값을 읽음. 실패하면 false | `Core/proto/EnNetwork.c` |
+
+14장 참고.
+
+## 사용자 액션
+
+| 시그니처 | 설명 | 정의 파일 |
+|---|---|---|
+| `void ScriptedUserAction.Init(IEntity pOwnerEntity, GenericComponent pManagerComponent)` | (이벤트) 액션 관리자에 등록될 때 | `Game/generated/UserAction/ScriptedUserAction.c` |
+| `void ScriptedUserAction.PerformAction(IEntity pOwnerEntity, IEntity pUserEntity)` | (이벤트) 액션이 실행될 때. 여러 기계에서 불릴 수 있음 | `Game/generated/UserAction/ScriptedUserAction.c` |
+| `bool ScriptedUserAction.CanBeShownScript(IEntity user)` | (이벤트) 메뉴에 보일지 | `Game/generated/UserAction/ScriptedUserAction.c` |
+| `bool ScriptedUserAction.CanBePerformedScript(IEntity user)` | (이벤트) 실행할 수 있을지 | `Game/generated/UserAction/ScriptedUserAction.c` |
+| `bool ScriptedUserAction.GetActionNameScript(out string outName)` | (이벤트) true를 반환하면 `outName`이 액션 이름이 됨 | `Game/generated/UserAction/ScriptedUserAction.c` |
+| `bool ScriptedUserAction.HasLocalEffectOnlyScript()` | (이벤트) 클라이언트에만 효과가 있는 액션인지. 기본값 false | `Game/generated/UserAction/ScriptedUserAction.c` |
+| `bool ScriptedUserAction.CanBroadcastScript()` | (이벤트) 서버가 이 액션을 클라이언트들에 퍼뜨릴지. 기본값 true | `Game/generated/UserAction/ScriptedUserAction.c` |
+| `void BaseUserAction.SetCannotPerformReason(string reason)` | 실행할 수 없는 이유를 기록 | `Game/generated/UserAction/BaseUserAction.c` |
+| `IEntity BaseUserAction.GetOwner()` | 액션이 속한 엔티티 | `Game/generated/UserAction/BaseUserAction.c` |
+
+16장 참고.
+
+## 입력
+
+| 시그니처 | 설명 | 정의 파일 |
+|---|---|---|
+| `void ActionManager.AddActionListener(string actionName, EActionTrigger trigger, ActionListenerCallback callback)` | 입력 액션 리스너를 등록. `InputManager`가 `ActionManager`를 상속 | `GameLib/generated/Input/ActionManager.c` |
+| `bool ActionManager.RemoveActionListener(string actionName, EActionTrigger trigger, ActionListenerCallback callback)` | 리스너를 해제 | `GameLib/generated/Input/ActionManager.c` |
+| `float ActionManager.GetActionValue(string actionName)` | 액션의 정규화된 값 | `GameLib/generated/Input/ActionManager.c` |
+| `bool ActionManager.GetActionTriggered(string actionName)` | 값이 임계값(0.99)을 넘고 활성이면 true | `GameLib/generated/Input/ActionManager.c` |
+| `bool ActionManager.ActivateContext(string contextName, int duration = 0)` | 입력 컨텍스트를 활성화 | `GameLib/generated/Input/ActionManager.c` |
+| `void ActionListenerCallback(float value = 0.0, EActionTrigger reason = 0, string actionName = string.Empty)` | 리스너 콜백의 형식 | `GameLib/inputManager.c` |
+| `EActionTrigger` (`UP`, `DOWN`, `PRESSED`, `VALUE`) | 놓을 때, 누를 때, 누르는 동안 매 틱, 매 틱 현재 값 | `GameLib/generated/Input/EActionTrigger.c` |
+
+11장 참고.
+
+## UI와 알림
+
+| 시그니처 | 설명 | 정의 파일 |
+|---|---|---|
+| `Widget WorkspaceWidget.CreateWidgets(ResourceName layoutResourceName, Widget parentWidget = NULL)` | `.layout` 파일로 위젯을 만듦 | `Core/generated/UI/WorkspaceWidget.c` |
+| `Widget Widget.FindAnyWidget(string pathname)` | 자식 가운데 이름으로 위젯을 찾음 | `Core/generated/UI/Widget.c` |
+| `void Widget.SetVisible(bool show)` / `bool IsVisible()` | 보이기·숨기기 | `Core/generated/UI/Widget.c` |
+| `void Widget.RemoveFromHierarchy()` | 부모에서 떼어 냄. 강한 참조가 없으면 파괴됨 | `Core/generated/UI/Widget.c` |
+| `void Widget.AddHandler(ScriptedWidgetEventHandler eventHandler)` | 이벤트 핸들러를 붙임 | `Core/generated/UI/Widget.c` |
+| `void TextWidget.SetText(string text)` | 글자를 정함. 문자열 테이블 항목은 번역됨 | `Core/generated/UI/TextWidget.c` |
+| `void TextWidget.SetTextFormat(string text, void param1 = NULL, ...)` | 매개변수를 끼워 넣어 글자를 정함 | `Core/generated/UI/TextWidget.c` |
+| `bool ImageWidget.LoadImageTexture(int num, ResourceName resource, bool noCache = false, bool fromLocalStorage = false)` | 이미지를 불러옴. 같은 번호의 이미지는 교체 | `Core/generated/UI/ImageWidget.c` |
+| `void ScriptedWidgetEventHandler.HandlerAttached(Widget w)` | (이벤트) 핸들러가 위젯에 붙을 때 | `Core/generated/UI/ScriptedWidgetEventHandler.c` |
+| `bool ScriptedWidgetEventHandler.OnClick(Widget w, int x, int y, int button)` | (이벤트) 클릭. true를 반환하면 처리된 것으로 봄 | `Core/generated/UI/ScriptedWidgetEventHandler.c` |
+| `MenuBase MenuManager.OpenMenu(ScriptMenuPresetEnum preset, int userId = 0, bool unique = false, bool hideParentMenu = true)` | 프리셋으로 메뉴를 엶 | `GameLib/generated/Menu/MenuManager.c` |
+| `bool MenuManager.CloseMenu(MenuBase menu)` | 다음 갱신 때 닫히도록 메뉴를 대기열에 넣음 | `GameLib/generated/Menu/MenuManager.c` |
+| `static bool SCR_HintManagerComponent.ShowCustomHint(string description, string name = string.Empty, float duration = 0, bool isSilent = false, ...)` | 문자열로 힌트를 띄움. 공식 주석상 빠른 디버깅용 | `Game/Components/Hints/SCR_HintManagerComponent.c` |
+| `static bool SCR_HintManagerComponent.ShowHint(SCR_HintUIInfo info, bool isSilent = false, bool ignoreShown = false)` | 설정한 힌트를 띄움 | `Game/Components/Hints/SCR_HintManagerComponent.c` |
+| `static bool SCR_NotificationsComponent.SendToPlayer(int playerID, ENotification notificationID, int param1 = 0, ...)` | 특정 플레이어에게 알림을 보냄. 서버가 아니면 false를 반환 | `Game/Network/Notifications/SCR_NotificationsComponent.c` |
+| `static bool SCR_NotificationsComponent.SendToEveryone(ENotification notificationID, int param1 = 0, ...)` | 모든 플레이어에게 알림을 보냄. 서버가 아니면 false를 반환 | `Game/Network/Notifications/SCR_NotificationsComponent.c` |
+| `static bool SCR_NotificationsComponent.SendLocal(ENotification notificationID, int param1 = 0, ...)` | 이 기계의 플레이어에게 알림을 보냄 | `Game/Network/Notifications/SCR_NotificationsComponent.c` |
+
+13장 참고.
+
+## 로그와 디버그
+
+| 시그니처 | 설명 | 정의 파일 |
+|---|---|---|
+| `void Print(void var, LogLevel level = LogLevel.NORMAL)` | 값 하나를 로그에 출력 | `Core/proto/EnDebug.c` |
+| `void PrintFormat(string fmt, void param1 = NULL, ..., LogLevel level = LogLevel.NORMAL)` | `%1`~`%9`를 채워 출력. `level`은 이름 있는 인수로 넘김 | `Core/proto/EnDebug.c` |
+| `LogLevel` (`SPAM`, `VERBOSE`, `DEBUG`, `NORMAL`, `WARNING`, `ERROR`, `FATAL`) | 로그 심각도 | `Core/generated/Debug/LogLevel.c` |
+| `static void Debug.DumpStack(out string output = string.Empty)` | 호출 스택을 로그(또는 변수)에 출력 | `Core/generated/Debug/Debug.c` |
+| `static string Debug.GetEntityLinkString(IEntity entity)` | 로그에서 누르면 카메라가 그 엔티티로 가는 링크 문자열 | `Core/generated/Debug/Debug.c` |
+| `static void Debug.BeginTimeMeasure()` / `EndTimeMeasure(string title)` | 구간 시간 측정 | `Core/generated/Debug/Debug.c` |
+| `static void Debug.DumpInstances(bool csvFormatting)` | 할당된 스크립트 객체를 덤프. `-checkInstance` 필요 | `Core/generated/Debug/Debug.c` |
+| `static ref Shape Shape.CreateLine(int color, ShapeFlags flags, vector p1, vector p2, float thickness = 1)` | 디버그 선분 | `Core/generated/Debug/Shape.c` |
+| `static ref Shape Shape.CreateSphere(int color, ShapeFlags flags, vector origin, float radius)` | 디버그 구 | `Core/generated/Debug/Shape.c` |
+| `static ref Shape Shape.CreateArrow(vector from, vector to, float size, int color, ShapeFlags flags, float thickness = 1)` | 디버그 화살표 | `Core/generated/Debug/Shape.c` |
+| `ShapeFlags` (`ONCE`, `NOZBUFFER`, `WIREFRAME`, `TRANSP` 등) | 도형 그리기 플래그. `ONCE`는 한 번 그린 뒤 사라짐 | `Core/generated/Debug/ShapeFlags.c` |
+| `static DebugTextWorldSpace DebugTextWorldSpace.Create(BaseWorld world, string text, DebugTextFlags flags, float x, float y, float z, ...)` | 월드 좌표에 글자. `ONCE`면 null 반환 | `Core/generated/Debug/DebugTextWorldSpace.c` |
+| `DebugTextFlags` (`ONCE`, `CENTER`, `FACE_CAMERA` 등) | 디버그 글자 플래그 | `Core/generated/Debug/DebugTextFlags.c` |
+| `static void DiagMenu.RegisterMenu(int id, string name, string parent)` | Diag Menu에 하위 메뉴를 등록 | `Core/generated/Debug/DiagMenu.c` |
+| `static void DiagMenu.RegisterBool(int id, string shortcut, string name, string parent, bool reverse = false)` | 켜고 끄는 항목을 등록 | `Core/generated/Debug/DiagMenu.c` |
+| `static bool DiagMenu.GetBool(int id, bool reverse = false)` | 항목이 켜져 있는지 | `Core/generated/Debug/DiagMenu.c` |
+| `static void DbgUI.Begin(string windowTitle, float x = 0, float y = 0)`, `DbgUI.Text(string label)`, `DbgUI.End()` | 매 프레임 그리는 즉시 모드 디버그 창 | `Core/generated/Debug/DbgUI.c` |
+| `int ARGB(int a, int r, int g, int b)` / `int ARGBF(float fa, float fr, float fg, float fb)` | 색 정수를 만듦(`ARGBF`는 0.0~1.0 값) | `Core/proto/proto.c` |
+| `Color.RED`, `Color.GREEN`, `Color.BLUE`, `Color.WHITE` 등 | `static const int` 색 상수 | `Core/generated/Visual/Color.c` |
+
+15장 참고.
+
+## 문자열
+
+| 시그니처 | 설명 | 정의 파일 |
+|---|---|---|
+| `int string.Length()` | 길이 | `Core/generated/Types/string.c` |
+| `bool string.IsEmpty()` | 빈 문자열이면 true | `Core/generated/Types/string.c` |
+| `string string.Substring(int start, int len)` | `start`부터 `len`글자 | `Core/generated/Types/string.c` |
+| `int string.IndexOf(string sample)` / `LastIndexOf(string sample)` | 처음·마지막 위치. 없으면 -1 | `Core/generated/Types/string.c` |
+| `bool string.Contains(string sample)` | 부분 문자열이 있으면 true | `Core/generated/Types/string.c` |
+| `bool string.StartsWith(string sample)` / `EndsWith(string sample)` | 접두사·접미사 검사 | `Core/generated/Types/string.c` |
+| `int string.Replace(string sample, string replace)` | 원본에서 모두 바꾸고 바꾼 횟수를 반환 | `Core/generated/Types/string.c` |
+| `int string.ToLower()` / `ToUpper()` | 원본을 소문자·대문자로 바꾸고 길이를 반환. ASCII 문자만 | `Core/generated/Types/string.c` |
+| `string string.Trim()` | 앞뒤 공백을 없앤 새 문자열 | `Core/generated/Types/string.c` |
+| `void string.Split(string delimiter, notnull out array<string> outTokens, bool skipEmptyEntries)` | 구분자로 나눠 배열에 담음 | `Core/generated/Types/string.c` |
+| `static string string.Format(string fmt, void param1 = NULL, ...)` | `%1`~`%9`를 채운 문자열 | `Core/generated/Types/string.c` |
+| `int string.ToInt(int default = 0, int offset = 0, out int parsed = -1)` | 정수로 변환. 실패하면 `default` | `Core/generated/Types/string.c` |
+| `float string.ToFloat(float default = 0.0, int offset = 0, out int parsed = -1)` | 실수로 변환. 실패하면 `default` | `Core/generated/Types/string.c` |
+| `string int.ToString(int len = -1, bool hex = false, string prefix = string.Empty)` | 정수를 문자열로 | `Core/generated/Types/int.c` |
+| `static string typename.EnumToString(typename e, int enumValue)` / `static int StringToEnum(typename e, string enumName)` | 열거형 값과 이름을 서로 변환 | `Core/generated/Types/typename.c` |
+
+2장, 9장 참고.
+
+## 배열, 집합, 맵
+
+| 시그니처 | 설명 | 정의 파일 |
+|---|---|---|
+| `int array<T>.Count()` / `bool IsEmpty()` | 원소 개수 / 비었는지 | `Core/proto/Types.c` |
+| `int array<T>.Insert(T value)` | 끝에 추가하고 위치를 반환 | `Core/proto/Types.c` |
+| `int array<T>.InsertAt(T value, int index)` | 지정 위치에 끼워 넣고 뒤를 한 칸씩 밂 | `Core/proto/Types.c` |
+| `T array<T>.Get(int n)` / `void Set(int n, T value)` | `n`번째 원소 읽기·쓰기 | `Core/proto/Types.c` |
+| `int array<T>.Find(T value)` | 처음 위치. 없으면 -1. O(n) | `Core/proto/Types.c` |
+| `bool array<T>.Contains(T value)` | 포함 여부. O(n) | `Core/proto/Types.c` |
+| `void array<T>.Remove(int index)` | 빠르게 제거. 마지막 원소가 빈자리로 와서 순서가 바뀜 | `Core/proto/Types.c` |
+| `void array<T>.RemoveOrdered(int index)` | 순서를 지키며 제거. `Remove`보다 느림 | `Core/proto/Types.c` |
+| `bool array<T>.RemoveItem(T value)` / `RemoveItemOrdered(T value)` | 값으로 찾아 제거 | `Core/proto/Types.c` |
+| `void array<T>.Clear()` | 모두 지움 | `Core/proto/Types.c` |
+| `void array<T>.Sort(bool reverse = false)` | 정렬 | `Core/proto/Types.c` |
+| `T array<T>.GetRandomElement()` | 무작위 원소 | `Core/proto/Types.c` |
+| `bool set<T>.Insert(T value)` | 추가. 이미 있으면 false | `Core/proto/Types.c` |
+| `bool set<T>.Contains(T value)` / `RemoveItem(T value)` | 포함 여부(O(log n)) / 값으로 제거 | `Core/proto/Types.c` |
+| `bool map<TKey,TValue>.Insert(TKey key, TValue value)` | 새 원소를 추가 | `Core/proto/Types.c` |
+| `void map<TKey,TValue>.Set(TKey key, TValue value)` | 값을 정함. 키가 없으면 새로 만듦 | `Core/proto/Types.c` |
+| `TValue map<TKey,TValue>.Get(TKey key)` | 값. 키가 없으면 타입의 기본값 | `Core/proto/Types.c` |
+| `bool map<TKey,TValue>.Find(TKey key, out TValue val)` | 키가 있으면 true와 함께 값을 꺼냄 | `Core/proto/Types.c` |
+| `bool map<TKey,TValue>.Contains(TKey key)` / `Remove(TKey key)` | 키 포함 여부 / 키로 제거 | `Core/proto/Types.c` |
+| `TKey map<TKey,TValue>.GetKey(int i)` / `TValue GetElement(int index)` | `i`번째 키·값. O(n)이므로 주의 | `Core/proto/Types.c` |
+
+`set`과 `map`에도 `Count()`, `IsEmpty()`, `Clear()`가 있습니다. 8장 참고.
+
+## 벡터와 수학
+
+| 시그니처 | 설명 | 정의 파일 |
+|---|---|---|
+| `vector Vector(float x, float y, float z)` | 성분으로 벡터를 만드는 전역 함수 | `Core/proto/Types.c` |
+| `vector.Zero`, `vector.Up`, `vector.Forward`, `vector.Right`, `vector.One` | 벡터 상수 | `Core/generated/Types/vector.c` |
+| `float vector.Length()` / `LengthSq()` | 길이 / 길이의 제곱 | `Core/generated/Types/vector.c` |
+| `vector vector.Normalized()` | 정규화한 새 벡터. 원본은 그대로 | `Core/generated/Types/vector.c` |
+| `void vector.Normalize()` | 원본을 정규화 | `Core/generated/Types/vector.c` |
+| `static float vector.Distance(vector v1, vector v2)` / `DistanceSq(...)` | 두 점 사이 거리 / 거리의 제곱 | `Core/generated/Types/vector.c` |
+| `static vector vector.Direction(vector p1, vector p2)` | `p1`에서 `p2`로 향하는 벡터. 정규화하지 않음 | `Core/generated/Types/vector.c` |
+| `static float vector.Dot(vector v1, vector v2)` | 내적 | `Core/generated/Types/vector.c` |
+| `static vector vector.Lerp(vector v1, vector v2, float t)` | 두 벡터 사이 선형 보간 | `Core/generated/Types/vector.c` |
+| `vector vector.VectorToAngles()` / `vector AnglesToVector()` | 방향 벡터를 각도(요, 피치, 롤, 도)로 / 각도를 단위 방향 벡터로 | `Core/generated/Types/vector.c` |
+| `Math.PI`, `Math.DEG2RAD`, `Math.RAD2DEG` | 수학 상수 | `Core/generated/Math/Math.c` |
+| `static float Math.Clamp(float value, float min, float max)` / `static int ClampInt(...)` | 값을 범위 안으로 자름 | `Core/generated/Math/Math.c` |
+| `static float Math.Min(float x, float y)` / `Max(...)`, `static int MinInt` / `MaxInt` | 작은 값·큰 값 | `Core/generated/Math/Math.c` |
+| `static float Math.AbsFloat(float f)` / `static int AbsInt(int i)` | 절댓값 | `Core/generated/Math/Math.c` |
+| `static float Math.Round(float f)` / `Floor(float f)` / `Ceil(float f)` | 반올림·내림·올림. 결과는 `float` | `Core/generated/Math/Math.c` |
+| `static float Math.Sqrt(float val)` / `Pow(float v, float power)` | 제곱근 / 거듭제곱 | `Core/generated/Math/Math.c` |
+| `static float Math.Sin(float angleRad)` / `Cos(...)`, `Atan2(float y, float x)` | 삼각함수. 각도는 라디안 | `Core/generated/Math/Math.c` |
+| `static float Math.Lerp(float a, float b, float t)` / `InverseLerp(float a, float b, float value)` | 선형 보간 / 그 역 | `Core/generated/Math/Math.c` |
+| `static int Math.RandomInt(int min, int max)` / `RandomIntInclusive(int min, int max)` | 무작위 정수. 앞의 것은 `max` 제외, 뒤의 것은 포함 | `Core/generated/Math/Math.c` |
+| `static float Math.RandomFloat(float min, float max)` / `RandomFloat01()` | 무작위 실수. 앞의 것은 `max` 제외, 뒤의 것은 0~1 양 끝 포함 | `Core/generated/Math/Math.c` |
+
+9장 참고.

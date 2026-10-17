@@ -1,0 +1,220 @@
+---
+title: 레이아웃과 문자열 테이블
+description: UI 레이아웃 파일을 만들고 Workbench 메인 창의 레이아웃 탭에서 위젯의 이름과 속성, 위젯에 붙은 스크립트를 다루는 화면을 살펴봅니다. 로컬라이즈 문장을 담는 문자열 테이블을 다루는 String Editor와, 테이블을 프로젝트에 등록하는 Project Settings의 자리도 함께 찾아봅니다.
+---
+
+<Objectives>
+
+- **Create** 메뉴의 **GUI layout**으로 레이아웃을 만드는 순서를 알고, 레이아웃 파일을 두 번 클릭해 열 수 있다.
+- 레이아웃 탭의 도구 막대, 뷰포트, Hierarchy, **Properties** 탭과 메뉴 막대에 더해지는 **Preview** 메뉴를 찾을 수 있다.
+- Hierarchy에서 위젯 이름을 바꿀 수 있다.
+- **Properties** 탭의 **Script** 묶음에서 위젯에 붙은 스크립트 컴포넌트를 찾을 수 있다.
+- String Editor의 메뉴와, **File > Project Settings...** 창의 문자열 테이블 목록을 찾을 수 있다.
+
+</Objectives>
+
+Arma Reforger의 UI는 위젯(widget)을 계층으로 배치한 레이아웃(layout) 파일 `.layout`으로 만듭니다. 화면에 보일 문장은 로컬라이즈 키로 적어 두고, 실행할 때 문자열 테이블(string table)에서 현재 언어의 문장을 찾아 바꿉니다. 스크립트로 레이아웃을 띄우고 위젯을 다루는 방법과 코드에서 로컬라이즈 키를 쓰는 방법은 Script 책 13장에서 다룹니다. 이 장은 레이아웃과 문자열 테이블을 Workbench에서 만들고 고치는 화면을 다룹니다.
+
+레이아웃은 메인 창에 탭으로 열어 편집하므로, 이 책은 이 화면을 "레이아웃 탭"이라고 부릅니다. 위키(Resource Manager: Layout Editor)는 이 화면을 Layout Editor라고 부릅니다(부록 C).
+
+## 레이아웃 파일 만들기
+
+레이아웃 파일도 Resource Browser의 **Create** 버튼으로 만듭니다. **Create** 메뉴의 **Create Resource** 묶음에 **GUI layout**이 있습니다(3장). 순서는 다음과 같습니다.
+
+1. Resource Browser에서 작업 중인 프로젝트 안에 `UI/layouts` 폴더를 만들고 그 폴더를 엽니다. 위키(Layout Creation)가 예로 든 위치이고, 폴더를 만드는 방법은 3장에서 다룹니다.
+2. **Create** 버튼을 누르거나 파일 목록의 빈 곳을 오른쪽 클릭해 **GUI layout**을 고릅니다. 폴더 아이콘이나 트리의 폴더 줄을 오른쪽 클릭한 메뉴에는 **GUI layout**이 없습니다.
+3. **Choose Name** 창의 **File Name** 칸에 이름(예: `TAG_InfoMenu`)만 넣고 <Kbd>Enter</Kbd>를 누르면 `.layout`이 붙은 파일(`TAG_InfoMenu.layout`)이 생깁니다. 새 파일은 열리지 않고 골라진 채로 남습니다.
+4. 만든 레이아웃을 두 번 클릭해 엽니다. 새 레이아웃의 **Hierarchy**에는 `rootFrame`이라는 `FrameWidget` 하나만 있습니다.
+
+`.layout` 파일을 두 번 클릭하면 메인 창에 탭으로 열립니다. 탭 이름은 파일 이름이고, 상태 줄의 파일 종류는 `GUI layout`입니다. 기본 게임에도 가져다 쓸 레이아웃이 있습니다. 예를 들어 Script 책 13장이 예로 드는 위젯 라이브러리의 버튼은 기본 게임 데이터의 `UI/layouts/WidgetLibrary/Buttons/WLib_ButtonText.layout`입니다.
+
+## 레이아웃 탭 둘러보기
+
+레이아웃 탭은 가운데의 뷰포트(viewport)와 그 위의 도구 막대, 오른쪽의 **Hierarchy**와 **Properties** 탭으로 이루어집니다. 레이아웃 탭을 연 메인 창(<FigRef id="ch10-layout-tab" />)에서 볼 곳은 다음과 같습니다.
+
+1. **Preview 메뉴**: 레이아웃 탭이 앞에 있으면 메뉴 막대의 **Help** 오른쪽에 더해집니다.
+2. **도구 막대**: 뷰포트 위의 줄입니다. 그림처럼 창이 좁으면 오른쪽 끝이 잘려 보입니다.
+3. **뷰포트**: 가운데에 레이아웃의 모양이 그려집니다.
+4. **Hierarchy**: 오른쪽 위에서 레이아웃의 위젯을 트리로 보여 줍니다.
+5. **Properties 탭**: Hierarchy 아래에서 고른 위젯의 속성을 보여 줍니다.
+
+오른쪽 맨 위의 **Resource Variants**, 아래쪽의 Log Console과 맨 아래 상태 줄은 9장의 설정 파일 탭과 같습니다.
+
+<Figure src="ch10/layout-tab.png" size="full" alt="메인 창에 열린 레이아웃 탭" id="ch10-layout-tab" marks="1@31.0,5.1;2@75.8,11.7;3@34.7,50.0;4@83.3,15.6;5@94.4,45.3">메인 창에 열린 레이아웃 탭</Figure>
+
+### Preview 메뉴
+
+레이아웃 탭이 앞에 있으면 메인 창 메뉴 막대의 **Help** 오른쪽에 **Preview** 메뉴가 더해집니다(<FigRef id="ch10-preview-menu" />). 레이아웃 탭이 열려 있어도 설정 파일 탭을 앞에 두면 이 메뉴는 없습니다. Workbench를 다시 띄울 때 저절로 다시 열린 레이아웃 탭에서는 이 메뉴가 보이지 않을 수 있습니다. 그때는 탭을 닫았다가 다시 엽니다.
+
+메뉴에는 **Copy**, **Paste**, **Duplicate**, **Delete**, **Rename**, **Open prefab**, **Save as prefab**이 있고, 앞의 다섯 항목 옆에는 <Kbd>Ctrl</Kbd>+<Kbd>C</Kbd>, <Kbd>Ctrl</Kbd>+<Kbd>V</Kbd>, <Kbd>Ctrl</Kbd>+<Kbd>D</Kbd>, <Kbd>Del</Kbd>, <Kbd>F2</Kbd>가 적혀 있습니다. 모두 Hierarchy의 오른쪽 클릭 메뉴에도 있는 항목입니다. 예를 들어 **Rename**을 고르면 Hierarchy에서 고른 위젯의 이름이 편집 상자로 바뀝니다.
+
+<Figure src="ch10/preview-menu.png" alt="레이아웃 탭이 앞에 있을 때 더해지는 Preview 메뉴" id="ch10-preview-menu">레이아웃 탭이 앞에 있을 때 더해지는 Preview 메뉴</Figure>
+
+### 도구 막대
+
+뷰포트 위의 도구 막대에는 왼쪽에 아이콘 버튼 다섯 개가 있고, 이어서 **Grid Size**, **Anchor Grid Size**, **Zoom**, **Root size**, **From slot**, **Root DPI scaling**, **Language**, 오른쪽 끝에 **Compact Mode**가 있습니다(<FigRef id="ch10-toolbar" />). 아이콘 버튼의 이름은 마우스를 올리면 툴팁으로 보입니다. **Draw grid**를 누르면 뷰포트에 격자가 그려지고, **Borders**를 끄면 고르지 않은 위젯의 테두리가 사라집니다. **Live Preview**를 누르면 레이아웃이 별도의 미리 보기 창에 뜹니다. 그림의 레이아웃에서 보이는 값과 위키(Resource Manager: Layout Editor)의 설명은 다음과 같습니다.
+
+| 항목 | 값(그림의 레이아웃) | 위키 설명 |
+|---|---|---|
+| 아이콘 버튼 다섯 개 | — | 왼쪽부터 끌 때 격자에 맞추기(**Snap To Grid while dragging**), 격자 그리기(**Draw grid**), 선택 해제(**Deselect**), 미리 보기 창 열기(**Live Preview**), 모든 위젯의 테두리 그리기(**Borders**) |
+| **Grid Size** | `8px` | 격자 한 칸의 크기(픽셀) |
+| **Anchor Grid Size** | `5%` | 앵커(Anchor)를 손으로 바꿀 때의 단계 |
+| **Zoom** | `100%` | 누르면 100%로 돌아감. 마우스 휠로 확대하고 줄임 |
+| **Root size** | `1920`, `1080` | 기준 화면 해상도. 공식으로 지원하는 가장 작은 해상도는 1920×1080 |
+| **From slot** | — | 루트 위젯의 슬롯(Slot)에서 **Root size**를 가져옴 |
+| **Root DPI scaling** | 체크 해제 | 다른 해상도에서 레이아웃이 어떻게 보이는지 확인 |
+| **Language** | `en_us` | 번역된 문장이 UI에 들어맞는지 볼 언어 |
+| **Compact Mode** | — | Hierarchy를 **Details**·**Import Settings** 탭 위에 둠. 끄면 Hierarchy가 뷰포트 왼쪽의 별도 창으로 감. 레이아웃마다 따로 정해짐 |
+
+<Figure src="ch10/toolbar.png" size="full" alt="레이아웃 탭의 도구 막대" id="ch10-toolbar">레이아웃 탭의 도구 막대</Figure>
+
+## Hierarchy와 위젯 이름
+
+### Hierarchy
+
+오른쪽 위의 **Hierarchy**는 레이아웃의 위젯을 트리로 보여 줍니다(<FigRef id="ch10-hierarchy" />). 맨 위에 검색 칸이 있고, 목록은 **Name**, **#**, **Class**, **Prefab** 네 열입니다. **Name**에는 위젯 이름, **Class**에는 `FrameWidget`, `ButtonWidget`, `TextWidget` 같은 위젯 클래스가 보입니다. **Prefab**에는 위젯 라이브러리처럼 다른 레이아웃에서 가져온 위젯의 원본 레이아웃 경로가 보이고, 그 안쪽 위젯에는 원본에서의 이름이 보입니다. **#** 열의 `{}` 표시는 스크립트 컴포넌트가 붙은 위젯이라는 뜻이고, 마우스를 올리면 컴포넌트 클래스 이름이 보입니다.
+
+위젯을 고르면 아래 **Properties** 탭에 그 위젯의 속성이 나타나고, 아무 위젯도 고르지 않으면 **Properties** 탭은 비어 있습니다. 검색 칸은 위젯을 이름으로 찾고, 클래스 이름으로는 찾지 않습니다. 가져온 위젯의 **Opacity** 같은 속성이나 스크립트 컴포넌트의 값을 바꾸면 그 줄이 굵게 표시되고, 값을 되돌리면 보통 굵기로 돌아갑니다. 놓은 자리(**Slot**의 위치)만 바뀐 줄은 굵게 표시되지 않습니다.
+
+<Figure src="ch10/hierarchy.png" alt="Hierarchy 창" id="ch10-hierarchy">Hierarchy 창</Figure>
+
+### 위젯 이름 바꾸기
+
+스크립트는 레이아웃 안의 위젯을 이름으로 찾으므로(Script 책 13장), 스크립트가 다룰 위젯에는 코드가 찾는 이름을 붙여 둡니다. 예를 들어 Script 책 13장의 메뉴 예제는 `TextTitle`이라는 텍스트 위젯과 `ButtonClose`라는 버튼을 찾습니다. 위젯 이름은 Hierarchy에서 바로 바꿉니다.
+
+<TryIt title="위젯 이름 바꾸기">
+
+1. 레이아웃 탭의 **Hierarchy**에서 이름을 바꿀 위젯 줄을 두 번 클릭합니다. 그 줄의 이름이 편집 상자로 바뀝니다(<FigRef id="ch10-rename" />).
+2. 새 이름(예: `TextTitle`)을 입력하고 <Kbd>Enter</Kbd>를 누릅니다. 바꾸지 않으려면 <Kbd>Esc</Kbd>를 누릅니다.
+3. **Hierarchy**의 이름과 **Properties** 탭 위쪽 **Name** 칸의 값이 함께 바뀌고, 탭 이름 앞에 `*`가 붙습니다.
+4. 메인 창의 **File > Save**(메뉴 표시: <Kbd>Ctrl</Kbd>+<Kbd>S</Kbd>)로 저장하면 탭 이름 앞의 `*`가 사라집니다. 저장하지 않고 탭을 닫으면 **Save File Before Close** 창이 뜹니다(2장).
+
+</TryIt>
+
+<Figure src="ch10/rename.png" alt="Hierarchy에서 위젯 이름 바꾸기" id="ch10-rename">Hierarchy에서 위젯 이름 바꾸기</Figure>
+
+**Properties** 탭의 **Name** 칸에 새 이름을 넣고 <Kbd>Enter</Kbd>를 눌러도 이름이 바뀝니다. Hierarchy의 오른쪽 클릭 메뉴에는 **Preview** 메뉴의 일곱 항목과 함께 다른 위젯 클래스로 바꾸기(**Convert into…**), 다른 위젯으로 감싸기(**Wrap into…**), **Create child…**, **Expand hierarchy**, **Collapse hierarchy**, **Deselect**가 있습니다.
+
+### 위젯 더하기
+
+레이아웃을 처음부터 그리지 않고, 기본 게임이 제공하는 위젯 라이브러리(Widget Library)의 레이아웃을 가져다 쓸 수 있습니다. Resource Browser에서 `WLib_ButtonText.layout`을 열어 둔 레이아웃 탭의 뷰포트로 끌어다 놓으면 놓은 자리에 버튼이 더해지고, Hierarchy에는 루트 위젯 아래에 `Button0` 같은 이름으로 들어갑니다. Hierarchy의 루트 위젯(`rootFrame`) 줄 위에 놓아도 그 아래에 더해지지만, 이때는 레이아웃의 왼쪽 위(자리 0, 0)에 놓입니다.
+
+제목 텍스트도 같은 방법으로 `RichText_Heading2.layout`을 놓으면 `Text0`이 더해집니다. 더해진 위젯의 이름은 Hierarchy에서 `ButtonClose`, `TextTitle`처럼 바꿉니다. 기본 게임 데이터에서 두 파일은 `UI/layouts/WidgetLibrary/Buttons/WLib_ButtonText.layout`과 `UI/layouts/WidgetLibrary/RichTextWidgets/RichText_Heading2.layout`에 있습니다.
+
+**Properties** 탭 옆에는 **Create** 탭과 **Last Used Prefabs** 탭이 있습니다. **Create** 탭에는 위젯 클래스가 **Basic**, **Layout**, **Special** 묶음으로 있고, 항목을 뷰포트로 끌어다 놓으면 프리팹이 아닌 그 클래스의 위젯이 하나 더해집니다. 이렇게 더한 위젯은 Hierarchy의 **Prefab** 열이 비어 있습니다. 위키(Resource Manager: Layout Editor)는 이 탭을 Classes 탭이라고 부릅니다. **Last Used Prefabs** 탭에는 최근에 놓은 프리팹 레이아웃이 경로로 나옵니다.
+
+## Properties와 Script 묶음
+
+### Properties 탭
+
+**Properties** 탭에는 고른 위젯의 속성이 묶음별로 나옵니다(<FigRef id="ch10-properties" />). 맨 위 줄에 검색 칸, **Name** 칸, 톱니 버튼이 있고, 그 아래로 파란 제목 줄의 묶음이 이어집니다. 버튼 위젯(`ButtonClose`)을 고르면 위쪽에 다음 묶음이 보입니다.
+
+- **Transform**: **Slot**, **Z Order**
+- **Behavior**: **Is Enabled**, **Is Visible**, **Is Pixel Perfect**, **Opacity**, **Clipping**, **Tooltip**, **Ignore Cursor**
+- **Appearance**: **Color** 등
+
+각 속성의 뜻은 위키(Resource Manager: Layout Editor)에 정리되어 있습니다. 톱니 버튼(위키의 Property Grid Options)의 메뉴에는 기본값에서 바꾼 속성만 보이기(**Show only modified properties**), 모든 묶음 펼치기(**Expand all groups**)와 접기(**Collapse all groups**), 모든 속성 복사(**Copy all properties**)와 붙여넣기(**Paste properties**)가 있습니다.
+
+<Figure src="ch10/properties.png" alt="ButtonClose를 고른 Properties 탭" id="ch10-properties">ButtonClose를 고른 Properties 탭</Figure>
+
+### 검색으로 Script 묶음 찾기
+
+속성이 많으므로 검색 칸으로 찾는 편이 빠릅니다. 예를 들어 `ButtonClose`를 고르고 **Properties** 탭 검색 칸에 `script`를 입력하면 **Script** 묶음만 남습니다(<FigRef id="ch10-script-components" />).
+
+**Script** 묶음의 **Components** 배열이 위젯에 붙은 스크립트 컴포넌트의 목록입니다. 그림의 `ButtonClose`는 **Components** 옆 괄호에 1이 보입니다. 줄 오른쪽에는 9장의 배열 칸처럼 **+** 버튼과 **-** 버튼이 있습니다. 위젯에 붙이는 컴포넌트 클래스를 만드는 방법은 Script 책 13장에서 다룹니다.
+
+<Figure src="ch10/script-components.png" alt="Script 묶음의 Components" id="ch10-script-components">Script 묶음의 Components</Figure>
+
+### 위젯에 스크립트 붙이기
+
+**Components** 줄의 **+** 버튼을 누르면 검색 칸이 있는 클래스 목록이 열리고, 직접 만든 `ScriptedWidgetComponent` 자식 클래스도 여기에 나옵니다. 고른 컴포넌트는 **Components** 아래 항목으로 더해지고, 펼치면 **Enabled**와 그 클래스의 `[Attribute]` 칸이 보입니다. Script 책 13장은 그 장의 `TAG_ClickCounterComponent`처럼 어트리뷰트 값에 기대는 핸들러를 이 자리에서 붙이라고 권합니다. 레이아웃에서 붙인 핸들러는 어트리뷰트의 기본값과 레이아웃에서 정한 값을 받기 때문입니다.
+
+위키(Layout Creation)는 위젯 라이브러리 버튼의 글자를 바꿀 때 버튼 안쪽 `Text` 위젯의 Text 속성을 고치지 말라고 안내합니다. 이 버튼은 표시할 글자를 컴포넌트가 정하므로, 버튼 맨 위 위젯(`ButtonClose`)을 고르고 **Script** 묶음의 **Components**에서 `SCR_ButtonTextComponent` 항목을 펼쳐 **Text** 칸을 고칩니다. 고친 글자는 뷰포트의 버튼에 바로 보이고, **Text** 칸과 **Components**가 굵게 바뀌며 되돌리기 화살표(6장)가 붙습니다.
+
+## 문자열 테이블
+
+### 문자열 테이블과 런타임 테이블
+
+UI에 보일 문장은 코드나 데이터에 직접 적지 않고 `#`로 시작하는 로컬라이즈 키로 적습니다. 엔진은 키에 맞는 현재 언어의 문장을 문자열 테이블에서 찾아 바꿉니다(Script 책 13장). 9장에서 본 `Notifications.conf`의 **Name** 칸에 든 `#AR-Notification_GROUPS_PLAYER_IS_NOT_LEADER`가 그런 키입니다.
+
+위키(Mod Localisation)에 따르면 모드는 자기 문자열 테이블(`.st`)에 키와 문장을 넣고, 언어마다 게임이 읽는 런타임 테이블(runtime string table)을 만들어 둘 다 프로젝트에 등록합니다. 게임은 런타임 테이블만 읽으므로, 문장을 고친 뒤에는 런타임 테이블을 다시 만들어야 합니다. 기본 게임 데이터의 `Language` 폴더에는 `localization.en_us.conf`, `localization.ko_kr.conf`처럼 언어 코드가 붙은 설정 파일이 언어마다 있는데, 위키가 보여 주는 런타임 테이블의 이름 꼴(`이름.언어코드.conf`)과 같습니다.
+
+### String Editor
+
+문자열 테이블은 String Editor로 편집합니다. String Editor는 메인 창 **Editors** 메뉴에 있고(<FigRef id="ch10-editors-menu" />), 고르면 별도 창으로 열립니다. Resource Browser에서 `.st` 파일을 두 번 클릭해도 그 문자열 테이블을 연 String Editor 창이 뜹니다.
+
+<Figure src="shared/main-editors-menu.png" alt="메인 창의 Editors 메뉴" id="ch10-editors-menu">메인 창의 Editors 메뉴</Figure>
+
+String Editor의 메뉴 막대에는 **File**, **Edit**, **Table**, **Columns**, **Window**, **Plugins**, **Help**가 있습니다. 이 가운데 **File** 메뉴와 **Table** 메뉴에는 다음 항목이 있습니다(<FigRef id="ch10-string-file-menu" />, <FigRef id="ch10-string-table-menu" />). 표의 키는 메뉴에 적힌 키입니다. 문자열 테이블을 열지 않은 상태에서는 **Save**와 **Table** 메뉴의 항목이 흐리게 표시됩니다.
+
+| 메뉴 | 항목(메뉴에 적힌 단축키) |
+|---|---|
+| **File** | **New**(<Kbd>Ctrl</Kbd>+<Kbd>N</Kbd>), **Open**(<Kbd>Ctrl</Kbd>+<Kbd>O</Kbd>), **Save**(<Kbd>Ctrl</Kbd>+<Kbd>S</Kbd>), **Exit**(<Kbd>Ctrl</Kbd>+<Kbd>Q</Kbd>) |
+| **Table** | **Insert Item**(<Kbd>Ctrl</Kbd>+<Kbd>I</Kbd>), **Delete Item**(<Kbd>Del</Kbd>), **Import Table**(<Kbd>Ctrl</Kbd>+<Kbd>Shift</Kbd>+<Kbd>I</Kbd>), **Export Table**(<Kbd>Ctrl</Kbd>+<Kbd>Shift</Kbd>+<Kbd>E</Kbd>), **Build Runtime Table**(<Kbd>Ctrl</Kbd>+<Kbd>B</Kbd>) |
+
+<Figure src="ch10/string-file-menu.png" alt="String Editor의 File 메뉴" id="ch10-string-file-menu">String Editor의 File 메뉴</Figure>
+
+<Figure src="ch10/string-table-menu.png" alt="String Editor의 Table 메뉴" id="ch10-string-table-menu">String Editor의 Table 메뉴</Figure>
+
+### 새 문자열 테이블 만들기
+
+String Editor의 **File > New**로 새 문자열 테이블을 만듭니다. 파일 이름과 위치를 고르는 **Create string table** 창(이름 칸 뒤에 `.st`가 붙어 있음)에서 폴더를 고르고 이름을 넣어 **OK**를 누르면, 항목 클래스를 고르는 **Choose String Table Item class** 창(`CustomStringTableItem`, `DefaultStringTableItem`)이 한 번 더 뜹니다. 위키(Mod Localisation)는 String Editor에서 쓰는 문자열 테이블의 항목 클래스를 `CustomStringTableItem`으로 적습니다. 항목 클래스를 고르면 고른 폴더에 `.st` 파일과 13개 언어의 런타임 테이블(`이름.en_us.conf`, `이름.ko_kr.conf` 등)이 생깁니다. 위키는 번역하지 않을 언어의 파일은 지워도 된다고 설명합니다.
+
+**Create** 메뉴의 **GUI string table**로 `.st`를 만들고 런타임 테이블을 하나씩 만드는 수동 방법도 있지만, 위키는 실수하기 쉽다며 더는 권하지 않습니다.
+
+### 문자열 더하기
+
+문자열을 더하는 순서는 다음과 같습니다(<FigRef id="ch10-string-editor" />).
+
+1. String Editor에서 문자열 테이블을 엽니다.
+2. 창 위쪽 **Insert** 묶음의 입력 칸에 새 키를 쓰고 **Insert** 버튼을 누릅니다. 왼쪽 목록에 새 항목이 생기고 골라집니다. 위키(Mod Localisation)는 여기에 쓰는 키 앞에 `#`를 붙이지 말라고 적습니다.
+3. 오른쪽 **Default** 묶음의 **Target En Us** 칸에 영어 문장을 넣습니다. 목록에서는 이 칸이 `Target_en_us` 열입니다. 다른 언어 칸을 비워 두면 그 언어의 런타임 테이블에도 영어 문장이 들어갑니다.
+4. **File > Save**(메뉴 표시: <Kbd>Ctrl</Kbd>+<Kbd>S</Kbd>)로 저장합니다. 창 제목 끝의 `*`가 사라집니다.
+5. **Table > Build Runtime Table**(메뉴 표시: <Kbd>Ctrl</Kbd>+<Kbd>B</Kbd>)로 런타임 테이블을 다시 만듭니다. 이 단계는 문자열 테이블을 프로젝트에 등록한 뒤에만 됩니다(다음 절). 등록하기 전에는 런타임 테이블이 만들어지지 않고 로그에 오류가 남습니다. 만들어지면 화면 오른쪽 아래에 `Runtime String table built.` 알림이 뜹니다. 문장을 고칠 때마다 이 단계를 되풀이합니다.
+
+키에는 다른 모드와 겹치지 않도록 자기 접두사를 붙이고, UI에서는 키 앞에 `#`를 붙여 씁니다(Script 책 13장).
+
+<Figure src="ch10/string-editor.png" size="full" alt="String Editor 창" id="ch10-string-editor">String Editor 창</Figure>
+
+## 문자열 테이블 등록하기
+
+만든 문자열 테이블과 런타임 테이블은 프로젝트 설정에 등록해야 게임이 씁니다. 위키(Mod Localisation, String Editor)는 이 목록이 Workbench의 Options 화면에 있다고 설명하지만, 화면에서는 메인 창의 **File > Project Settings...** 창에 있고 **File > Options...** 창에는 없습니다(두 창은 2장). **File > New**로 문자열 테이블을 만든 뒤 뜨는 알림 창도 `Workbench->Options`에 등록하라고 적지만, 등록하는 곳은 **Project Settings** 창입니다.
+
+문자열 테이블 목록은 **Project Settings** 창 아래쪽의 **Modules** 묶음에서 **Widget Manager Settings** 아래에 있는 **String Tables**입니다. 아래쪽 검색 칸에 `string`을 입력하면 이 부분만 남습니다(<FigRef id="ch10-string-tables" />). 그림에서는 **String Tables** 옆 괄호에 2가 보이고, 두 항목의 제목은 `ui/language/default.st`와 `Language/localization.st`, 클래스는 `StringTableDefinition`입니다. **String Tables** 줄 오른쪽에는 **+** 버튼과 **-** 버튼이 있습니다.
+
+<Figure src="shared/project-settings-string.png" alt="Project Settings 창에서 string으로 찾은 String Tables" id="ch10-string-tables">Project Settings 창에서 string으로 찾은 String Tables</Figure>
+
+등록 순서는 다음과 같습니다.
+
+1. **Project Settings** 창 맨 위의 **Project** 펼침 목록에서 지금 고치는 프로젝트가 맞는지 확인합니다.
+2. **Configuration**에서 설정할 플랫폼을 고릅니다. 처음에는 `PC`가 골라져 있습니다. 위키는 Headless, PC, Xbox, PS5 같은 값을 예로 듭니다.
+3. **String Tables** 줄의 **+** 버튼을 누릅니다. 목록에 항목이 하나 더해지면서 문자열 테이블 파일을 고르는 **Choose a string table file** 창이 뜹니다.
+4. 만든 `.st` 파일을 고르고 **OK**를 누릅니다. 새 항목의 **String Table Source**에 그 파일이 들어가고, **Languages** 배열에는 `.st`와 함께 만들어진 런타임 테이블마다 언어 항목이 채워집니다. 언어 항목의 **Code**에는 언어 코드가, **String Table Runtime**에는 그 언어의 런타임 테이블이 들어 있습니다.
+5. **OK**를 눌러 저장합니다.
+
+문자열 테이블을 등록하고 런타임 테이블을 만들면 Workbench를 다시 시작하지 않아도 레이아웃 탭의 뷰포트에서 키가 문장으로 바뀌어 보입니다. {/* 확인 대기: 게임(Play) 화면에서도 다시 시작하지 않고 키가 문장으로 바뀌는지 */}
+
+## 로컬라이즈 확인하기
+
+문장이 키에 제대로 이어졌는지는 게임 화면에서 봅니다. Diag Menu의 `UI > Disable Loc`을 켜면 UI의 글이 `#`로 시작하는 키 그대로 보이고, 끄면 다시 문장으로 바뀝니다(11장). 위키(Resource Manager: Layout Editor)는 레이아웃 탭 도구 막대의 **Language** 펼침 목록으로 다른 언어의 문장이 레이아웃에 들어맞는지 미리 볼 수 있다고 설명합니다. 그러나 화면에서는 프로젝트에 여러 언어의 문자열 테이블을 등록한 뒤에도 이 목록에 `en_us` 하나만 있어 다른 언어를 고를 수 없습니다. {/* 확인 대기: 다른 언어가 Language 목록에 나오는 조건 */}
+
+## 정리
+
+<Summary>
+
+- 레이아웃 파일은 폴더를 열고 **Create** 메뉴의 **GUI layout**으로 만들고, 두 번 클릭하면 메인 창 탭으로 열립니다. 위키는 이 화면을 Layout Editor라고 부릅니다.
+- 레이아웃 탭이 앞에 있으면 메뉴 막대 끝에 **Preview** 메뉴가 더해집니다. 탭은 도구 막대, 뷰포트, Hierarchy, **Properties** 탭으로 이루어집니다.
+- Hierarchy에서 위젯 줄을 두 번 클릭하면 이름을 바꿀 수 있고, **Properties** 탭의 **Name**도 함께 바뀝니다. 스크립트는 이 이름으로 위젯을 찾습니다.
+- 위젯에 붙은 스크립트 컴포넌트는 **Properties** 탭의 **Script** 묶음, **Components** 배열에 있습니다. 검색 칸에 `script`를 넣으면 바로 찾을 수 있습니다.
+- 문자열 테이블(`.st`)은 **Editors** 메뉴의 String Editor로 편집합니다. 프로젝트에 등록한 뒤에는 문장을 고칠 때마다 **Table > Build Runtime Table**로 런타임 테이블을 다시 만듭니다.
+- 문자열 테이블을 등록하는 **String Tables** 목록은 **File > Project Settings...** 창의 **Modules** 묶음, **Widget Manager Settings** 아래에 있습니다. **File > Options...** 창에는 없습니다.
+- 로컬라이즈가 제대로 이어졌는지는 Diag Menu의 `UI > Disable Loc`으로 키를 드러내 확인합니다.
+
+</Summary>
+
+**더 읽을거리**
+
+- [Layout Creation](https://community.bistudio.com/wiki/Arma_Reforger:Layout_Creation)
+- [Resource Manager: Layout Editor](https://community.bistudio.com/wiki/Arma_Reforger:Resource_Manager:_Layout_Editor)
+- [String Editor](https://community.bistudio.com/wiki/Arma_Reforger:String_Editor)
+- [Mod Localisation](https://community.bistudio.com/wiki/Arma_Reforger:Mod_Localisation)

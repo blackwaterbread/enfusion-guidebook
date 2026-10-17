@@ -1,0 +1,39 @@
+{
+  "name": "enfusion-guidebook",
+  "private": true,
+  "license": "MIT",
+  "version": "1.0.0",
+  "description": "Enforce Script guidebook for Arma Reforger (Enfusion engine): a textbook and reference for scripting and modding, written in MDX and built to PDF",
+  "type": "module",
+  "scripts": {
+    "check": "bun src/check.mjs",
+    "build": "bun src/build.mjs",
+    "build:html": "bun src/build.mjs --html-only",
+    "check:guide": "bun src/check.mjs --book=guide/book.config.mjs",
+    "build:guide": "bun src/build.mjs --book=guide/book.config.mjs",
+    "build:guide:html": "bun src/build.mjs --book=guide/book.config.mjs --html-only",
+    "build:web": "bun src/web.mjs",
+    "serve:web": "bun src/web.mjs --serve"
+  },
+  "dependencies": {
+    "@mdx-js/mdx": "^3.1.1",
+    "@shikijs/rehype": "^4.5.0",
+    "@shikijs/transformers": "^4.5.0",
+    "d2coding": "^1.3.2",
+    "gray-matter": "^4.0.3",
+    "hast-util-to-string": "^3.0.1",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^6.4.299",
+    "playwright-core": "^1.64.0",
+    "pretendard": "^1.3.9",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "remark-frontmatter": "^5.0.0",
+    "remark-gfm": "^4.0.1",
+    "shiki": "^4.5.0",
+    "unist-util-visit": "^5.1.0"
+  },
+  "devDependencies": {
+    "pagefind": "^1.5.2"
+  }
+}

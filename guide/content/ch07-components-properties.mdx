@@ -1,0 +1,208 @@
+---
+title: 컴포넌트와 속성
+description: Object Properties에서 엔티티에 컴포넌트를 더하고, 스크립트의 어트리뷰트가 만든 속성 칸을 다루는 방법을 살펴봅니다. 객체 속성과 배열, 되돌리기 화살표, ActionsManagerComponent와 RplComponent의 칸도 봅니다.
+---
+
+<Objectives>
+
+- **+ Add Component**로 분류를 따라가거나 검색해 컴포넌트를 엔티티에 더할 수 있다.
+- `[Attribute]`로 선언한 멤버가 Object Properties에서 어떤 이름과 칸으로 보이는지 설명할 수 있다.
+- 객체 속성에 클래스를 넣거나 `.conf` 파일을 끌어다 놓아 채울 수 있다.
+- 배열 속성의 <strong>+</strong> 버튼과 값 옆의 되돌리기 화살표를 알아볼 수 있다.
+- `ActionsManagerComponent`와 `RplComponent`에서 필요한 칸을 찾을 수 있다.
+
+</Objectives>
+
+6장에서 Object Properties의 생김새를 보았습니다. 이 장은 그 아래쪽 속성 영역을 다룹니다. 엔티티에 컴포넌트를 더하고, 스크립트에서 `[Attribute]`로 드러낸 값을 고치는 곳입니다.
+
+어트리뷰트를 선언하는 문법은 Script 책 10장, 설정 클래스와 `.conf` 파일은 Script 책 12장에 있습니다. 이 장은 그 코드가 Workbench 화면에서 어떻게 보이는지만 다룹니다. 화면은 World Editor의 Object Properties이지만, 메인 창에서 설정 파일을 열었을 때의 속성 표(9장)에도 같은 모양의 칸(체크 상자, 펼침 목록, **set class**, 배열의 <strong>+</strong>)이 나옵니다.
+
+## 컴포넌트 더하기
+
+### Add Component 목록
+
+Object Properties 맨 아래의 **+ Add Component** 버튼을 누르면 컴포넌트 목록 창이 뜹니다(<FigRef id="ch07-add-component" />). 위에는 검색 칸, 아래에는 분류 폴더가 나무 구조로 있습니다. 검색 칸에 이름의 일부를 넣으면 맞는 컴포넌트만 분류와 함께 남습니다. 예를 들어 `supply`를 넣으면 **GameLib > Generic**, **GameScripted > Misc**, **GameScripted > SupportStation** 아래의 기본 게임 컴포넌트가 남고, Script 책 16장의 `TAG_SupplyCrateComponent`가 있는 프로젝트라면 **TAG > Tutorial** 아래에 그 컴포넌트도 남습니다.
+
+직접 만든 컴포넌트가 들어갈 분류는 스크립트의 `ComponentEditorProps`에 적은 `category`로 정해집니다(Script 책 10장). `category: "TAG/Tutorial"`로 적은 컴포넌트는 **TAG** 폴더 안의 **Tutorial** 폴더에 있습니다.
+
+목록에서 컴포넌트를 한 번 누르면 엔티티의 컴포넌트 목록에 바로 더해지고 목록 창은 닫힙니다. 새 컴포넌트 줄이 골라진 채로, 속성 영역에 그 컴포넌트의 속성이 나옵니다(<FigRef id="ch07-component-added" />).
+
+목록에 직접 만든 컴포넌트가 보이지 않으면 두 가지를 확인합니다.
+
+- 스크립트 파일이 프로젝트의 `Scripts/Game` 아래에 있는지 봅니다. 위키(Create a Component)에 따르면 Game 모듈 밖에 둔 컴포넌트는 목록에 나오지 않습니다.
+- 스크립트를 만들거나 고친 뒤 Script Editor의 **Build > Validate and Reload Scripts**(<Kbd>Shift</Kbd>+<Kbd>F7</Kbd>)로 컴파일하고 다시 불러왔는지 봅니다(4장). 위키는 새 컴포넌트가 목록에 나타나려면 이 과정이 필요하다고 안내합니다.
+
+컴포넌트를 붙이는 순간 그 컴포넌트의 초기화 코드가 실행되어 로그가 찍힐 수 있습니다. 이유는 Script 책 10장의 수명 주기 표에 있습니다.
+
+컴포넌트 목록에서 컴포넌트 줄을 오른쪽 클릭하면 **Jump to Script Definition**, **Apply to Prefab**, **Add Child Component**, **Delete Component**, **Restore Defaults from Prefab**, **Change Class**가 있는 메뉴가 열립니다. 프리팹이 아닌 엔티티에서는 **Apply to Prefab**과 **Restore Defaults from Prefab**이 흐리게 표시됩니다. 위키(Prefabs Basics)에 따르면 붙인 컴포넌트는 이 메뉴의 **Delete Component**로 지웁니다. {/* 확인 대기: Delete Component를 눌렀을 때의 동작 */} 방금 더한 컴포넌트는 World Editor의 **Edit > Undo**로도 없앨 수 있습니다.
+
+<TryIt title="회전 컴포넌트 붙이기">
+
+1. Script 책 10장의 `TAG_SpinComponent`(분류 `TAG/Tutorial`)를 `GuideDemo` 프로젝트의 `Scripts/Game`에 저장하고 **Build > Validate and Reload Scripts**로 컴파일합니다.
+2. 6장에서 만든 `GuideTest` 월드를 열고 Hierarchy에서 엔티티 하나를 고릅니다.
+3. Object Properties 맨 아래의 **+ Add Component**를 누르고 검색 칸에 `spin`을 입력합니다.
+4. **TAG > Tutorial** 아래의 `TAG_SpinComponent`를 누릅니다.
+5. 컴포넌트 목록에 `TAG_SpinComponent`가 생겼는지, 속성 영역의 **Spin** 묶음에 속성 세 개가 보이는지 확인합니다.
+
+</TryIt>
+
+<Figure src="ch07/add-component.png" alt="Add Component 목록 창" id="ch07-add-component">Add Component 목록 창</Figure>
+
+<Figure src="ch07/component-added.png" alt="컴포넌트를 더한 Object Properties" id="ch07-component-added">컴포넌트를 더한 Object Properties</Figure>
+
+## 어트리뷰트가 만드는 칸
+
+### 속성 이름
+
+속성 이름은 멤버 변수 이름에서 `m_`과 타입 접두사를 떼고 대문자 자리에서 나눠 만듭니다(위키 Scripting: Config Object). 예를 들어 `m_iMyVariable`은 **My Variable**, `m_vOffset`은 **Offset**, `m_sAutoResource`는 **Auto Resource**로 보입니다. 화면의 이름으로 스크립트의 멤버를 찾을 때는 이 규칙을 거꾸로 적용합니다.
+
+컴포넌트에는 직접 선언하지 않은 **Enabled** 체크 상자도 있습니다. 속성 맨 위나 **Unsorted** 묶음에 보입니다.
+
+### 타입별 칸
+
+`[Attribute]`에 `uiwidget`을 적지 않으면 멤버 타입에 맞는 칸이 자동으로 쓰입니다(Script 책 10장). 타입마다 쓰이는 칸은 다음과 같습니다(<FigRef id="ch07-attribute-fields" />).
+
+| 멤버 타입 | 칸 | 예 |
+|---|---|---|
+| `bool` | 체크 상자 | **Flag**: 체크됨 |
+| `int` | 숫자 칸과 위아래 버튼 | **Count**: `7` |
+| `float` | 숫자 칸 | **Rate**: `12.500` |
+| `string` | 글자 칸 | **Label**: `hello` |
+| `vector` | X, Y, Z 세 칸 | **Offset**: `0`, `1`, `0` |
+| `Color` | 0–255 값 넷과 색 견본 | **Tint**: `255,0,0,255`와 빨간 견본 |
+| `ResourceName` | 파일 칸과 고르기 버튼 | **Auto Resource**: `None` |
+
+`uiwidget`을 정하면 칸 모양이 바뀝니다. Script 책 10장의 `TAG_SpinComponent`에서 `UIWidgets.Slider`를 준 **Degrees Per Second**는 막대(슬라이더) 위에 값 `45.000`이 겹쳐 보이고, 열거형에 `UIWidgets.ComboBox`를 준 **Axis**는 펼침 목록(값 `YAW`)으로 보입니다.
+
+<Figure src="ch07/attribute-fields.png" alt="타입마다 다른 속성 칸" id="ch07-attribute-fields">타입마다 다른 속성 칸</Figure>
+
+### 분류 묶음
+
+`category`를 준 속성은 그 이름의 묶음 아래에 모입니다. 묶음 제목 줄은 파란 막대이고, 누르면 묶음이 접히고 다시 누르면 펴집니다. 왼쪽 화살표의 방향이 접힘과 펼침을 나타냅니다. 일부 속성에만 분류가 있으면, 분류가 없는 속성은 **Unsorted** 묶음에 들어갑니다. `TAG_SpinComponent`에서는 **Spin** 묶음 아래에 **Degrees Per Second**, **Axis**, **Spin On Start**가, **Unsorted** 아래에 **Enabled**가 보입니다. 어떤 속성에도 분류가 없는 컴포넌트는 묶음 없이 속성만 나열됩니다.
+
+### 툴팁
+
+`desc`에 적은 설명은 속성 이름 위에 마우스를 올리면 툴팁으로 나타납니다. 예를 들어 **Degrees Per Second** 이름 위에 마우스를 올리면 `desc`에 적은 "초당 회전 각도"가 뜹니다(<FigRef id="ch07-tooltip" />). 위키(Scripting: Config Object)에 따르면 툴팁은 이름을 바꾸지 않고 설명만 더합니다.
+
+<Figure src="ch07/tooltip.png" alt="desc가 툴팁으로 보이는 모습" id="ch07-tooltip">desc가 툴팁으로 보이는 모습</Figure>
+
+### 리소스 고르기
+
+`ResourceName` 칸 오른쪽의 작은 고르기 버튼을 누르면 파일을 고르는 창이 뜹니다(<FigRef id="ch07-resource-picker" />). 창 제목에는 `Choose m_sProjectilePrefab (et files)`처럼 멤버 이름과 고를 수 있는 확장자가 들어 있고, 창 안에는 검색 칸과 폴더 나무, **OK**와 **Cancel** 버튼이 있습니다.
+
+목록에는 어트리뷰트의 `params`에 적은 확장자의 파일만 나옵니다. `params: "et"`이면 `.et` 파일만 보입니다. `params`에 `"conf class=TAG_LootTableConfig"`처럼 클래스를 적으면 그 클래스의 설정 파일만 보이고, 같은 폴더에 있는 다른 클래스의 `.conf`는 보이지 않습니다(Script 책 12장). 파일을 골라 **OK**를 누르면 칸에 그 파일이 들어가고, 속성 이름이 굵게 바뀌며 값 오른쪽에 되돌리기 화살표가 생깁니다.
+
+<Figure src="ch07/resource-picker.png" alt="리소스를 고르는 창" id="ch07-resource-picker">리소스를 고르는 창</Figure>
+
+## 객체 속성: set class와 .conf
+
+`ref`로 선언한 객체 멤버(예: Script 책 12장의 `[Attribute()] protected ref TAG_LootTableConfig m_LootTable;`)는 값 칸에 **set class** 버튼이 있는 줄로 보입니다(<FigRef id="ch07-object-empty" />). 아직 객체가 들어 있지 않다는 표시입니다. 채우는 방법은 두 가지입니다.
+
+첫째는 클래스를 골라 그 자리에서 객체를 만드는 방법입니다. 그 칸에 넣을 수 있는 클래스가 여럿이면(예: 뒤에서 볼 `ActionsManagerComponent`의 **Position**, **UI Info**) **set class**를 눌렀을 때 검색 칸이 있는 클래스 목록이 뜨고, 클래스를 고르면 줄이 그 클래스의 객체로 바뀝니다. 넣을 수 있는 클래스가 하나뿐인 칸(예: `TAG_LootTableConfig`만 받는 **Loot Table**)은 목록 없이 곧바로 그 클래스의 객체가 들어갑니다. 줄을 펼쳐서 안의 속성을 채웁니다(9장).
+
+둘째는 Resource Browser의 `.conf` 파일을 그 줄로 끌어다 놓는 방법입니다. 예를 들어 `TAG_LootTableConfig` 클래스의 설정 파일을 **Loot Table** 줄에 놓으면 다음과 같이 바뀝니다(<FigRef id="ch07-conf-dropped" />).
+
+- 속성 이름이 굵게 바뀌고, 이름 앞의 동그라미 아이콘이 파란색이 됩니다.
+- 값 칸에 클래스 이름과 파일 이름이 표시되고, 오른쪽에 되돌리기 화살표가 생깁니다.
+- 줄을 펼치면 그 파일에 든 값(예: **Entries** 배열)이 보입니다.
+
+위키(Prefabs Basics)는 이렇게 놓으면 그 설정 파일을 원본으로 하는 객체가 만들어지고, 파란 아이콘이 그 표시라고 설명합니다. 같은 문서는 아직 객체가 없는 칸이나 맞는 클래스의 객체 배열에만 놓을 수 있다고 적지만, 설정 파일을 놓아 채운 칸에 같은 클래스의 다른 설정 파일을 놓으면 칸이 그 파일의 객체로 바뀝니다. 맞는 클래스의 객체 배열 줄(예: **Entries**)에 놓으면 배열 끝에 그 파일을 원본으로 하는 항목이 생기고, 값 옆에 파란 파일 이름이 보입니다.
+
+같은 설정 파일을 앞 절의 `ResourceName` 칸(`conf class=`)으로 받을 수도 있습니다. 두 방식의 차이와 스크립트에서 쓰는 법은 Script 책 12장에서 다룹니다.
+
+<TryIt title="설정 파일을 객체 칸에 끌어다 놓기">
+
+1. Script 책 12장의 `TAG_LootTableConfig`로 설정 파일을 하나 만들어 둡니다(만드는 법은 9장).
+2. `[Attribute()] protected ref TAG_LootTableConfig m_LootTable;` 한 줄을 가진 컴포넌트를 엔티티에 붙이고, 컴포넌트 목록에서 그 줄을 고릅니다. **Loot Table** 칸에 **set class**가 보입니다.
+3. World Editor 아래쪽 **Resource Browser**의 검색 칸에 설정 파일 이름을 넣어 찾습니다. 보이지 않으면 트리 맨 위의 `GuideDemo`를 누릅니다.
+4. 설정 파일의 아이콘을 **Loot Table** 줄로 끌어다 놓습니다.
+5. **Loot Table**이 굵게 바뀌고 파란 아이콘이 생겼는지, 줄을 펼쳐 설정 파일의 값이 보이는지 확인합니다.
+
+</TryIt>
+
+<Figure src="ch07/object-empty.png" alt="비어 있는 객체 칸" id="ch07-object-empty">비어 있는 객체 칸</Figure>
+
+<Figure src="ch07/conf-dropped.png" alt="설정 파일을 끌어다 놓아 채운 객체 칸" id="ch07-conf-dropped">설정 파일을 끌어다 놓아 채운 객체 칸</Figure>
+
+## 배열과 + 버튼
+
+배열 멤버는 값 칸에 `(2)`처럼 항목 수가 표시되고, 오른쪽에 <strong>+</strong>와 <strong>-</strong> 버튼이 있습니다. 줄 왼쪽의 화살표로 펼치면 항목이 하나씩 보이고, 객체 항목은 다시 펼쳐 안의 속성을 고칩니다. 항목을 고르고 <strong>-</strong>를 누르면 고른 항목이 지워집니다.
+
+<strong>+</strong>는 항목을 더하는 버튼입니다. 넣을 수 있는 클래스가 하나뿐인 배열(예: 뒤에서 볼 **Action Contexts**)에서는 <strong>+</strong>를 누르면 목록 없이 그 클래스의 빈 항목이 배열 끝에 생깁니다. 넣을 수 있는 클래스가 여럿인 객체 배열에서는 <strong>+</strong>를 누르면 먼저 넣을 클래스의 목록이 뜹니다. 예를 들어 `ActionsManagerComponent`의 **Additional Actions** 줄에서 <strong>+</strong>를 누르면 검색 칸이 있는 클래스 목록이 뜨고, `TAG_Take`를 입력하면 Script 책 16장의 `TAG_TakeSupplyAction`만 남습니다(<FigRef id="ch07-array-plus" />). 목록에서 클래스를 고르면 그 클래스의 새 항목이 배열 끝에 생깁니다(9장).
+
+설정 파일을 객체 배열 줄로 끌어다 놓아도 항목이 더해집니다(앞 절). 위키(Asset Browser Mod Integration)는 프리팹도 배열 줄로 끌어다 놓아 항목을 더하는 방법을 소개합니다. {/* 확인 대기: 프리팹을 배열 줄로 끌어다 놓기 */}
+
+<Figure src="ch07/array-plus.png" alt="배열의 + 버튼으로 연 클래스 목록" id="ch07-array-plus">배열의 + 버튼으로 연 클래스 목록</Figure>
+
+## 바꾼 값과 되돌리기 화살표
+
+6장에서 본 것처럼 값을 따로 정한 속성은 이름이 굵게 보이고, 값 칸 오른쪽 끝에 되돌리기 화살표가 함께 붙습니다(<FigRef id="ch07-revert-arrow" />). 프리팹 인스턴스의 **Coords**, 값을 바꾼 컴포넌트 속성, `.conf`를 끌어다 놓은 **Loot Table**, `.xob`로 만든 엔티티의 `MeshObject` **Object**에 이 화살표가 있습니다.
+
+프리팹 인스턴스에서 바꾼 값은 되돌리기 화살표를 누르면 프리팹의 값으로 돌아가고, 이름의 굵은 표시도 풀립니다. 속성 이름을 오른쪽 클릭해 여는 메뉴의 **Restore to Prefab Value**를 골라도 값이 프리팹의 값으로 돌아갑니다. 같은 메뉴에는 **Apply Value to Prefab**도 있습니다(8장).
+
+방금 한 변경은 World Editor의 **Edit > Undo**(<Kbd>Ctrl</Kbd>+<Kbd>Z</Kbd>)로 되돌립니다. 바꾼 값이 돌아오고, 다른 변경이 없으면 창 제목의 `*`도 사라집니다.
+
+<Figure src="shared/we-instance-value-changed.png" alt="값을 바꾼 속성의 굵은 이름과 되돌리기 화살표" id="ch07-revert-arrow">값을 바꾼 속성의 굵은 이름과 되돌리기 화살표</Figure>
+
+## ActionsManagerComponent
+
+`ActionsManagerComponent`는 엔티티에 사용자 액션(Script 책 16장)을 붙이는 컴포넌트입니다. 컨텍스트 이름과 액션 클래스가 스크립트와 맞아야 하므로 칸을 정확히 채웁니다. 채우는 순서는 Script 책 16장의 실습과 위키(Action Context Setup)를 따르고, 여기서는 칸이 어디에 있는지만 봅니다. 그림은 액션 컨텍스트와 액션을 채운 상자 엔티티입니다(<FigRef id="ch07-actions-manager" />).
+
+**Action Contexts**는 액션 컨텍스트의 배열입니다. 항목 줄에는 컨텍스트 이름(예: `supply`)이 보이고, 펼치면 다음 칸이 있습니다.
+
+- **UI Info**: `UIInfo` 객체 칸입니다.
+- **Context Name**: 컨텍스트 이름입니다. 액션 쪽에서 이 이름으로 컨텍스트를 가리킵니다.
+- **Position**: 위치를 정하는 객체 칸으로, 그림의 상자에는 `PointInfo`가 들어 있습니다. 펼치면 **Pivot ID**, **Offset**, **Angles**가 있습니다. **Offset**의 Y 값을 올리면 뷰포트에 보이는 점(기즈모)이 위로 옮겨 갑니다(<FigRef id="ch07-pointinfo" />).
+- **Radius**, **Height**와 체크 상자 몇 개가 이어집니다.
+
+**Additional Actions**는 엔티티에 더할 액션의 배열입니다. <strong>+</strong>로 액션 클래스를 고르고(앞 절), 항목을 펼치면 다음 칸이 있습니다.
+
+- **Parent Context List**: 위의 **Context Name**을 넣는 배열입니다. <strong>+</strong>로 항목을 더하면 값 칸이 펼침 목록이 되고, ▾를 누르면 **Action Contexts**의 컨텍스트 이름(예: `supply`)이 나옵니다. 그 이름을 고릅니다.
+- **UI Info**: 펼치면 메뉴에 보일 이름을 넣는 **Name** 칸과 **Description** 칸이 있습니다.
+- **Action Title**, **Visibility Range**, **Duration**: 그림의 상자에서는 **Visibility Range**가 `2.000`, **Duration**이 `1.000`입니다.
+
+배열 아래에는 **Allow Cross Hierarchy**와 **Is Ghost Entity** 체크 상자가 더 있습니다. 창이 좁으면 긴 이름은 끝이 잘려 보입니다(창 경계를 끌어 넓힙니다, 6장).
+
+<Figure src="ch07/actions-manager.png" alt="ActionsManagerComponent의 칸" id="ch07-actions-manager">ActionsManagerComponent의 칸</Figure>
+
+<Figure src="ch07/pointinfo.png" alt="Offset을 바꿔 옮겨 간 컨텍스트 위치" id="ch07-pointinfo">Offset을 바꿔 옮겨 간 컨텍스트 위치</Figure>
+
+## RplComponent
+
+`RplComponent`는 엔티티를 리플리케이션에 등록하는 컴포넌트입니다(Script 책 14장). `RplComponent`를 붙이고 값을 바꾸지 않았을 때의 칸과 값은 다음과 같습니다(<FigRef id="ch07-rplcomponent" />).
+
+| 칸 | 값 |
+|---|---|
+| **Enabled** | 체크됨 |
+| **Self Insert** | 체크됨 |
+| **Rpl State Override** | `None` |
+| **Parent Node From Parent Entity** | 체크됨 |
+| **Spatial Relevancy** | 체크됨 |
+| **Streamable** | `Enabled` |
+| **Auto Hierarchy** | 체크 안 됨 |
+| **Runtime Only** | 체크 안 됨 |
+
+엔진 문서(Replicating entities, components and hierarchies)는 자식 엔티티까지 노드로 모을지를 Recursive 속성으로 정한다고 설명하지만, 칸에는 그 이름이 없습니다. {/* 확인 대기: Auto Hierarchy가 Recursive와 같은 역할인지 */} 각 칸이 리플리케이션에 주는 영향은 Script 책 14장에서 다룹니다.
+
+<Figure src="ch07/rplcomponent.png" alt="RplComponent의 칸" id="ch07-rplcomponent">RplComponent의 칸</Figure>
+
+## 정리
+
+<Summary>
+
+- **+ Add Component**는 검색 칸과 분류 폴더가 있는 목록을 엽니다. 직접 만든 컴포넌트의 분류는 `ComponentEditorProps`의 `category`이고, 스크립트가 `Scripts/Game`에 있고 컴파일되어 있어야 목록에 나옵니다.
+- 속성 이름은 멤버 이름에서 `m_`과 타입 접두사를 떼고 대문자 자리에서 나눈 것입니다(`m_iMyVariable`은 **My Variable**).
+- 칸은 멤버 타입에 따라 정해지고 `uiwidget`으로 바꿀 수 있습니다. `category`는 묶음, `desc`는 이름 위의 툴팁이 됩니다.
+- `ResourceName` 칸은 `params`에 맞는 파일만 보여 주는 창에서 파일을 고릅니다.
+- 객체 칸(**set class**)은 클래스를 골라 채우거나 `.conf` 파일을 끌어다 놓아 채웁니다. 끌어다 놓으면 파란 아이콘이 붙습니다.
+- 배열은 <strong>+</strong>로 항목을 더하고, 넣을 수 있는 클래스가 여럿인 객체 배열에서는 클래스 목록이 먼저 뜹니다.
+- 값을 따로 정한 속성은 이름이 굵고 값 오른쪽에 되돌리기 화살표가 붙습니다. 방금 한 변경은 World Editor의 **Edit > Undo**로 되돌립니다.
+- `RplComponent`의 칸에는 엔진 문서의 Recursive가 없습니다.
+
+</Summary>
+
+**더 읽을거리**
+
+- [Create a Component](https://community.bistudio.com/wiki/Arma_Reforger:Create_a_Component)
+- [Scripting: Config Object](https://community.bistudio.com/wiki/Arma_Reforger:Scripting:_Config_Object): 타입별 칸과 `params`의 쓰임
+- [Action Context Setup](https://community.bistudio.com/wiki/Arma_Reforger:Action_Context_Setup)

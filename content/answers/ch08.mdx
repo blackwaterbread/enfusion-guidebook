@@ -1,0 +1,240 @@
+<Answer id="8-1">
+
+```enforce
+class TAG_NumbersDemo
+{
+	static void Run()
+	{
+		array<int> numbers = {5, 3, 8, 1};
+
+		numbers.Insert(7);             // 5, 3, 8, 1, 7
+		numbers.InsertAt(2, 0);        // 2, 5, 3, 8, 1, 7 (값 2를 인덱스 0에)
+		int index = numbers.Find(8);   // 3
+		PrintFormat("8 is at %1", index);
+		numbers.RemoveItemOrdered(3);  // 2, 5, 8, 1, 7
+		numbers.Sort(true);            // 8, 7, 5, 2, 1
+	}
+}
+```
+
+출력은 `8 is at 3`입니다. 단계별 내용은 주석과 같습니다.
+
+- `InsertAt(2, 0)`은 **값이 먼저, 인덱스가 나중**이므로 "값 2를 0번 자리에" 넣습니다. 두 인수가 모두 정수라 순서를 바꿔 써도 컴파일 오류가 나지 않으니 특히 조심해야 합니다.
+- 값으로 지우면서 순서를 지키려면 `RemoveItemOrdered`를 씁니다. `RemoveItem`을 쓰면 빈자리를 마지막 원소 7이 채워 `2, 5, 7, 8, 1`이 됩니다.
+- `Sort(true)`는 내림차순입니다.
+
+</Answer>
+
+<Answer id="8-2">
+
+| 이름 | 결과 |
+|---|---|
+| `a` | `T, W, E, R` |
+| `b` | `Q, W, R` |
+| `removed1` | `true` |
+| `removed2` | `false` |
+
+- `a.Remove(0)`은 0번 자리를 마지막 원소 `T`로 채우므로 `T, W, E, R`이 됩니다.
+- `b.RemoveItemOrdered("E")`는 `E`를 찾아 지우고 순서를 유지하므로 `Q, W, R, T`가 되고 `true`를 반환합니다.
+- `"Z"`는 배열에 없으므로 아무것도 지우지 않고 `false`를 반환합니다.
+- 마지막 인덱스를 `Remove`하면 채울 원소가 따로 없으므로 마지막 원소 `T`만 빠져 `Q, W, R`이 됩니다.
+
+</Answer>
+
+<Answer id="8-3">
+
+```enforce title="Scripts/Game/TAG_WordCounter.c"
+class TAG_WordCounter
+{
+	static void CountWords(string sentence)
+	{
+		array<string> words = {};
+		sentence.Split(" ", words, true);
+
+		map<string, int> counts = new map<string, int>();
+		foreach (string word : words)
+		{
+			counts.Set(word, counts.Get(word) + 1);
+		}
+
+		// 맵의 순회 순서는 정해져 있지 않으므로 키를 모아 정렬합니다
+		array<string> keys = {};
+		foreach (string key, int count : counts)
+		{
+			keys.Insert(key);
+		}
+		keys.Sort();
+
+		foreach (string key : keys)
+		{
+			PrintFormat("%1: %2", key, counts.Get(key));
+		}
+	}
+}
+```
+
+`TAG_WordCounter.CountWords("move move hold fire move")`의 출력은 다음과 같습니다.
+
+```text
+fire: 1
+hold: 1
+move: 3
+```
+
+- `Get`은 없는 키에 `int`의 기본값 0을 돌려주므로 `counts.Get(word) + 1`만으로 처음 나온 단어는 1, 다시 나온 단어는 1씩 늘어납니다. 값을 바꿀 때는 `Set`을 씁니다.
+- 맵을 순회하는 순서에 기대지 않고, 키를 배열에 모아 `Sort()`로 정렬한 다음 그 순서대로 값을 읽었습니다.
+- `Split`의 세 번째 인수 `true`는 빈 조각을 버리라는 뜻이므로, 단어 사이에 공백이 두 칸 있어도 빈 단어가 생기지 않습니다(9장).
+
+</Answer>
+
+<Answer id="8-4">
+
+```enforce title="Scripts/Game/TAG_NameUtils.c"
+class TAG_NameUtils
+{
+	static array<string> UniqueInOrder(notnull array<string> names)
+	{
+		array<string> result = {};
+		set<string> seen = new set<string>();
+
+		foreach (string name : names)
+		{
+			if (seen.Insert(name)) // 처음 본 이름이면 true
+				result.Insert(name);
+		}
+
+		return result;
+	}
+}
+
+class TAG_NameUtilsDemo
+{
+	static void Run()
+	{
+		array<string> names = {"Alpha", "Bravo", "Alpha", "Charlie", "Bravo"};
+		array<string> unique = TAG_NameUtils.UniqueInOrder(names);
+		Print(string.Join(", ", unique, false));
+	}
+}
+```
+
+실행 결과는 다음과 같습니다.
+
+```text
+Alpha, Bravo, Charlie
+```
+
+`set`의 `Insert`는 새로 넣었을 때만 `true`를 반환하므로 "이미 봤는지 확인"과 "본 것으로 기록"을 한 번에 처리합니다. 결과의 순서는 원래 배열을 앞에서부터 돌며 만든 `result` 배열이 정하므로, 순서가 보장되지 않는 집합에 의존하지 않습니다. 함수 안에서 만든 배열은 반환값(강한 참조)으로 넘어가 호출한 쪽의 지역 변수가 이어서 붙잡습니다.
+
+</Answer>
+
+<Answer id="8-5">
+
+문제가 되는 선언은 세 가지입니다. 그중 멤버 두 개는 컴파일러가 막고, 원소 타입 두 곳은 컴파일은 되지만 실행 중에 문제가 됩니다.
+
+1. `protected map<string, array<string>> m_mTeams;`: 맵 멤버에 `ref`가 없어 약한 참조입니다. `new`로 만든 맵을 넣어도 붙잡는 곳이 없으므로, 컴파일러가 생성자의 대입을 `Variable 'm_mTeams' is not strong ref (missing 'ref'?)` 오류로 막습니다.
+2. 같은 선언의 값 타입 `array<string>`: 안쪽 배열에 `ref`가 없어 맵이 배열을 붙잡지 않습니다. 컴파일러가 잡지 못하는 문제입니다. `AddMember`가 끝나 지역 변수 `members`가 사라지면 배열도 해제되므로, 다음 호출에서 같은 팀을 찾으면 다시 `null`이 나와 이전 대원 이름이 사라집니다.
+3. `protected array<TAG_Gear> m_aGear;`: 배열 멤버에 `ref`가 없어 `m_aGear = {};`도 1번과 같은 컴파일 오류입니다. 원소 타입에도 `ref`가 없는데, 이쪽은 컴파일러가 잡지 못하고 `Insert(new TAG_Gear())`로 넣은 장비가 바로 해제됩니다.
+
+고친 코드는 다음과 같습니다.
+
+```enforce
+class TAG_Roster
+{
+	protected ref map<string, ref array<string>> m_mTeams = new map<string, ref array<string>>();
+	protected ref array<ref TAG_Gear> m_aGear = {};
+
+	//------------------------------------------------------------------------------------------------
+	void AddMember(string team, string name)
+	{
+		array<string> members = m_mTeams.Get(team);
+		if (!members)
+		{
+			members = {};
+			m_mTeams.Set(team, members);
+		}
+
+		members.Insert(name);
+	}
+
+	//------------------------------------------------------------------------------------------------
+	void AddGear()
+	{
+		m_aGear.Insert(new TAG_Gear());
+	}
+}
+```
+
+`AddMember`의 "없으면 만들어 넣고, 있으면 꺼내 쓰기" 형태는 공식 `SCR_AISettingsBaseComponent`가 `ref map<typename, ref array<ref SCR_AISettingBase>>`를 다루는 방식과 같습니다. 대원 이름은 `string`이라 원소에는 `ref`가 필요 없지만, 이름을 담는 배열 객체는 맵이 소유해야 하므로 `ref array<string>`으로 씁니다.
+
+</Answer>
+
+<Answer id="8-6">
+
+```enforce title="Scripts/Game/TAG_RingBuffer.c"
+class TAG_RingBuffer<Class T>
+{
+	protected ref array<T> m_aData = {};
+	protected int m_iStart; // 가장 오래된 값의 위치
+	protected int m_iCount;
+
+	//------------------------------------------------------------------------------------------------
+	void TAG_RingBuffer(int capacity)
+	{
+		m_aData.Resize(capacity);
+	}
+
+	//------------------------------------------------------------------------------------------------
+	void Push(T value)
+	{
+		int capacity = m_aData.Count();
+		if (capacity == 0)
+			return;
+
+		if (m_iCount < capacity)
+		{
+			m_aData[(m_iStart + m_iCount) % capacity] = value;
+			m_iCount++;
+			return;
+		}
+
+		// 가득 찼으면 가장 오래된 값을 덮어쓰고 시작 위치를 한 칸 옮깁니다
+		m_aData[m_iStart] = value;
+		m_iStart = (m_iStart + 1) % capacity;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	int Count()
+	{
+		return m_iCount;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	//! 가장 오래된 값부터 센 i번째 값입니다. 범위를 벗어나면 T의 기본값을 반환합니다.
+	T Get(int i)
+	{
+		if (i < 0 || i >= m_iCount)
+		{
+			T none;
+			return none;
+		}
+
+		return m_aData[(m_iStart + i) % m_aData.Count()];
+	}
+}
+```
+
+용량 3인 버퍼에 1, 2, 3, 4, 5를 넣으면 `Get(0)`, `Get(1)`, `Get(2)`는 각각 3, 4, 5입니다.
+
+| 넣은 값 | 내부 배열 | 시작 위치 | 개수 |
+|---|---|---|---|
+| 1, 2, 3 | 1, 2, 3 | 0 | 3 |
+| 4 | 4, 2, 3 | 1 | 3 |
+| 5 | 4, 5, 3 | 2 | 3 |
+
+- 생성자에서 `Resize`로 배열을 용량만큼 미리 만들어 두었습니다. 늘어난 자리는 0이나 `null`로 채워집니다.
+- 가득 찬 뒤에는 원소를 옮기지 않고 가장 오래된 자리를 덮어쓴 뒤 시작 위치만 옮기므로, `RemoveOrdered(0)`처럼 원소 수만큼 옮기는 비용이 들지 않습니다.
+- `T none;`처럼 초기화하지 않은 지역 변수는 `T`의 기본값을 가집니다. 공식 `SCR_MapHelperT`도 `U tmp;`처럼 템플릿 타입의 지역 변수를 이렇게 선언합니다.
+- 내부 배열이 `array<T>`이므로 `T`가 클래스라면 원소가 약한 참조가 됩니다. 객체를 소유해야 한다면 `ref array<ref T>`를 쓰는 클래스 전용 버전을 따로 만듭니다(본문의 `SCR_Stack` 참고).
+
+</Answer>

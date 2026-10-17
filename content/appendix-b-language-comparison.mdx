@@ -1,0 +1,204 @@
+---
+title: Python·JavaScript·C#과 비교
+description: 익숙한 언어의 문법이 Enforce Script에서 어떻게 바뀌는지 요소별로 대조합니다.
+---
+
+Enforce Script 열은 Arma Reforger 1.8.0.13의 엔진 문서와 공식 스크립트로 확인한 내용이고, 다른 언어 열은 Python 3, 최신 JavaScript, C#의 일반적인 문법을 적었습니다. 표는 짧게 줄였으므로 자세한 규칙은 마지막 열의 장을 보세요.
+
+## 사고방식이 가장 크게 다른 곳
+
+문법 차이는 금방 익숙해지지만, 아래 여섯 가지는 머릿속 그림을 바꿔야 합니다. 다른 언어의 습관대로 쓰면 버그로 이어지기 쉬운 차이이기도 합니다.
+
+### 진입점이 없다
+
+Python과 JavaScript는 파일을 위에서부터 실행하고, C#은 `Main` 메서드에서 시작합니다. Enforce Script에는 내가 정하는 진입점이 없습니다. 엔진이 엔티티와 컴포넌트의 이벤트(10장), 게임 모드의 콜백(11장)을 부르거나, `modded` 클래스로 바꿔 끼운 메서드(12장)가 불릴 때 내 코드가 실행됩니다. 파일 맨 위에 실행문을 쓰면 컴파일 오류가 납니다(1장).
+
+<Compare title="코드가 실행되는 자리">
+
+```python
+# 파일을 실행하면 맨 위부터 바로 실행됨
+print("Mod loaded")
+```
+
+```enforce
+// 클래스 안의 메서드만 실행됨. 누가 부를지는 엔진 쪽 구조가 정함
+class TAG_Startup
+{
+	static void OnLoaded()
+	{
+		Print("Mod loaded");
+	}
+}
+```
+
+</Compare>
+
+### import 없이 모듈 전체가 함께 컴파일된다
+
+같은 스크립트 모듈의 `.c` 파일은 모두 함께 컴파일되고, 다른 파일의 클래스를 이름만으로 씁니다(1장). 이름 공간이 하나뿐이므로 모든 클래스와 전역 함수에 태그(`TAG_`)를 붙여 다른 모드와 이름이 겹치지 않게 합니다.
+
+### 멤버 변수의 참조는 기본이 약하다
+
+Python, JavaScript, C#에서는 객체를 어딘가에 담아 두기만 하면 살아 있습니다. Enforce Script의 `Managed` 객체는 강한 참조가 하나도 남지 않으면 바로 지워집니다. 엔진 문서에 따르면 지역 변수, 함수 인수, 반환값은 기본적으로 강한 참조이지만(실행해 보면 함수 인수는 객체를 붙잡지 않습니다, 7장), 멤버 변수는 기본적으로 약한 참조이므로, 객체를 멤버에 담아 두려면 `ref`를 붙여야 합니다. 서로를 `ref`로 가리키는 순환 참조는 저절로 정리되지 않습니다(7장).
+
+<Compare title="객체를 멤버에 담아 두기">
+
+```python
+class Squad:
+    def __init__(self):
+        self.members = []    # Squad가 살아 있는 동안 리스트도 살아 있음
+```
+
+```enforce
+class TAG_Squad
+{
+	protected ref array<string> m_aMembers = {};    // ref가 있어야 강한 참조
+}
+```
+
+</Compare>
+
+### 예외 처리 구문이 없다
+
+`try`/`catch`가 없습니다. `null` 객체에 접근하는 것 같은 실행 중 오류는 가상 머신 예외(VM Exception)로 나타나고, 코드에서 잡을 수 없습니다. 그래서 공식 코드는 조기 `return`으로 `null`을 걸러 내고, 실패할 수 있는 함수는 `bool`을 돌려주고 결과는 `out` 매개변수로 넘깁니다(3장, 4장, 15장).
+
+### 시간을 기다리는 방법이 다르다
+
+`async`/`await`나 `setTimeout`이 없습니다. 일정 시간 뒤에 무언가를 하려면 콜 큐의 `GetGame().GetCallqueue().CallLater()`에 메서드를 맡깁니다. `thread` 키워드는 Workbench 플러그인용입니다(4장, 11장).
+
+### 남의 코드를 고치는 방법이 다르다
+
+Python의 몽키 패칭이나 JavaScript의 프로토타입 수정 대신, `modded class`로 기존 클래스를 같은 이름의 내 클래스로 바꿔 끼우고 `super`로 원래 동작을 부릅니다(12장).
+
+## 문장, 블록, 파일
+
+| 요소 | Python | JavaScript | C# | Enforce Script | 장 |
+|---|---|---|---|---|---|
+| 문장 끝 | 줄바꿈 | `;`(생략 가능) | `;` | `;` 필수 | 1장 |
+| 블록 | 들여쓰기 | `{ }` | `{ }` | `{ }`, 중괄호는 새 줄(Allman) | 1장 |
+| 한 줄 주석 | `#` | `//` | `//` | `//` | 1장 |
+| 문서 주석 | 독스트링 | `/** */` | `///` | `//!`, `/*! */`(Doxygen) | 1장 |
+| 대소문자 | 구분 | 구분 | 구분 | 구분 | 1장 |
+| 파일 맨 위 코드 | 실행됨 | 실행됨 | 최상위 문 지원(C# 9 이상) | 컴파일 오류 | 1장, 2장 |
+| 다른 파일 쓰기 | `import` | `import` | `using`과 프로젝트 참조 | 필요 없음(모듈 전체를 함께 컴파일) | 1장 |
+| 소스 파일 확장자 | `.py` | `.js` | `.cs` | `.c` | 1장 |
+
+## 변수와 타입
+
+| 요소 | Python | JavaScript | C# | Enforce Script | 장 |
+|---|---|---|---|---|---|
+| 선언 | `x = 1` | `let x = 1;` | `int x = 1;` | `int x = 1;` | 2장 |
+| 타입 생략 | 필요 없음(동적 타입) | 필요 없음(동적 타입) | `var` | `auto`(권장하지 않음) | 2장 |
+| 타입 변경 | 가능 | 가능 | 불가 | 불가 | 2장 |
+| 상수 | 관례(대문자) | `const` | `const`, `readonly` | `const` | 2장 |
+| 초기화 안 한 변수 | 사용하면 `NameError` | `undefined` | 지역 변수는 사용 전 대입 필수 | 타입별 기본값(`0`, `false`, `""`, `null`) | 2장 |
+| 정수 | `int`(크기 제한 없음) | `number`, `BigInt` | `int`, `long` 등 | `int`(32비트)만 있음 | 2장 |
+| 실수 | `float`(64비트) | `number`(64비트) | `float`(32), `double`(64) | `float`(32비트)만 있음 | 2장 |
+| 문자 | 없음(길이 1 문자열) | 없음 | `char` | 없음(한 글자짜리 `string`) | 2장 |
+| 문자열 | `str`, 변경 불가 | `string`, 변경 불가 | `string`, 참조 타입 | `string`, 값 타입이며 `null`이 될 수 없음 | 2장, 9장 |
+| 3차원 벡터 | 라이브러리 | 라이브러리 | `System.Numerics.Vector3` | `vector` 기본 타입 | 2장, 9장 |
+| 없음을 뜻하는 값 | `None` | `null`, `undefined` | `null` | `null`(객체에만) | 2장 |
+| 열거형 | `enum.Enum` | 없음 | `enum` | `enum`(`int` 기반) | 2장 |
+| 열거형 이름 얻기 | `value.name` | 없음 | `value.ToString()` | `typename.EnumToString(E, value)` | 2장 |
+| 타입 별칭 | 타입 별칭 표기 | 없음 | `using X = ...;` | `typedef` | 8장 |
+| 전역 변수 | 모듈 수준 변수 | 모듈 또는 전역 | 없음(정적 필드) | 가능하지만 `g_` 접두사를 붙이고 지양 | 2장 |
+
+## 연산자
+
+| 요소 | Python | JavaScript | C# | Enforce Script | 장 |
+|---|---|---|---|---|---|
+| 정수 나눗셈 | `7 // 2` | `Math.trunc(7 / 2)` | `7 / 2` | `7 / 2`(`int`나 `Print`로 받으면 3, `float`로 받으면 3.5) | 2장 |
+| 실수 나눗셈 | `7 / 2` | `7 / 2` | `7 / 2.0` | `7 / 2.0`, `(float)a / b` | 2장 |
+| 나머지 | `%` | `%` | `%` | `%`(정수만), 실수는 `Math.Mod` | 2장 |
+| 거듭제곱 | `**` | `**` | `Math.Pow` | `Math.Pow` | 9장 |
+| 증감 | 없음(`+= 1`) | `++` `--` | `++` `--` | `++` `--` | 2장 |
+| 논리 | `and` `or` `not` | `&&` `\|\|` `!` | `&&` `\|\|` `!` | `&&` `\|\|` `!` | 2장 |
+| 조건 연산자 | `a if c else b` | `c ? a : b` | `c ? a : b` | 없음, `if`/`else`로 씀 | 2장 |
+| 값 비교 | `==` | `===` | `==` | `==`(기본 타입, 문자열, 벡터는 값) | 2장 |
+| 같은 객체인지 | `is` | `===` | `ReferenceEquals` | `==`(객체와 배열은 참조) | 2장 |
+| 문자열 연결 | `+` | `+` | `+` | `+`(왼쪽이 문자열이어야 함) | 2장 |
+| 문자열 서식 | `f"{x}"` | 템플릿 리터럴 `${x}` | `$"{x}"` | `string.Format("%1", x)` | 9장 |
+| 우선순위 | 언어별 표 | 언어별 표 | 언어별 표 | C와 같음 | 2장, 부록 A |
+
+## 제어 흐름
+
+| 요소 | Python | JavaScript | C# | Enforce Script | 장 |
+|---|---|---|---|---|---|
+| 조건 잇기 | `elif` | `else if` | `else if` | `else if` | 3장 |
+| 참거짓 판정 | 빈 컬렉션, `0`, `""`, `None`이 거짓 | `false`, `0`, `""`, `null`, `undefined`, `NaN` 등이 거짓 | `bool`만 허용 | 객체는 `null`이 아니면 참(빈 배열도 참), 숫자는 0이 아니면, 문자열은 비어 있지 않으면 참 | 3장 |
+| 다중 분기 | `match`(3.10 이상) | `switch` | `switch` | `switch`(정수, 열거형, 문자열) | 3장 |
+| 다음 case로 넘어감 | 없음 | `break`가 없으면 넘어감 | 비어 있지 않은 case는 넘어갈 수 없음 | 빈 라벨은 겹쳐 쓸 수 있음. 코드가 있는 case에서 `break`를 빼면 첫 번째 case는 컴파일 오류, 그 밖의 case는 다음 case로 넘어감 | 3장 |
+| 횟수 반복 | `for i in range(n)` | `for (let i = 0; i < n; i++)` | `for (int i = 0; i < n; i++)` | `for (int i = 0; i < n; i++)` | 3장 |
+| 원소 순회 | `for x in xs` | `for (const x of xs)` | `foreach (var x in xs)` | `foreach (int x : xs)` | 3장 |
+| 인덱스와 함께 | `enumerate(xs)` | `xs.entries()` | 직접 셈 | `foreach (int i, int x : xs)` | 3장 |
+| 맵 순회 | `d.items()` | `for (const [k, v] of m)` | `foreach (var kv in d)` | `foreach (string k, int v : m)` | 3장 |
+| 맵 순회 순서 | 넣은 순서 | 넣은 순서 | 정해지지 않음 | 보장되지 않음 | 3장, 8장 |
+| 뒤에서 검사하는 반복 | 없음 | `do`/`while` | `do`/`while` | 문서와 공식 코드에 없음, `while (true)`와 `break` | 3장 |
+| 바깥 반복문 탈출 | 없음 | 레이블 `break` | `goto` | 없음, 플래그나 `return` | 3장 |
+
+## 함수
+
+| 요소 | Python | JavaScript | C# | Enforce Script | 장 |
+|---|---|---|---|---|---|
+| 선언 | `def f(a):` | `function f(a) {}` | `int F(int a) {}` | `int F(int a) {}` | 4장 |
+| 반환값 없음 | `None` 반환 | `undefined` 반환 | `void` | `void` | 4장 |
+| 기본값 | 있음 | 있음 | 있음 | 있음(목록 뒤쪽) | 4장 |
+| 이름 있는 인수 | `f(a=1)` | 없음(객체로 흉내) | `F(a: 1)` | `F(a: 1)` | 4장 |
+| 가변 인수 | `*args` | `...args` | `params` | 없음, 배열을 넘김 | 4장 |
+| 여러 값 돌려주기 | 튜플 | 배열, 객체 | 튜플, `out` | `out` 매개변수 | 4장 |
+| 참조로 넘기기 | 없음 | 없음 | `ref`, `out`(호출할 때도 표시) | `out`, `inout`(호출할 때는 표시 안 함) | 4장 |
+| null 금지 매개변수 | 없음 | 없음 | nullable 참조 타입 분석 | `notnull` | 4장 |
+| 오버로드 | 없음 | 없음 | 있음 | 메서드에 있음 | 4장 |
+| 람다와 클로저 | `lambda` | 화살표 함수 | 람다 | 없음, 메서드 이름을 `func`로 넘김 | 4장, 11장 |
+| 나중에 실행 | `asyncio` | `setTimeout` | `Task.Delay` | `GetGame().GetCallqueue().CallLater()` | 4장, 11장 |
+| 예외 | `try`/`except` | `try`/`catch` | `try`/`catch` | 없음 | 15장 |
+
+## 클래스와 객체
+
+| 요소 | Python | JavaScript | C# | Enforce Script | 장 |
+|---|---|---|---|---|---|
+| 선언 | `class A:` | `class A {}` | `class A {}` | `class TAG_A {}` | 5장 |
+| 생성자 | `__init__` | `constructor` | `A()` | `void TAG_A()` | 5장 |
+| 소멸자 | `__del__` | 없음 | 종료자 `~A()` | `void ~TAG_A()` | 5장 |
+| 인스턴스 만들기 | `A()` | `new A()` | `new A()` | `new TAG_A()` | 5장 |
+| 자기 자신 | `self` | `this` | `this` | `this` | 5장 |
+| 멤버 기본 공개 범위 | 공개 | 공개 | `private` | 공개 | 5장 |
+| 비공개 표시 | 관례(`_x`) | `#x` | `private` | `private`, 모딩을 생각하면 `protected` | 5장, 12장 |
+| 정적 멤버 | `@staticmethod` | `static` | `static` | `static` | 5장 |
+| 상속 | `class B(A):` | `extends` | `: A` | `: TAG_A` 또는 `extends TAG_A` | 6장 |
+| 부모 호출 | `super()` | `super` | `base` | `super` | 6장 |
+| 오버라이드 | 다시 정의 | 다시 정의 | `virtual`과 `override` | `override` 필수 | 6장 |
+| 인터페이스, 추상 클래스 | `abc` 모듈 | 없음 | `interface`, `abstract` | 없음 | 6장 |
+| 형변환 | 필요 없음 | 필요 없음 | `(B)a`, `a as B` | `TAG_B.Cast(a)`, 실패하면 `null` | 6장 |
+| 타입 검사 | `isinstance` | `instanceof` | `is` | `IsInherited`, `Type()` | 6장 |
+| 메모리 관리 | 참조 카운팅과 순환 수집(CPython) | 가비지 컬렉션 | 가비지 컬렉션 | 참조 카운팅, 멤버는 `ref`로 강한 참조, 순환 참조는 직접 끊음 | 7장 |
+| 남의 클래스 고치기 | 몽키 패칭 | 프로토타입 수정 | 확장 메서드 | `modded class` | 12장 |
+
+## 컬렉션
+
+| 요소 | Python | JavaScript | C# | Enforce Script | 장 |
+|---|---|---|---|---|---|
+| 동적 배열 | `list` | `Array` | `List<T>` | `array<T>` | 8장 |
+| 고정 크기 배열 | 없음 | 없음 | `T[]` | `T name[N]`(정적 배열, 값으로 전달) | 8장 |
+| 사전 | `dict` | `Map` | `Dictionary<K, V>` | `map<K, V>` | 8장 |
+| 집합 | `set` | `Set` | `HashSet<T>` | `set<T>` | 8장 |
+| 바로 초기화 | `[1, 2]` | `[1, 2]` | `new List<int> { 1, 2 }` | `{ 1, 2 }`(배열만 가능) | 8장 |
+| 원소 수 | `len(xs)` | `xs.length` | `xs.Count` | `xs.Count()` | 8장 |
+| 제네릭 | 타입 힌트 | 없음 | `class Box<T>` | 템플릿 `class TAG_Box<Class T>` | 8장 |
+| 객체 원소의 수명 | 담으면 유지 | 담으면 유지 | 담으면 유지 | `array<ref T>`처럼 `ref`가 있어야 유지 | 7장, 8장 |
+
+## 출력과 디버깅
+
+| 요소 | Python | JavaScript | C# | Enforce Script | 장 |
+|---|---|---|---|---|---|
+| 출력 | `print()` | `console.log()` | `Console.WriteLine()` | `Print()`, `PrintFormat()` | 1장 |
+| 경고 수준 출력 | `logging.warning()` | `console.warn()` | 로깅 라이브러리 | `Print(msg, LogLevel.WARNING)` | 1장, 15장 |
+| 코드에서 중단점 | `breakpoint()` | `debugger` | `Debugger.Break()` | `debug;` | 15장 |
+| 조건부 컴파일 | 없음 | 없음 | `#if` | `#ifdef`, `#ifndef` | 부록 A |
+| 현재 파일 이름 | `__file__` | `import.meta.url` | `[CallerFilePath]` | `__FILE__`(줄 번호는 `__LINE__`) | 부록 A |
+
+## 비교표를 쓸 때 주의할 점
+
+- 비슷해 보이는 문법도 의미가 다를 수 있습니다. 예를 들어 `if (items)`는 Python에서는 비어 있지 않은지 묻지만, Enforce Script에서는 배열 객체가 있는지(`null`이 아닌지)만 묻습니다.
+- C#과 가장 비슷하지만 C#의 많은 기능(삼항 연산자, 람다, 예외, 인터페이스, `do`/`while`)이 없습니다. "C#이라면 이렇게 쓸 텐데"라는 생각이 들면 이 부록과 공식 스크립트에서 같은 일을 하는 코드를 먼저 찾아보세요.
+- Python과 JavaScript의 맵은 넣은 순서를 지키지만, Enforce Script의 `map`과 `set`은 순서를 보장하지 않습니다. 순서가 중요하면 배열을 함께 씁니다(8장).

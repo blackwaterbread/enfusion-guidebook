@@ -1,0 +1,305 @@
+<Answer id="6-1">
+
+```enforce title="Scripts/Game/TAG_Animal.c"
+class TAG_Animal
+{
+	string GetSound()
+	{
+		return "...";
+	}
+}
+
+class TAG_Dog : TAG_Animal
+{
+	override string GetSound()
+	{
+		return "Woof";
+	}
+}
+
+class TAG_Cat : TAG_Animal
+{
+	override string GetSound()
+	{
+		return "Meow";
+	}
+}
+
+class TAG_AnimalDemo
+{
+	static void Run()
+	{
+		array<ref TAG_Animal> animals = {};
+		animals.Insert(new TAG_Dog());
+		animals.Insert(new TAG_Cat());
+
+		foreach (TAG_Animal animal : animals)
+		{
+			PrintFormat("%1 says %2", animal.ClassName(), animal.GetSound());
+		}
+	}
+}
+```
+
+실행 결과는 다음과 같습니다.
+
+```text
+TAG_Dog says Woof
+TAG_Cat says Meow
+```
+
+반복문의 변수 타입은 `TAG_Animal`이지만 `GetSound()`는 각 객체의 실제 타입에 맞는 오버라이드가 실행됩니다. `ClassName()`은 `Class`에 정의된 메서드로, 객체의 실제 클래스 이름을 돌려줍니다.
+
+</Answer>
+
+<Answer id="6-2">
+
+1. `override void Clean() {}`: 부모의 `Clean()`은 `private`이라 자식이 볼 수 없으므로 오버라이드할 수 없습니다. 부모에서 `protected`로 바꾸거나, 자식에서 `override`를 빼고 다른 이름의 메서드로 만듭니다.
+2. `int Use(int power, bool silent)`: 부모와 시그니처가 같은 메서드를 다시 정의하려면 `override`를 붙여야 합니다.
+3. `tool.Swing();`: 변수 `tool`의 타입은 `TAG_Tool`이고, `TAG_Tool`에는 `Swing()`이 없으므로 컴파일 오류입니다. 실제 객체가 망치여도 변수 타입을 기준으로 검사합니다.
+4. `TAG_Hammer hammer = tool;`: 부모 타입 값을 자식 타입 변수에 바로 대입하는 다운캐스트입니다. `TAG_Hammer.Cast(tool)`로 형변환하고 결과를 확인해야 합니다.
+
+고친 코드는 다음과 같습니다.
+
+```enforce
+class TAG_Tool
+{
+	protected void Clean() {}
+
+	int Use(int power, bool silent)
+	{
+		return power;
+	}
+}
+
+class TAG_Hammer : TAG_Tool
+{
+	override protected void Clean() {}
+
+	override int Use(int power, bool silent)
+	{
+		return power * 2;
+	}
+
+	void Swing() {}
+}
+
+class TAG_ToolDemo
+{
+	static void Run()
+	{
+		TAG_Tool tool = new TAG_Hammer();
+		TAG_Hammer hammer = TAG_Hammer.Cast(tool);
+		if (hammer)
+			hammer.Swing();
+	}
+}
+```
+
+오버라이드하는 `Use`는 매개변수 이름까지 부모와 같게(`power`, `silent`) 썼습니다.
+
+</Answer>
+
+<Answer id="6-3">
+
+출력은 다음 순서입니다.
+
+```text
+vehicle: Truck1
+truck: Truck1 carries 500
+```
+
+`new TAG_Truck("Truck1", 500)`을 실행하면 먼저 부모 생성자 `TAG_Vehicle`이 자동으로 실행됩니다. 이때 자식 생성자가 받은 인수 가운데 앞쪽의 `name`이 부모 생성자로 전달되어 `m_sName`이 설정되고 첫 줄이 출력됩니다. 그다음 자식 생성자의 본문이 실행되므로, 두 번째 줄에서 부모가 설정한 `m_sName`을 쓸 수 있습니다.
+
+`TAG_Truck`에 생성자를 선언하지 않았다면 부모 생성자의 매개변수를 그대로 쓰므로 `new TAG_Truck("Truck1")`처럼 이름만 넘겨 만듭니다. 이때 `m_iCargo`는 기본값 0이므로, 화물량을 정하려면 세터 같은 메서드를 따로 둬야 합니다.
+
+</Answer>
+
+<Answer id="6-4">
+
+```enforce
+class TAG_AutoShotgun : TAG_Shotgun
+{
+}
+
+class TAG_WeaponStats
+{
+	//------------------------------------------------------------------------------------------------
+	static int CountShotguns(notnull array<ref TAG_Weapon> weapons)
+	{
+		int count;
+		foreach (TAG_Weapon weapon : weapons)
+		{
+			if (weapon && weapon.IsInherited(TAG_Shotgun))
+				count++;
+		}
+
+		return count;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	static int CountExactShotguns(notnull array<ref TAG_Weapon> weapons)
+	{
+		int count;
+		foreach (TAG_Weapon weapon : weapons)
+		{
+			if (weapon && weapon.Type() == TAG_Shotgun)
+				count++;
+		}
+
+		return count;
+	}
+}
+
+class TAG_WeaponStatsDemo
+{
+	static void Run()
+	{
+		array<ref TAG_Weapon> weapons = {};
+		weapons.Insert(new TAG_Weapon("Pistol", 7));
+		weapons.Insert(new TAG_Shotgun("Shotgun", 2, 8));
+		weapons.Insert(new TAG_AutoShotgun("AutoShotgun", 10, 8));
+
+		PrintFormat("shotguns: %1", TAG_WeaponStats.CountShotguns(weapons));
+		PrintFormat("exact: %1", TAG_WeaponStats.CountExactShotguns(weapons));
+	}
+}
+```
+
+실행 결과는 다음과 같습니다.
+
+```text
+shotguns: 2
+exact: 1
+```
+
+`IsInherited(TAG_Shotgun)`은 자식 타입인 `TAG_AutoShotgun`도 참으로 판정하므로 2를 셉니다. `Type() == TAG_Shotgun`은 정확히 같은 타입만 참이므로 1을 셉니다. `TAG_AutoShotgun`은 생성자를 선언하지 않았으므로 부모인 `TAG_Shotgun`의 생성자 매개변수(이름, 탄 수, 산탄 수)로 만듭니다. 배열 원소가 null일 수도 있다고 보고 `weapon &&`로 먼저 확인했습니다.
+
+</Answer>
+
+<Answer id="6-5">
+
+```enforce title="Scripts/Game/TAG_ObjectiveBase.c"
+//! 임무 목표의 공통 부모입니다. 직접 만들지 않고 상속해서 씁니다.
+class TAG_ObjectiveBase
+{
+	//------------------------------------------------------------------------------------------------
+	//! 자식 클래스가 반드시 오버라이드합니다.
+	bool IsCompleted();
+
+	//------------------------------------------------------------------------------------------------
+	string GetDescription()
+	{
+		return "Objective";
+	}
+
+	//------------------------------------------------------------------------------------------------
+	//! 클래스 이름으로 목표를 만듭니다. 목표 계열이 아니면 null을 반환합니다.
+	static TAG_ObjectiveBase Create(string className)
+	{
+		typename objectiveType = className.ToType();
+		if (!objectiveType || objectiveType == TAG_ObjectiveBase)
+			return null;
+
+		if (!objectiveType.IsInherited(TAG_ObjectiveBase))
+			return null;
+
+		return TAG_ObjectiveBase.Cast(objectiveType.Spawn());
+	}
+}
+```
+
+```enforce title="Scripts/Game/TAG_KillObjective.c"
+class TAG_KillObjective : TAG_ObjectiveBase
+{
+	protected int m_iTargetKills = 3;
+	protected int m_iKills;
+
+	//------------------------------------------------------------------------------------------------
+	void TAG_KillObjective()
+	{
+	}
+
+	//------------------------------------------------------------------------------------------------
+	void SetTargetKills(int count)
+	{
+		m_iTargetKills = count;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	void AddKill()
+	{
+		m_iKills++;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	override bool IsCompleted()
+	{
+		return m_iKills >= m_iTargetKills;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	override string GetDescription()
+	{
+		return string.Format("Kill enemies: %1/%2", m_iKills, m_iTargetKills);
+	}
+}
+
+class TAG_ReachObjective : TAG_ObjectiveBase
+{
+	protected bool m_bReached;
+
+	//------------------------------------------------------------------------------------------------
+	void TAG_ReachObjective()
+	{
+	}
+
+	//------------------------------------------------------------------------------------------------
+	void SetReached()
+	{
+		m_bReached = true;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	override bool IsCompleted()
+	{
+		return m_bReached;
+	}
+}
+```
+
+사용 예와 출력은 다음과 같습니다.
+
+```enforce
+class TAG_ObjectiveDemo
+{
+	static void Run()
+	{
+		TAG_KillObjective kill = TAG_KillObjective.Cast(TAG_ObjectiveBase.Create("TAG_KillObjective"));
+		if (kill)
+		{
+			kill.AddKill();
+			Print(kill.GetDescription());
+			if (!kill.IsCompleted())
+				Print("not completed");
+		}
+
+		TAG_ObjectiveBase wrong = TAG_ObjectiveBase.Create("TAG_Weapon");
+		if (!wrong)
+			Print("invalid objective");
+	}
+}
+```
+
+```text
+Kill enemies: 1/3
+not completed
+invalid objective
+```
+
+- 부모 생성자는 `protected`로 두지 않았습니다. 부모 생성자가 `protected`이면 `Create`가 쓰는 `typename.Spawn()`이 자식 타입에서도 null을 돌려주기 때문입니다. 대신 `Create`가 부모 자신을 거절하는 것으로 부모를 직접 만들지 않는다는 규칙을 지킵니다.
+- `IsCompleted()`는 본문 없이 선언해 자식이 구현할 자리로 남겼고, `GetDescription()`은 기본 본문을 두어 필요한 자식만 오버라이드합니다.
+- `Create`는 `ToType()`으로 이름에서 타입을 찾고, 빈 타입이거나 부모 자신이거나 목표 계열이 아니면 null을 반환합니다. 부모 클래스는 직접 만들지 않기로 한 클래스이므로 이름이 같아도 거절합니다.
+- `Spawn()`은 생성자에 인수를 넘길 수 없으므로, 처치 목표 수는 기본값을 두고 `SetTargetKills`로 바꾸게 했습니다.
+
+</Answer>

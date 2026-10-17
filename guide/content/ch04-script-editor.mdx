@@ -1,0 +1,246 @@
+---
+title: Script Editor
+description: 스크립트를 쓰고 컴파일하는 Script Editor의 창 배치와 메뉴, 스크립트 파일 만들기, Build 메뉴와 Errors 창, 선언 열기를 화면과 함께 살펴봅니다.
+---
+
+<Objectives>
+
+- Script Editor를 열고 기본 창들의 이름과 자리를 말할 수 있다.
+- **Window** 메뉴에서 창 목록을 찾을 수 있다.
+- Resource Browser에서 스크립트 파일을 만들어 Script Editor로 열 수 있다.
+- **Build** 메뉴의 세 항목과 단축키를 구별해 쓸 수 있다.
+- Errors 창의 묶음을 읽고, <Kbd>Ctrl</Kbd>+클릭으로 공식 스크립트의 선언을 열 수 있다.
+
+</Objectives>
+
+Script 책의 예제는 모두 Script Editor에서 쓰고 컴파일합니다. 이 장에서는 Script Editor를 열어 창 배치와 메뉴를 익히고, 스크립트 파일을 만들어 컴파일한 뒤 **Errors** 창에서 문제를 찾는 흐름을 따라갑니다.
+
+코드를 입력해 실행하는 **Remote Console**, 출력이 쌓이는 **Output**, 디버거 화면은 5장에서 다룹니다. 스크립트 문법과 API는 이 책에서 설명하지 않고 Script 책의 장 번호로 가리킵니다.
+
+## Script Editor 열기
+
+Script Editor는 메인 창과 따로 뜨는 창입니다. 여는 방법은 셋입니다.
+
+- 메인 창의 **Editors** 메뉴에서 **Script Editor**를 고릅니다(<FigRef id="ch04-editors-menu" />).
+- 메인 창 시작 화면의 **QUICK LAUNCH**에서 **Script Editor** 버튼을 누릅니다. 시작 화면은 2장에서 봅니다.
+- Resource Browser에서 확장자가 `.c`인 스크립트 파일을 두 번 클릭합니다. 그 파일이 Script Editor의 탭으로 열립니다. Script Editor가 닫혀 있으면 Script Editor 창이 새로 열립니다.
+
+<Figure src="shared/main-editors-menu.png" alt="메인 창의 Editors 메뉴" id="ch04-editors-menu">메인 창의 Editors 메뉴</Figure>
+
+Script Editor를 닫을 때는 Script Editor의 **File** 메뉴에서 **Exit**를 고릅니다. 닫은 뒤에는 위 방법으로 다시 엽니다.
+
+Script Editor 창의 제목 막대에는 `Script Editor - Debugging: ArmaReforgerWorkbenchSteamDiag.exe on port: 1000 - Configuration: WORKBENCH`처럼 두 가지 정보가 붙습니다. `Debugging:` 뒤는 디버거가 붙은 실행 파일과 포트이고(5장), `Configuration:` 뒤는 **Build** 메뉴에서 고른 구성입니다(이 장 뒤쪽).
+
+## 창 배치
+
+이 책의 그림에 쓰는 Script Editor 배치는 <FigRef id="ch04-overview" />에 있습니다. 창마다 제목 줄이 있고, 같은 자리에 겹친 창은 아래쪽 탭을 눌러 바꿔 봅니다.
+
+<Figure src="ch04/overview.png" size="full" alt="Script Editor 창" id="ch04-overview" marks="1@13.9,8.1;2@13.9,14.8;3@55.6,42;4@93.1,8.1;5@13.9,61.2;6@52.8,61.2;7@83.3,61.2">Script Editor 창</Figure>
+
+| 번호 | 자리 | 창(탭 이름) | 하는 일 |
+|---|---|---|---|
+| 1 | 왼쪽 위 | **Debug** | 디버거 버튼 다섯 개. 5장 |
+| 2 | 왼쪽 | **Outline**, **Projects** | **Outline**은 지금 연 파일의 클래스(C), 변수(V), 메서드(M) 목록 |
+| 3 | 가운데 | 편집 영역 | 파일마다 탭 하나. 읽기 전용 파일의 탭에는 자물쇠 |
+| 4 | 오른쪽 | **Find Entity**, **Find Symbol**, **Find File**, **Bookmarks** | 찾기와 책갈피 |
+| 5 | 아래 왼쪽 | **Watch**, **Errors**, **Find Results** | **Errors**는 컴파일 문제 목록 |
+| 6 | 아래 가운데 | **Callstack**, **Breakpoints**, **Output** | **Output**은 출력과 컴파일 결과 |
+| 7 | 아래 오른쪽 | **Remote Console**, **Text Search** | **Remote Console**은 코드를 입력해 실행 |
+
+Watch, Callstack, Breakpoints는 디버거 창이라 5장에서 봅니다. **Projects** 창은 스크립트 모듈별 파일 목록입니다. `Engine('scripts/Core')`처럼 모듈 이름 뒤 괄호에 스크립트 폴더가 붙은 줄 아래로 폴더와 파일이 나오고, 공식 스크립트와 내 프로젝트의 파일이 함께 보입니다. 파일을 두 번 클릭하면 편집 영역에 탭으로 열립니다.
+
+창 아래 상태 줄의 왼쪽에는 커서 위치가 `Class:`, `Method:`, `Line:`, `Column:` 순서로 나오고, 오른쪽에는 버전 `Version 1.8.0.13 (production)`이 나옵니다. `Class:`와 `Method:`는 커서가 클래스나 메서드 안에 있을 때만 나옵니다.
+
+<Note title="한글이 든 파일의 줄 번호">
+
+한글 주석이 든 파일에서는 편집 영역 왼쪽의 줄 번호가 아래로 갈수록 코드 줄보다 조금씩 내려가 그려져, 번호와 줄이 어긋나 보일 수 있습니다. <FigRef id="ch04-overview" />에서도 커서가 있는 7행의 코드가 번호 6과 7 사이에 있습니다. 그려진 번호에 기대지 말고 상태 줄의 `Line:`으로 지금 줄을 확인하고, 정해진 줄로 갈 때는 **Edit > Jump To Line**(<Kbd>Ctrl</Kbd>+<Kbd>G</Kbd>)을 씁니다.
+
+</Note>
+
+위키(Script Editor)는 편집 영역을 Text Editor, **Remote Console**을 Console이라고 부릅니다(부록 C).
+
+### Window 메뉴
+
+창 목록은 **Window** 메뉴에 있습니다(<FigRef id="ch04-window-menu" />). 메뉴 아래쪽에 창 열다섯 개 **Output**, **Errors**, **Find Symbol**, **Projects**, **Watch**, **Find Results**, **Callstack**, **Breakpoints**, **Text Search**, **Find File**, **Find Entity**, **Outline**, **Bookmarks**, **Remote Console**, **Debug**가 나열됩니다. 나열 순서는 그림과 다를 수 있습니다.
+
+모든 창이 열려 있으면 열다섯 항목 모두에 체크 표시가 있습니다. 창 제목 줄의 닫기 버튼으로 창을 닫으면 그 항목의 체크가 빠지고, 이 메뉴에서 그 항목을 고르면 창이 원래 자리에 다시 열립니다.
+
+<Figure src="shared/se-window-menu.png" alt="Script Editor의 Window 메뉴" id="ch04-window-menu">Script Editor의 Window 메뉴</Figure>
+
+메뉴 위쪽에는 창 배치를 다루는 **Layout**(하위 메뉴), **Manage Layouts**, **Reset Default Layouts**가 있습니다. 그 아래에 **Move Tab to Other View**, **Switch Active View**가 있고, 다시 그 아래에 탭을 다루는 **Next Tab**, **Previous Tab**, **Cycle Tabs**, **Close Tab**, **Reopen Closed Tab**, **Navigate To File**이 있습니다.
+
+**Layout** 하위 메뉴에는 지금 배치인 `edit`(체크 표시)와 **Create New Layout**이 있고, **Manage Layouts** 창에는 배치 목록과 **Rename**, **Delete**, **Import...**, **Export...** 버튼이 있습니다. **Reset Default Layouts**를 고르면 기본 배치를 처음 상태로 되돌릴지 묻는 창이 뜨고, **Yes**를 누르면 창의 자리와 크기가 <FigRef id="ch04-overview" />의 배치로 돌아갑니다. 창은 제목 줄을 끌어 다른 자리의 창 묶음에 놓으면 그 묶음의 탭으로 붙습니다.
+
+### 메뉴 막대
+
+메뉴 막대에는 **File**, **Edit**, **Build**, **Debug**, **Window**, **Bookmarks**, **Plugins**, **Help**가 있습니다.
+
+- **File**: **Save All**, <strong>Options...</strong>, 최근에 연 파일 목록, **Exit**. 바꾼 파일이 없을 때는 **Save All**이 흐리게 표시됩니다. <strong>Options...</strong>는 메인 창의 <strong>File > Options...</strong>와 같은 **Options** 창을 **Script Editor** 범주가 골라진 채로 엽니다(2장).
+- **Edit**: **Undo**, **Redo**와 찾기 항목(**Find**, **Find File**, **Find Symbol**, **Find Entity**, **Find Next**, **Find Prev**, **Find in Files**, **Find in Outline**), **Jump To Line**, **Find Stack Trace**, **Navigate Back**, **Navigate Forward**, **Copy Link**, **Duplicate Line**, **Comment Selection Toggle**.
+- **Bookmarks**: **Toggle Bookmark**(<Kbd>Ctrl</Kbd>+<Kbd>F2</Kbd>), **Next Bookmark**(<Kbd>Shift</Kbd>+<Kbd>F2</Kbd>), **Previous Bookmark**(메뉴 표시: <Kbd>Alt</Kbd>+<Kbd>F2</Kbd>). **Toggle Bookmark**는 커서가 있는 줄에 책갈피를 달거나 떼고, 책갈피를 단 줄은 **Bookmarks** 창에 `파일:줄` 꼴로 모입니다.
+- **Help**: **View Help**.
+- **Build**, **Plugins**: 이 장에서 봅니다. **Debug**는 5장에서 봅니다.
+
+**Edit** 메뉴의 **Find**와 **Find in Files**는 둘 다 **Text Search** 창을 엽니다. 찾을 범위(**Look in**)가 **Find**는 **Current Document**, **Find in Files**는 **Entire Solution**으로 정해져 있습니다. **Find File**, **Find Symbol**, **Find Entity**는 같은 이름의 창의 검색 칸으로, **Find in Outline**은 **Outline** 창의 검색 칸으로 갑니다. **Jump To Line**은 줄 번호를 넣는 **Jump To Line** 창을 엽니다.
+
+## 스크립트 파일 만들기
+
+스크립트 파일은 확장자가 `.c`인 글 파일이고, 모드의 스크립트는 프로젝트의 `Scripts/Game` 폴더 아래에 둡니다. 어느 폴더가 어느 스크립트 모듈에 속하는지는 Script 책 1장에서 설명합니다.
+
+파일은 Resource Browser 아래쪽의 **Create** 버튼으로 만듭니다. 버튼을 누르면 열리는 메뉴(<FigRef id="ch04-create-menu" />)에서 **Script**를 고릅니다. 메뉴의 다른 항목과 Resource Browser 자체는 3장에서 다룹니다.
+
+<Figure src="shared/rb-create-menu.png" alt="Resource Browser의 Create 메뉴" id="ch04-create-menu">Resource Browser의 Create 메뉴</Figure>
+
+<TryIt title="TAG_HelloWorld.c 만들기">
+
+1장에서 만든 `GuideDemo` 프로젝트에 Script 책 1장의 첫 스크립트를 만듭니다.
+
+1. 메인 창 Resource Browser에서 `GuideDemo` 폴더를 엽니다. 새 프로젝트에는 `Scripts/Game` 폴더가 없으므로 **Create** 메뉴의 **New Folder**로 `Scripts`를 만들고, 그 안에 `Game`을 만든 뒤 `Scripts/Game` 폴더로 들어갑니다. **New Folder**를 고르면 **Create folder** 창이 열려 폴더 이름을 묻습니다.
+2. **Create** 버튼을 누르고 **Script**를 고릅니다. 설정 파일을 만들 때(9장)와 같은 **Choose Name** 창이 뜹니다.
+3. **File Name:** 칸에 `TAG_HelloWorld`를 입력하고 **OK**를 누릅니다. 확장자 `.c`는 저절로 붙고, 새 파일은 비어 있습니다. `TAG_`는 Script 책 1장에서 설명하는 태그로, 자기 태그로 바꿔 써도 됩니다.
+4. 생긴 `TAG_HelloWorld.c`를 두 번 클릭합니다. 파일이 Script Editor의 탭으로 열립니다.
+5. Script 책 1장의 `TAG_HelloWorld.c` 내용을 붙여 넣습니다. 저장하기 전에는 탭 이름과 창 제목 끝에 `*`가 붙습니다. **File > Save All**(<Kbd>Ctrl</Kbd>+<Kbd>S</Kbd>)로 저장하면 `*`가 사라집니다.
+6. **Build > Validate and Reload Scripts**(<Kbd>Shift</Kbd>+<Kbd>F7</Kbd>)로 컴파일합니다. Workbench를 띄운 뒤에 만든 클래스는 **Validate Scripts**로 검사만 해서는 Remote Console에서 부를 수 없습니다.
+
+</TryIt>
+
+위키(Scripting Example)는 다른 길도 소개합니다. Script Editor의 **Projects** 창에서 폴더를 오른쪽 클릭하면 **Add New Script...** 항목이 있습니다. 위키가 Script Wizard라고 부르는 것은 화면의 **Plugins** 메뉴에서 **Create New Script**이고, 메뉴에는 그 옆에 <Kbd>Ctrl</Kbd>+<Kbd>N</Kbd>이 적혀 있습니다(<FigRef id="ch04-plugins-menu" />). 이 항목을 고르면 **Script Creation** 창이 열립니다.
+
+위키(Script Editor: Create New Script Plugin)는 이 플러그인이 부모 클래스 이름, 종류, 템플릿 설정 파일도 받는다고 적지만, 화면의 창에는 **Addon**(파일을 만들 프로젝트), **Destination Directory**(폴더), **File Name** 세 칸만 있습니다. **OK**를 누르면 빈 `.c` 파일이 생겨 탭으로 열립니다. 이때 **Script Authorization Required** 대화상자가 파일 접근을 허락할지 물을 수 있습니다(5장).
+
+## 저장과 컴파일
+
+Workbench는 시작할 때 프로젝트의 스크립트를 컴파일합니다. 시작 로그에 `Compiling GameLib scripts`, `Compiling Game scripts` 줄이 찍히고, 그 뒤로는 따로 컴파일하지 않아도 Remote Console에서 클래스를 부를 수 있습니다(5장).
+
+시작한 뒤에 만들거나 고친 스크립트는 저장한 다음 **Build > Validate and Reload Scripts**로 다시 컴파일합니다. 위키(Create an Entity)도 새 엔티티 클래스가 World Editor에 나타나려면 **Build** 메뉴의 Compile & Reload Scripts(<Kbd>Shift</Kbd>+<Kbd>F7</Kbd>)로 컴파일하고 다시 불러와야 한다고 안내합니다. 화면에서는 이 항목의 이름이 **Validate and Reload Scripts**입니다(부록 C).
+
+### Build 메뉴
+
+**Build** 메뉴는 <FigRef id="ch04-build-menu" />에 있습니다. 위쪽에 컴파일 항목 셋이, 아래쪽 **Configuration** 묶음에 구성 목록이 있습니다.
+
+<Figure src="ch04/build-menu.png" alt="Script Editor의 Build 메뉴" id="ch04-build-menu">Script Editor의 Build 메뉴</Figure>
+
+| 항목 | 메뉴의 단축키 | 하는 일 |
+|---|---|---|
+| **Validate Scripts** | <Kbd>F7</Kbd> | 스크립트를 검사해 문제를 **Errors** 창에 모읍니다 |
+| **Validate and Reload Scripts** | <Kbd>Shift</Kbd>+<Kbd>F7</Kbd> | 검사한 뒤 게임 스크립트를 다시 컴파일해 불러옵니다 |
+| **Reload Scripts** | <Kbd>Ctrl</Kbd>+<Kbd>Shift</Kbd>+<Kbd>F7</Kbd> | 이 책에서는 쓰지 않습니다 |
+
+**Validate and Reload Scripts**는 메뉴에서 고르거나 Script Editor에서 <Kbd>Shift</Kbd>+<Kbd>F7</Kbd>을 눌러 실행합니다. 실행하면 로그에 `Reloading game scripts`와 `Script validation`이 찍히고, 이어서 `Game destroyed.`, 스크립트 컴파일 줄, `Creating game instance`, `Game successfully created.`가 차례로 찍힙니다. Workbench 안의 게임 인스턴스를 없애고 새 스크립트로 다시 만드는 것입니다. **Reload Scripts**(<Kbd>Ctrl</Kbd>+<Kbd>Shift</Kbd>+<Kbd>F7</Kbd>)를 실행해도 로그에는 같은 꼴의 줄이 찍힙니다. **Validate Scripts**(<Kbd>F7</Kbd>)는 로그에 줄을 더하지 않고, 결과는 Output 창과 Errors 창에서 봅니다. 로그 파일은 5장에서 봅니다.
+
+위키(Script Editor)의 단축키 표는 <Kbd>Shift</Kbd>+<Kbd>F7</Kbd>을 Previous Bookmark로 적지만, 화면에서 이 키는 **Validate and Reload Scripts**의 키입니다.
+
+**Validate Scripts**를 실행하면 **Output** 창 첫머리에 검사 결과가 나옵니다(<FigRef id="ch04-output-compile" />). 검사 시작을 알리는 `Compilation` 줄, 이번 검사에 쓴 정의 목록 `Defines: PLATFORM_WINDOWS;WORKBENCH;ENF_WB;ENABLE_DIAG`, 모듈마다 `Succeeded: Game( Scripts/Game ) in 1206ms` 같은 줄, 끝의 `Compilation finished` 줄입니다. 모듈은 Engine, GameLib, Game, Entities, WorkbenchGame, Workbench 순서로 나옵니다.
+
+<Figure src="ch04/output-compile.png" alt="Validate Scripts 직후의 Output 창" id="ch04-output-compile">Validate Scripts 직후의 Output 창</Figure>
+
+### 구성(Configuration)
+
+**Build** 메뉴 아래쪽 **Configuration** 묶음에는 **WORKBENCH**, **PC**, **XBOX**, **PS4**, **PS5**, **ALL**이 있습니다. 그림에서는 **WORKBENCH**에 체크 표시가 있습니다. 지금 고른 구성은 창 제목 끝(`Configuration: WORKBENCH`)과 Errors 창 맨 위 묶음 이름(`Configuration WORKBENCH`)에도 나옵니다. 위 `Defines:` 줄도 WORKBENCH 구성일 때의 것입니다. **PC**를 고르고 **Validate Scripts**를 실행하면 창 제목 끝은 `Configuration: PC`, Errors 창 맨 위 묶음 이름은 `Configuration PC`가 되고, Output의 `Defines:` 줄은 비며 WorkbenchGame과 Workbench 모듈은 `Skipped:`로 나옵니다. 이 책의 예제는 **WORKBENCH** 구성 그대로 따라 합니다.
+
+## Errors 창 읽기
+
+**Validate Scripts**나 **Validate and Reload Scripts**를 실행하면 문제가 **Errors** 창에 모입니다(<FigRef id="ch04-errors" />). 창의 열은 **Description**, **Addon**, **File**, **Line**입니다. 문제는 `Configuration WORKBENCH` 아래 세 묶음으로 나뉩니다.
+
+| 묶음 | 아이콘 | 내용 |
+|---|---|---|
+| **Errors** | 빨간 원 안의 × | 컴파일되지 않는 문제. 없을 때도 `Errors(0):`처럼 묶음 이름은 보입니다 |
+| **Warnings** | 노란 삼각형 | 컴파일은 되지만 확인이 필요한 문제. 예: `Variable '…' is not used` |
+| **Hints** | 파란 원 안의 i | 고치면 좋은 제안. 예: `Variable 'key' can be const` |
+
+묶음 이름 뒤의 괄호 숫자는 문제 개수입니다. 오류와 경고의 뜻, 첫 오류부터 보는 습관은 Script 책 15장에서 설명합니다.
+
+<Figure src="ch04/errors.png" alt="Errors 창의 세 묶음" id="ch04-errors">Errors 창의 세 묶음</Figure>
+
+내 코드에 문제가 없어도 공식 스크립트의 경고가 여럿 나옵니다. `'GetPlayerPlatformKind' is obsolete`처럼 더는 쓰지 않는 API를 알리는 경고입니다. 공식 스크립트 항목은 **Addon** 칸이 비어 있고, 내 프로젝트의 항목에는 **Addon** 칸에 프로젝트 ID가 나옵니다. 내 문제만 보려면 **Addon** 칸과 **File** 칸의 경로를 봅니다.
+
+창 위쪽 검색 칸에 글자를 넣으면 그 글자가 들어간 항목만 남습니다. 설명 글뿐 아니라 파일 경로에 그 글자가 든 항목도 남고, 묶음 이름의 개수는 줄지 않습니다. 항목을 두 번 클릭하면 그 파일이 편집 영역에 열리고 해당 줄로 갑니다.
+
+<TryIt title="경고를 일부러 내고 찾아가기">
+
+1. `TAG_HelloWorld.c`의 `SayHello()` 안에 쓰지 않는 지역 변수를 한 줄 더합니다(예: `int unused = 1;`). 저장합니다.
+2. **Build > Validate Scripts**를 실행합니다.
+3. **Errors** 창의 **Warnings** 묶음에서 `Variable 'unused' is not used` 경고를 찾습니다. 공식 스크립트 경고에 섞여 잘 보이지 않으면 검색 칸에 변수 이름이나 파일 이름을 넣습니다.
+4. 경고를 두 번 클릭합니다. 편집 영역이 그 줄로 가고, 상태 줄의 `Line:`이 그 줄 번호가 됩니다.
+5. 더한 줄을 지우고 저장한 뒤 다시 **Validate Scripts**를 실행합니다. 경고가 사라집니다.
+
+</TryIt>
+
+## 선언 열기
+
+편집 영역에서 클래스, 메서드, 변수의 이름 위에 <Kbd>Ctrl</Kbd>을 누른 채 클릭하면 그 이름을 선언한 곳으로 갑니다. 선언이 다른 파일에 있으면 그 파일이 새 탭으로 열립니다. 예를 들어 내 스크립트에서 부모 클래스 이름 `ScriptComponent`를 <Kbd>Ctrl</Kbd>+클릭하면 공식 파일 `ScriptComponent.c`가 새 탭으로 열립니다(<FigRef id="ch04-ctrl-click" />). 편집 영역은 `class ScriptComponent: GenericComponent` 줄로 가고, 상태 줄에는 `Line: 23 Column: 1`이, **Outline**에는 그 클래스의 메서드 목록이 나옵니다.
+
+<Figure src="ch04/ctrl-click.png" size="full" alt="Ctrl+클릭으로 연 공식 스크립트" id="ch04-ctrl-click">Ctrl+클릭으로 연 공식 스크립트</Figure>
+
+공식 스크립트 탭에는 자물쇠가 붙습니다. 읽을 수는 있지만 고칠 수 없는 읽기 전용 파일입니다. 모르는 클래스가 나오면 이렇게 선언을 열어 주석과 메서드 목록을 읽습니다. 오버라이드할 메서드의 선언을 부모 클래스에서 그대로 옮기는 습관은 Script 책 15장에서 권합니다.
+
+다른 찾기 방법도 있습니다. 기호를 오른쪽 클릭하면 **Go to Definition**, **Go to type definition**, **Find In Current Document**, **Find In Entire Solution**, **Overrides** ▸ 같은 항목이 있는 메뉴가 열립니다. 위키(Script Editor)는 선언으로 가는 항목을 Goto Declaration이라고 적지만 화면에서는 **Go to Definition**입니다.
+
+**Find Symbol** 창에는 검색 칸과 **Types**, **Methods**, **Variables** 체크 상자가 있습니다. 검색 칸에 이름 일부를 넣으면 클래스(C), 메서드(M), 변수(V) 아이콘이 붙은 결과가 나오고, 체크를 끈 종류는 결과에서 빠집니다. 결과를 두 번 클릭하면 그 파일이 탭으로 열리고 선언으로 갑니다. **Outline**의 항목은 한 번 누르면 그 자리로 갑니다.
+
+클래스 이름에 마우스를 올리면 그 클래스의 선언 줄과 문서 주석이 작은 창으로 보입니다. 디버거로 멈춰 있지 않은 편집 중에도 같고, 멈춘 상태에서 변수에 마우스를 올렸을 때의 모습은 5장에서 봅니다.
+
+## 단축키
+
+Script Editor에서 자주 쓰는 단축키는 다음과 같습니다. **Debug** 메뉴의 단축키는 5장에, 전체 목록은 부록 A에 있습니다.
+
+| 키 | 메뉴 항목 |
+|---|---|
+| <Kbd>F7</Kbd> | **Build > Validate Scripts** |
+| <Kbd>Shift</Kbd>+<Kbd>F7</Kbd> | **Build > Validate and Reload Scripts** |
+| <Kbd>Ctrl</Kbd>+<Kbd>Shift</Kbd>+<Kbd>F7</Kbd> | **Build > Reload Scripts** |
+| <Kbd>Ctrl</Kbd>+<Kbd>S</Kbd> | **File > Save All** |
+| <Kbd>Ctrl</Kbd>+<Kbd>F</Kbd> | **Edit > Find** |
+| <Kbd>Ctrl</Kbd>+<Kbd>Shift</Kbd>+<Kbd>F</Kbd> | **Edit > Find in Files** |
+| <Kbd>Alt</Kbd>+<Kbd>Shift</Kbd>+<Kbd>O</Kbd> | **Edit > Find File** |
+| <Kbd>Alt</Kbd>+<Kbd>Shift</Kbd>+<Kbd>S</Kbd> | **Edit > Find Symbol** |
+| <Kbd>Ctrl</Kbd>+<Kbd>G</Kbd> | **Edit > Jump To Line** |
+| <Kbd>Alt</Kbd>+<Kbd>Left</Kbd> | **Edit > Navigate Back** |
+| <Kbd>Ctrl</Kbd>+<Kbd>W</Kbd> | **Window > Close Tab** |
+| <Kbd>F4</Kbd> | **Plugins > Autotest**(12장) |
+| <Kbd>Ctrl</Kbd>+클릭 | 메뉴 없음. 선언 열기 |
+| <Kbd>Ctrl</Kbd>+<Kbd>Space</Kbd> | 메뉴 없음. 자동 완성 목록 보기(이름을 입력하는 중에는 저절로 뜸) |
+
+메인 창의 **File > Options...** 창에는 **Shortcuts** 범주가 있습니다(2장). 단축키 목록은 편집기와 기능별 묶음으로 나뉘고, Script Editor의 단축키는 **Script Editor** 묶음에 있습니다. 키를 바꾸는 방법은 부록 A에서 봅니다.
+
+## Plugins 메뉴
+
+**Plugins** 메뉴에는 Script Editor용 플러그인이 모여 있습니다(<FigRef id="ch04-plugins-menu" />). 항목은 **Settings**(하위 메뉴), **AI Script Generator**, **Autocomplete**, **Autotest**, **Basic Code Formatter**, **Basic Code Formatter - forced**, **Class Renaming Plugin**, **Copy Class and Method Name**, **Create New Script**, **Debug Line Shortcut**, **Doxygen Filler**, **Fill from Template**, **Run Tracy Profiler**, **Version Control System**(하위 메뉴)입니다.
+
+<Figure src="shared/se-plugins-menu.png" alt="Script Editor의 Plugins 메뉴" id="ch04-plugins-menu">Script Editor의 Plugins 메뉴</Figure>
+
+**Autotest**는 커서가 있는 테스트를 실행하는 플러그인으로, 12장에서 다룹니다. **Create New Script**는 앞의 스크립트 파일 만들기 절에서 보았습니다. **Debug Line Shortcut**은 커서가 있는 줄 아래에 `[TAG_HelloWorld.SayHello]`처럼 클래스와 메서드 이름이 든 글과 `__FILE__`, `__LINE__`을 경고 수준(`LogLevel.WARNING`)으로 찍는 `Print` 줄을 넣습니다. 나머지 가운데 Autocomplete, Basic Code Formatter, Class Renaming Plugin, Doxygen Filler, Fill from Template는 위키에 플러그인마다 설명 문서가 있습니다. {/* 확인 대기: 나머지 플러그인(AI Script Generator, Autocomplete, Basic Code Formatter 둘, Class Renaming Plugin, Copy Class and Method Name, Doxygen Filler, Fill from Template, Run Tracy Profiler)을 실행했을 때의 동작 */}
+
+**Settings** 하위 메뉴에는 **Reload WB Scripts**, **Clear All Settings**, **Autocomplete**, **Autotest**, **Basic Code Formatter**, **Debug Line Shortcut**, **Doxygen Filler**, **VCS Configuration**이 있습니다. **Version Control System** 하위 메뉴에는 **VCS Blame**, **VCS Commit**, **VCS Diff**, **VCS Log**가 있습니다.
+
+## Options의 Script Editor 설정
+
+Workbench 설정을 바꾸는 **Options** 창은 메인 창의 <strong>File > Options...</strong>로 엽니다(2장). 이 창의 **Script Editor** 범주에는 **Tab Size**, **Font Size**, **Font Family**, **Append Closing Bracket**, **Scroll Bar Overlays**가 있습니다. 위키(Resource Manager: Options)는 이 항목들이 탭 크기, 글꼴 크기와 글꼴, 닫는 중괄호 자동 입력, 스크롤 막대에 바뀐 곳과 브레이크포인트를 표시할지를 정한다고 설명합니다.
+
+**General** 범주에는 스크립트와 관련된 항목이 둘 있습니다(<FigRef id="ch04-options-general" />).
+
+- **Auto Rebuild Scripts**: 켜 두면 Script Editor에서 파일을 저장한 뒤 메인 창으로 돌아갈 때 스크립트를 자동으로 다시 불러옵니다. 로그에는 **Validate and Reload Scripts**와 같은 줄이 찍힙니다. 저장한 순간 바로 다시 불러오지는 않습니다.
+- **Language Server Protocol** 묶음: **Enabled** 체크 상자와 **Port** 칸이 있습니다. 그림에서는 **Enabled**가 꺼져 있고 **Port** 칸에 `5776`이 흐리게 보입니다. **Enabled**를 켜면 **Port** 칸을 고칠 수 있게 되고, **OK**를 누르면 Workbench를 다시 시작하지 않아도 이 포트(기본 5776)로 외부 편집기의 접속을 받습니다. 끄고 **OK**를 누르면 곧바로 접속을 받지 않습니다. VS Code 같은 외부 편집기를 이 기능으로 연결하는 방법은 Script 책 1장에서 설명합니다.
+
+<Figure src="shared/options-general.png" alt="Options 창의 General 범주" id="ch04-options-general">Options 창의 General 범주</Figure>
+
+## 정리
+
+<Summary>
+
+- Script Editor는 메인 창의 **Editors** 메뉴나 **QUICK LAUNCH**의 **Script Editor** 버튼으로 열고, Resource Browser에서 `.c` 파일을 두 번 클릭해도 그 파일이 Script Editor에 열립니다.
+- 창 열다섯 개의 목록은 **Window** 메뉴에 있습니다. 위키의 Text Editor와 Console은 화면에서 편집 영역과 Remote Console입니다.
+- 스크립트 파일은 Resource Browser의 **Create** 버튼에서 **Script**를 골라 프로젝트의 `Scripts/Game` 아래에 만듭니다.
+- **Build** 메뉴에는 **Validate Scripts**(<Kbd>F7</Kbd>), **Validate and Reload Scripts**(<Kbd>Shift</Kbd>+<Kbd>F7</Kbd>, 위키 이름 Compile and Reload Scripts), **Reload Scripts**(<Kbd>Ctrl</Kbd>+<Kbd>Shift</Kbd>+<Kbd>F7</Kbd>)가 있습니다.
+- Errors 창은 `Configuration WORKBENCH` 아래 **Errors**, **Warnings**, **Hints** 묶음으로 나뉘고, 항목을 두 번 클릭하면 그 줄로 갑니다. 공식 스크립트의 경고는 **Addon** 칸이 비어 있습니다.
+- 클래스, 메서드, 변수 이름을 <Kbd>Ctrl</Kbd>+클릭하면 그 선언으로 가고, 선언이 다른 파일에 있으면 그 파일이 새 탭으로 열립니다. 자물쇠가 붙은 탭은 읽기 전용입니다.
+- <strong>File > Options...</strong>의 **General** 범주에 **Auto Rebuild Scripts**와 **Language Server Protocol** 묶음이 있습니다.
+
+</Summary>
+
+**더 읽을거리**
+
+- [Script Editor](https://community.bistudio.com/wiki/Arma_Reforger:Script_Editor)
+- [Scripting Example](https://community.bistudio.com/wiki/Arma_Reforger:Scripting_Example)
+- [Script Editor: Create New Script Plugin](https://community.bistudio.com/wiki/Arma_Reforger:Script_Editor:_Create_New_Script_Plugin)
+- [Resource Manager: Options](https://community.bistudio.com/wiki/Arma_Reforger:Resource_Manager:_Options)

@@ -1,0 +1,5 @@
+node_modules/
+dist/
+
+# 내부 작업 문서(검토 목록, 메모 등). 저장소에 올리지 않는다
+.internal/

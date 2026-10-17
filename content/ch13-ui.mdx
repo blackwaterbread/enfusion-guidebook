@@ -1,0 +1,466 @@
+---
+title: UI 스크립팅 기초
+description: 위젯과 레이아웃의 개념을 익히고, 스크립트로 레이아웃을 띄워 위젯을 찾고 바꾸는 방법, 위젯에 스크립트를 붙이는 방법, 메뉴를 등록하고 여는 방법, 힌트와 알림, 로컬라이즈 문자열과 RichText 형식을 배웁니다.
+---
+
+<Objectives>
+
+- 위젯, 레이아웃, 디스플레이, 메뉴, 대화상자의 차이를 설명할 수 있다.
+- 스크립트로 레이아웃을 만들고 위젯을 찾아 내용과 표시 상태를 바꿀 수 있다.
+- `ScriptedWidgetComponent`로 위젯에 동작을 붙일 수 있다.
+- `ChimeraMenuPreset`과 메뉴 클래스로 새 메뉴를 등록하고 열고 닫을 수 있다.
+- 힌트와 알림을 띄우고, 로컬라이즈 키와 RichText 태그로 텍스트를 꾸밀 수 있다.
+
+</Objectives>
+
+지금까지 만든 기능은 결과를 로그로만 확인했습니다. 플레이어에게 무언가를 보여 주려면 화면에 UI를 띄워야 합니다. Arma Reforger의 UI는 위젯(widget)을 배치한 레이아웃(layout) 파일로 만들고, 스크립트는 그 레이아웃을 띄우고 위젯의 내용을 바꾸고 입력에 반응합니다.
+
+이 장은 레이아웃을 그리는 Layout Editor의 자세한 사용법보다는, 이미 만든 레이아웃을 스크립트에서 다루는 방법에 집중합니다. 11장에서 배운 `ScriptInvoker`와 입력 액션 리스너가 여기서 다시 쓰입니다.
+
+## 위젯과 레이아웃
+
+### 용어 정리
+
+위키의 Layout Creation 문서는 UI를 다음과 같이 나눕니다.
+
+| 용어 | 뜻 | 예 |
+|---|---|---|
+| 위젯(widget) | 레이아웃을 이루는 요소 하나. 버튼, 텍스트, 이미지, 스크롤바 등 | 버튼 하나 |
+| 디스플레이(display) | 정보만 보여 주고 입력을 받지 않는 레이아웃. 플레이어는 평소처럼 캐릭터를 조종할 수 있음 | HUD |
+| 메뉴(menu) | 선택지나 기능을 제공하는 화면 | 야전 교범, 인벤토리 |
+| 대화상자(dialog) | 플레이어의 입력을 요구하는 창. 여러 개가 우선순위대로 쌓이고, 메뉴가 있으면 그 위에 뜸 | 확인/취소 창 |
+
+위젯은 계층 구조를 이룹니다. 레이아웃 파일(`.layout`)은 이 계층과 각 위젯의 속성을 저장한 리소스이고, Layout Editor로 편집합니다. Resource Browser에서 레이아웃을 둘 폴더를 열고 **Create** 버튼(또는 파일 목록의 빈 곳을 마우스 오른쪽 버튼으로 누른 메뉴)의 **GUI layout**으로 새 레이아웃을 만들 수 있습니다. 만든 레이아웃은 두 번 클릭해 엽니다.
+
+### 이름이 곧 연결고리
+
+스크립트는 레이아웃 안의 위젯을 **이름**으로 찾습니다. 그래서 Layout Editor의 Hierarchy 창에서 스크립트가 다룰 위젯에 의미 있는 이름(`TextTitle`, `ButtonClose` 등)을 붙여 두는 것이 첫 단계입니다. 레이아웃을 처음부터 그리지 않아도 됩니다. Arma Reforger가 제공하는 위젯 라이브러리의 레이아웃, 예를 들어 버튼인 `WLib_ButtonText.layout`이나 제목 텍스트인 `RichText_Heading2.layout`을 Resource Browser에서 열어 둔 레이아웃의 뷰포트로 끌어다 놓으면 그 위젯이 더해집니다. 더해진 위젯에는 `Button0` 같은 이름이 붙으므로 Hierarchy 창에서 줄을 두 번 클릭해 이름을 바꿉니다. 이름 앞의 `WLib`는 Widget Library를 뜻합니다.
+
+### 자주 쓰는 위젯 클래스
+
+스크립트에서 위젯은 `Widget` 클래스와 그 자식 클래스로 다룹니다. 정의는 `Core/generated/UI`에 있습니다.
+
+| 클래스 | 용도 | 대표 메서드 |
+|---|---|---|
+| `Widget` | 모든 위젯의 부모 | `FindAnyWidget`, `SetVisible`, `SetOpacity`, `SetColor`, `SetEnabled`, `RemoveFromHierarchy` |
+| `TextWidget` | 텍스트 | `SetText`, `SetTextFormat`, `GetText` |
+| `RichTextWidget` | 여러 줄, 태그로 꾸민 텍스트(`TextWidget` 상속) | `TextWidget`과 같음 |
+| `ImageWidget` | 이미지 | `LoadImageFromSet`, `SetImage` |
+| `ButtonWidget` | 버튼 | 이벤트는 핸들러로 받음 |
+| `WorkspaceWidget` | 위젯들이 속한 최상위 작업 공간 | `CreateWidgets` |
+
+## 스크립트에서 위젯 다루기
+
+### 레이아웃 띄우기
+
+레이아웃을 화면에 띄우는 가장 단순한 방법은 워크스페이스에서 `CreateWidgets`를 부르는 것입니다. `GetGame().GetWorkspace()`가 돌려주는 `WorkspaceWidget`의 `CreateWidgets(ResourceName layoutResourceName, Widget parentWidget = NULL)`은 레이아웃의 위젯들을 만들고 그 루트 위젯을 돌려줍니다. Layout Creation 문서가 디스플레이를 띄울 때 쓰는 방법도 이것입니다. 다음 `TAG_MessageDisplay`를 쓰려면 레이아웃에 `Message`라는 이름의 텍스트 위젯(`TextWidget`)이 있어야 합니다.
+
+```enforce title="Scripts/Game/TAG_MessageDisplay.c"
+class TAG_MessageDisplay
+{
+	protected Widget m_wRoot;
+	protected TextWidget m_wMessage;
+
+	void Show(ResourceName layout, string message)
+	{
+		if (!m_wRoot)
+			m_wRoot = GetGame().GetWorkspace().CreateWidgets(layout);
+
+		if (!m_wRoot)
+			return;	// 레이아웃을 만들지 못했다
+
+		m_wMessage = TextWidget.Cast(m_wRoot.FindAnyWidget("Message"));
+		if (m_wMessage)
+			m_wMessage.SetText(message);
+	}
+
+	void Hide()
+	{
+		if (m_wRoot)
+			m_wRoot.RemoveFromHierarchy();
+
+		m_wRoot = null;
+		m_wMessage = null;
+	}
+}
+```
+
+### 위젯 찾기
+
+위젯을 찾는 메서드는 두 가지입니다. 공식 주석에 따르면 `FindAnyWidget(string pathname)`은 이 위젯의 자손 가운데서 이름으로 찾고, `FindWidget(string pathname)`은 `"widget1.widget2.mywidget"`처럼 점으로 이은 경로로 찾습니다. 찾은 결과는 `Widget`이므로 `TextWidget.Cast()`처럼 형변환해서 씁니다. 이름이 틀리거나 형변환할 수 없으면 null이니 항상 확인합니다.
+
+### 위젯 바꾸기
+
+자주 쓰는 변경은 다음과 같습니다.
+
+```enforce
+m_wMessage.SetText("임무 완료");				// 텍스트 바꾸기
+m_wMessage.SetTextFormat("남은 시간: %1초", 30);	// %1 자리에 값 넣기
+m_wMessage.SetColor(Color.Red);					// 색 바꾸기
+m_wRoot.SetOpacity(0.5);						// 반투명하게
+m_wRoot.SetVisible(false);						// 숨기기
+```
+
+`Color.Red`, `Color.White` 같은 색 상수는 `Core/generated/Visual/Color.c`에 정의되어 있습니다. `SetVisible(false)`는 위젯을 숨기기만 하고, `RemoveFromHierarchy()`는 부모와 위젯 관리자에서 떼어 냅니다. 공식 주석에 따르면 떼어 낸 위젯은 강한 참조가 더 없으면 해제됩니다.
+
+### 위젯 참조는 약하게 둔다
+
+위의 `m_wRoot`와 `m_wMessage`에는 `ref`가 없습니다. 위젯은 계층에 붙어 있는 동안 위젯 관리자가 살려 두므로, 스크립트는 약한 참조로 들고 있으면 됩니다. 공식 Game 모듈에서도 `protected Widget m_w...;` 형태의 약한 참조가 거의 전부이고 `ref`를 붙인 경우는 손에 꼽습니다. 위젯이 해제되면 약한 참조는 null이 되므로(7장), 쓰기 전에 null을 확인하는 습관만 지키면 됩니다. 이름은 공식 코드처럼 `m_w` 접두사를 붙입니다.
+
+## 위젯에 스크립트 붙이기
+
+### ScriptedWidgetComponent
+
+버튼을 눌렀을 때처럼 위젯 자체의 이벤트에 반응하려면 위젯에 핸들러(handler)를 붙입니다. 스크립트 핸들러의 부모는 `ScriptedWidgetEventHandler`이고, 레이아웃에서 위젯에 붙이는 컴포넌트는 이를 상속한 `ScriptedWidgetComponent`로 만듭니다. 이름에 "Component"가 들어가지만 10장의 엔티티 컴포넌트와는 다른 계열입니다.
+
+주요 이벤트는 다음과 같고, `bool`을 돌려주는 이벤트에서 true를 돌려주면 그 이벤트를 "처리했다"는 뜻입니다. 공식 주석에 따르면 이벤트는 먼저 그 위젯의 핸들러들에, 이어서 처리될 때까지 부모 위젯 쪽으로 차례로 전달됩니다.
+
+| 이벤트 | 불리는 때 |
+|---|---|
+| `void HandlerAttached(Widget w)` | 핸들러가 위젯에 붙을 때 |
+| `void HandlerDeattached(Widget w)` | 핸들러가 위젯에서 떨어질 때 |
+| `bool OnClick(Widget w, int x, int y, int button)` | 클릭 |
+| `bool OnMouseEnter(Widget w, int x, int y)` / `bool OnMouseLeave(Widget w, Widget enterW, int x, int y)` | 마우스가 들어오고 나갈 때 |
+| `bool OnFocus(Widget w, int x, int y)` / `bool OnFocusLost(Widget w, int x, int y)` | 포커스를 얻고 잃을 때 |
+| `bool OnChange(Widget w, bool finished)` | 편집 상자 등의 값이 바뀔 때. 1.8.0.13에서 편집 상자(`EditBoxWidget`)에 `abc`를 입력해 보면 글자마다 `finished`가 false로 불렸고, 다른 버튼을 눌러 포커스가 빠질 때 true로 한 번 더 불렸습니다. |
+
+다음은 버튼을 누를 때마다 횟수를 세어 텍스트에 보여 주는 컴포넌트입니다. 표시할 텍스트 위젯의 이름은 어트리뷰트로 받습니다.
+
+```enforce title="Scripts/Game/UI/TAG_ClickCounterComponent.c"
+class TAG_ClickCounterComponent : ScriptedWidgetComponent
+{
+	[Attribute(defvalue: "Label", desc: "횟수를 표시할 텍스트 위젯 이름")]
+	protected string m_sLabelName;
+
+	protected TextWidget m_wLabel;
+	protected int m_iClicks;
+
+	override void HandlerAttached(Widget w)
+	{
+		super.HandlerAttached(w);
+		m_wLabel = TextWidget.Cast(w.FindAnyWidget(m_sLabelName));
+	}
+
+	override bool OnClick(Widget w, int x, int y, int button)
+	{
+		m_iClicks++;
+		if (m_wLabel)
+			m_wLabel.SetTextFormat("클릭 %1회", m_iClicks);
+
+		return true;	// 이 클릭은 여기서 처리했다
+	}
+}
+```
+
+이 컴포넌트는 Layout Editor에서 버튼 위젯의 속성 가운데 **Script** 항목에 추가합니다. Layout Creation 문서는 위젯 라이브러리 버튼에 붙은 `SCR_ButtonTextComponent`의 `Text` 속성을 바로 이 **Script** 항목에서 고치는 방법을 설명하는데, 이처럼 핸들러 컴포넌트의 `[Attribute]`도 Layout Editor에서 값을 정할 수 있습니다. 스크립트에서 붙이려면 `Widget.AddHandler(handler)`를 쓰고, 붙은 핸들러는 `Widget.FindHandler(typename)`으로 찾습니다. 다만 1.8.0.13에서 시험해 보면 `AddHandler(new TAG_ClickCounterComponent())`처럼 `new`로 만든 핸들러에는 `[Attribute]`의 `defvalue`가 들어가지 않아 `m_sLabelName`이 빈 문자열이었습니다. 그래서 라벨 위젯을 찾지 못하고, `if (m_wLabel)` 검사 때문에 오류 없이 글자만 바뀌지 않습니다. 이 예제처럼 어트리뷰트 값에 기대는 핸들러는 Layout Editor의 **Script** 항목에서 붙입니다.
+
+### 위젯 라이브러리의 버튼 컴포넌트
+
+위젯 라이브러리의 버튼은 이미 `SCR_ButtonTextComponent` 같은 컴포넌트를 갖고 있으므로, 대개 직접 `OnClick`을 쓰지 않고 그 컴포넌트의 이벤트를 구독합니다. 공식 헬퍼 `SCR_ButtonTextComponent.GetButtonText(string name, Widget parent, bool searchAllChildren = true)`는 이름으로 버튼을 찾아 컴포넌트를 돌려주고, 버튼 컴포넌트의 `m_OnClicked`(`ScriptInvoker`)는 클릭될 때 버튼 컴포넌트 자신을 넘기며 알립니다.
+
+```enforce
+SCR_ButtonTextComponent button = SCR_ButtonTextComponent.GetButtonText("ButtonClose", m_wRoot);
+if (button)
+	button.m_OnClicked.Insert(OnCloseClicked);
+
+// ...
+
+protected void OnCloseClicked(SCR_ButtonBaseComponent button)
+{
+	Hide();
+}
+```
+
+`m_OnClicked`는 시그니처를 고정하지 않은 `ScriptInvoker`라서, 공식 코드에는 매개변수 없는 메서드를 넣는 곳도 있습니다.
+
+공식 버튼과 효과를 조합하는 `SCR_ModularButtonComponent`도 있습니다. Modular Button Component Tutorial 문서에 따르면 색, 투명도, 이미지 같은 효과(Effect)를 마우스 올림, 클릭, 토글 같은 이벤트와 짝지어 레이아웃에서 설정하는 방식입니다.
+
+## 메뉴 시스템
+
+### 메뉴를 이루는 세 가지
+
+엔진 문서 Menu System에 따르면 메뉴는 메뉴 관리자(`MenuManager`)가 열고 닫으며, 메뉴 하나는 다음 세 가지를 묶은 **메뉴 프리셋**으로 정의됩니다.
+
+- **레이아웃**: 메뉴의 생김새
+- **클래스**: 메뉴의 동작. `MenuBase`나 그 자식 클래스
+- **액션 컨텍스트**: 메뉴가 열려 있는 동안 켜질 입력 컨텍스트(11장)
+
+Arma Reforger의 메뉴 프리셋은 열거형 `ChimeraMenuPreset`의 값과 설정 파일 `chimeraMenus.conf`의 항목으로 이루어지고, 둘은 **이름으로** 연결됩니다. 메뉴 클래스는 `MenuBase`, `ChimeraMenuBase`, `MenuRootBase` 가운데 필요한 기능에 맞는 것을 상속합니다(Layout Creation 문서). 공식 메뉴는 대부분 `ChimeraMenuBase`를 상속합니다.
+
+### 새 메뉴 등록하기
+
+Layout Creation 문서가 안내하는 순서는 다음과 같습니다.
+
+1. 12장에서 배운 `modded enum`으로 `ChimeraMenuPreset`에 값을 더합니다.
+2. `chimeraMenus.conf`를 모드에 Override하고(**Override in** 메뉴), **+** 버튼으로 항목을 추가합니다. 항목 이름은 열거형 값과 **정확히 같아야** 하며, 다르면 엔진이 메뉴를 찾지 못해 오류를 냅니다.
+3. 항목의 **Layout**에 레이아웃을, **Class**에 메뉴 클래스 이름을 적습니다.
+
+```enforce
+modded enum ChimeraMenuPreset
+{
+	TAG_InfoMenu
+}
+```
+
+### 메뉴 클래스
+
+`MenuBase`가 부르는 콜백의 순서는 공식 주석에 정리되어 있습니다.
+
+| 시점 | 콜백(순서대로) |
+|---|---|
+| 열 때 | `OnMenuInit`(메뉴 설정을 불러올 때) → `OnMenuOpen` → `OnMenuShow` → `OnMenuFocusGained` → `OnMenuOpened`(준비 완료) |
+| 열려 있는 동안 | `OnMenuUpdate(float tDelta)`(매 프레임), `OnMenuItem` |
+| 닫을 때 | `OnMenuFocusLost` → `OnMenuHide` → `OnMenuClose` |
+
+다음은 제목을 바꾸고, 닫기 버튼과 뒤로 가기 입력으로 닫히는 메뉴입니다. 구조는 Layout Creation 문서의 예제를 따랐습니다. 이 메뉴의 레이아웃에는 `TextTitle`이라는 이름의 텍스트 위젯과, `SCR_ButtonTextComponent`가 붙은 `ButtonClose`라는 이름의 버튼(예: 위젯 라이브러리의 `WLib_ButtonText.layout`)이 있어야 합니다.
+
+```enforce title="Scripts/Game/UI/TAG_InfoMenuUI.c"
+class TAG_InfoMenuUI : ChimeraMenuBase
+{
+	protected static const string TEXT_TITLE = "TextTitle";
+	protected static const string BUTTON_CLOSE = "ButtonClose";
+
+	override void OnMenuOpen()
+	{
+		super.OnMenuOpen();
+
+		Widget root = GetRootWidget();
+		if (!root)
+			return;
+
+		TextWidget title = TextWidget.Cast(root.FindAnyWidget(TEXT_TITLE));
+		if (title)
+			title.SetText("정보");
+
+		SCR_ButtonTextComponent closeButton = SCR_ButtonTextComponent.GetButtonText(BUTTON_CLOSE, root);
+		if (closeButton)
+			closeButton.m_OnClicked.Insert(Close);
+
+		InputManager inputManager = GetGame().GetInputManager();
+		if (inputManager)
+			inputManager.AddActionListener(UIConstants.MENU_ACTION_BACK, EActionTrigger.DOWN, Close);
+	}
+
+	override void OnMenuClose()
+	{
+		super.OnMenuClose();
+
+		InputManager inputManager = GetGame().GetInputManager();
+		if (inputManager)
+			inputManager.RemoveActionListener(UIConstants.MENU_ACTION_BACK, EActionTrigger.DOWN, Close);
+	}
+}
+```
+
+- `GetRootWidget()`는 이 메뉴의 레이아웃 루트를, `Close()`는 메뉴를 닫는 `MenuBase`의 메서드입니다. `Close`를 버튼 이벤트와 입력 리스너에 그대로 넘기는 방식은 공식 `PauseMenuUI`와 `SCR_PlayerListMenu`도 씁니다.
+- `UIConstants.MENU_ACTION_BACK`은 공식 상수로, 값은 `"MenuBack"` 액션입니다.
+- 입력 리스너는 `OnMenuOpen`에서 등록하고 `OnMenuClose`에서 해제합니다. 11장의 구독 해제 규칙 그대로입니다.
+
+### 메뉴 열고 닫기
+
+Layout Creation 문서의 예제처럼, 메뉴는 `GetGame().GetMenuManager()`로 얻은 `MenuManager`로 엽니다.
+
+```enforce
+MenuManager menuManager = GetGame().GetMenuManager();
+MenuBase menu = menuManager.OpenMenu(ChimeraMenuPreset.TAG_InfoMenu);
+
+// 같은 프리셋을 대화상자로 열 수도 있다. 우선순위는 INFORMATIVE, WARNING, CRITICAL
+// menuManager.OpenDialog(ChimeraMenuPreset.TAG_InfoMenu, DialogPriority.INFORMATIVE);
+```
+
+| 메서드 | 하는 일 |
+|---|---|
+| `OpenMenu(ScriptMenuPresetEnum preset, int userId = 0, bool unique = false, bool hideParentMenu = true)` | 메뉴 열기. `unique`가 true면 이미 열린 같은 메뉴를 돌려줌 |
+| `OpenDialog(ScriptMenuPresetEnum preset, int priority = DialogPriority.INFORMATIVE, int iUserData = 0, bool unique = false, bool hideParentMenu = true)` | 대화상자 열기. 우선순위대로 쌓임 |
+| `CloseMenu(MenuBase menu)`, `CloseAllMenus()` | 닫기(다음 갱신 때 처리) |
+| `IsAnyMenuOpen()`, `IsAnyDialogOpen()`, `GetTopMenu()` | 상태 확인 |
+
+1.8.0.13에서 시험해 보면 `IsAnyMenuOpen()`과 `GetTopMenu()`는 `OpenDialog`로 연 대화상자를 세지 않았습니다. 대화상자만 열려 있을 때는 각각 false와 null이었고, 메뉴 위에 대화상자가 떠 있을 때 `GetTopMenu()`는 대화상자가 아니라 그 메뉴를 돌려주었습니다. 대화상자가 열렸는지는 `IsAnyDialogOpen()`으로 확인합니다.
+
+엔진 문서는 메뉴가 열릴 때 그 메뉴의 액션 컨텍스트가 자동으로 켜지고 닫힐 때 꺼진다고 설명합니다. 그래서 메뉴 클래스에서 컨텍스트를 직접 켤 필요는 없습니다.
+
+<Note title="설정만으로 만드는 대화상자">
+
+확인·취소 같은 단순한 대화상자는 레이아웃과 클래스를 따로 만들지 않고 설정 파일로 정의할 수 있습니다. Dialog Configuration Tutorial 문서가 설명하는 `SCR_ConfigurableDialogUi.CreateFromPreset(ResourceName presetsResourceName, string tag, SCR_ConfigurableDialogUi customDialogObj = null)`은 설정 파일에서 태그로 프리셋을 찾아 대화상자를 띄우고, `m_OnConfirm`, `m_OnCancel`, `m_OnClose` 같은 `ScriptInvoker`로 결과를 알려 줍니다. 공식 `SCR_CommonDialogs`가 이 방식으로 공통 대화상자를 만듭니다.
+
+</Note>
+
+## 힌트와 알림
+
+### 힌트
+
+화면 한쪽에 설명을 띄우는 힌트는 게임 모드에 붙은 `SCR_HintManagerComponent`가 관리합니다. 정적 메서드 `SCR_HintManagerComponent.GetInstance()`는 `GetGame().GetGameMode()`에서 이 컴포넌트를 찾아 돌려줍니다. 힌트를 띄우는 정적 메서드는 두 가지입니다.
+
+| 메서드 | 쓰임 |
+|---|---|
+| `ShowHint(SCR_HintUIInfo info, bool isSilent = false, bool ignoreShown = false)` | 설정으로 만든 힌트를 띄움 |
+| `ShowCustomHint(string description, string name = string.Empty, float duration = 0, bool isSilent = false, EFieldManualEntryId fieldManualEntry = EFieldManualEntryId.NONE, bool isTimerVisible = false)` | 문자열로 바로 띄움 |
+
+`ShowCustomHint`의 공식 주석은 이 메서드를 **빠른 디버깅에만** 쓰고, 제대로 된 힌트는 엔티티나 컴포넌트, 설정의 어트리뷰트로 구성해 쓰라고 경고합니다. 주석은 `SCR_UIInfo`라고 적었지만, `ShowHint()`가 받는 타입은 그 자손 클래스인 `SCR_HintUIInfo`입니다. 그래야 힌트의 모든 속성을 정하고 로컬라이즈할 수 있습니다. `SCR_HintUIInfo`는 `[BaseContainerProps(configRoot: true)]` 클래스라서 설정 파일로 만들 수도 있고, 컴포넌트의 어트리뷰트로 그 자리에서 채울 수도 있습니다(12장).
+
+```enforce
+[ComponentEditorProps(category: "TAG/UI", description: "환영 힌트를 띄웁니다")]
+class TAG_WelcomeHintComponentClass : ScriptComponentClass
+{
+}
+
+class TAG_WelcomeHintComponent : ScriptComponent
+{
+	[Attribute(desc: "보여 줄 힌트")]
+	protected ref SCR_HintUIInfo m_Hint;
+
+	void ShowWelcomeHint()
+	{
+		if (m_Hint)
+			SCR_HintManagerComponent.ShowHint(m_Hint);
+	}
+}
+```
+
+Hint Usage 문서에 따르면 힌트 설정에는 제목(Name), 내용(Description), 아이콘, 표시 시간(Duration, 0이면 관리자 기본값, -1이면 닫을 때까지), 우선순위(Priority), 표시 횟수 제한(Show Limit) 등이 있습니다. `ShowHint()`는 bool을 돌려주는데, 공식 코드에 따르면 플레이어가 게임 설정에서 힌트를 껐거나, 이미 보여 준 힌트이거나, 지금 떠 있는 힌트보다 우선순위가 낮으면 띄우지 않고 false를 돌려줍니다. 또 `SCR_HintManagerComponent`에는 다른 기계로 무언가를 보내는 코드가 없습니다. 힌트는 이 메서드를 호출한 기계의 화면에 뜨는 UI입니다.
+
+### 알림
+
+화면에 짧게 떴다 사라지는 알림(notification)은 `SCR_NotificationsComponent`가 보냅니다. Notification Creation 문서에 따르면 알림은 다음 순서로 만듭니다.
+
+1. 열거형 `ENotification`에 고유한 정수 값을 가진 항목을 더합니다. 모드라면 `modded enum`을 씁니다.
+2. 알림 목록 설정 파일 `Notifications.conf`(플레이어 컨트롤러에 연결됨)를 Override하고, 항목을 추가합니다. 클래스는 보통 `SCR_NotificationDisplayData`(텍스트만), `SCR_NotificationPlayer`(플레이어 하나), `SCR_NotificationPlayerTargetPlayer`(플레이어 둘) 가운데 고릅니다.
+3. 항목의 Notification Key를 1에서 만든 열거형 값으로 정하고, 항목에 Info 클래스를 만들어 표시할 문장(Name)을 채웁니다. 플레이어를 받는 클래스에서는 문장 속 `%1`이 플레이어 이름으로 바뀝니다.
+
+```enforce
+modded enum ENotification
+{
+	TAG_BEACON_PLACED = 7310001,	// 다른 값과 겹치지 않는 정수
+}
+```
+
+보내는 쪽은 정적 메서드 하나로 끝납니다.
+
+| 메서드 | 받는 사람 |
+|---|---|
+| `SendLocal(ENotification notificationID, int param1 = 0, ...)` | 이 기계의 플레이어 |
+| `SendToPlayer(int playerID, ENotification notificationID, int param1 = 0, ...)` | 지정한 플레이어 |
+| `SendToEveryone(ENotification notificationID, int param1 = 0, ...)` | 모든 플레이어 |
+| `SendToGroup(int groupID, ENotification notificationID, int param1 = 0, ...)` | 그룹 |
+
+```enforce
+SCR_NotificationsComponent.SendLocal(ENotification.TAG_BEACON_PLACED);
+SCR_NotificationsComponent.SendToEveryone(ENotification.PLAYER_JOINED, playerId);
+```
+
+`param1` 이후의 정수 인수는 알림 클래스가 쓰는 값입니다. 예를 들어 `ENotification.PLAYER_JOINED`의 주석은 `param1`이 플레이어 ID라고 적고 있습니다. `SendToEveryone`과 `SendToPlayer`는 공식 코드에서 `Replication.IsServer()`가 아니면 아무것도 보내지 않고 false를 돌려줍니다. 서버에서만 보낼 수 있다는 뜻이며, 이유는 14장에서 다룹니다.
+
+## 로컬라이즈 문자열과 RichText
+
+### 로컬라이즈 키
+
+UI에 보이는 문장은 코드에 직접 적지 않고 **로컬라이즈 키**로 적는 것이 원칙입니다. Mod Localisation 문서에 따르면 UI의 문자열이 `#`로 시작하면 엔진이 문자열 테이블에서 그 키를 찾아 현재 언어의 문장으로 바꿉니다. 공식 `TextWidget.SetText()`의 주석도 "문자열 테이블 항목은 번역된다"고 적고 있습니다.
+
+```enforce
+title.SetText("#AR-FriendlyFire_Title");					// 공식 키
+SCR_HintManagerComponent.ShowCustomHint("#AR-FriendlyFire_Text", "#AR-FriendlyFire_Title", 15);
+```
+
+두 번째 줄은 공식 `SCR_KickHintComponent`의 코드 그대로입니다. 위젯이 아닌 곳에서 번역된 문장이 필요하면 `WidgetManager.Translate(string text, void param1 = NULL, ...)`를 씁니다. 공식 주석은 이 메서드가 텍스트 ID를 현재 언어의 문장으로 바꿔 돌려준다고 설명하며, `%1` 같은 자리표시자에 인수를 채울 수도 있습니다. 공식 코드는 `SetTextFormat("#AR-ValueUnit_Short_Multiplier", value)`처럼 키와 인수를 함께 넘기기도 합니다.
+
+로컬라이즈될 문자열을 담는 변수는 `string` 대신 `LocalizedString` 타입으로 선언하는 것이 공식 권장입니다(`Game/Language/LocalizedString.c`). 어트리뷰트로 노출할 때는 위키가 권하는 대로 `UIWidgets.LocaleEditBox`를 씁니다.
+
+```enforce
+[Attribute(uiwidget: UIWidgets.LocaleEditBox, defvalue: "#AR-Editor_Hint_Intro_Title")]
+protected LocalizedString m_sIntroHintTitle;
+```
+
+모드의 문장은 모드의 문자열 테이블(`.st`)에 넣습니다. Mod Localisation 문서가 설명하는 흐름을 요약하면 다음과 같습니다.
+
+1. String Editor에서 **File > New**로 문자열 테이블과 언어별 런타임 테이블을 만듭니다.
+2. **File > Project Settings...** 화면의 Widget Manager Settings에 있는 String Tables 목록에 테이블과 언어별 런타임 테이블을 등록합니다.
+3. 문자열을 추가합니다. 키는 다른 모드와 겹치지 않게 자기 접두사를 씁니다(문서의 예는 `SampleMod-...`). UI에서는 `#SampleMod-...`처럼 앞에 `#`를 붙여 씁니다.
+4. 문자열을 고칠 때마다 String Editor의 **Table > Build Runtime Table**로 런타임 테이블을 다시 만듭니다. 게임은 런타임 테이블만 읽습니다.
+
+문서는 Diag Menu에서 로컬라이즈를 끄고 원래 키(`#...`)가 보이게 해서, 문장이 제대로 연결되었는지 확인하는 방법도 소개합니다.
+
+### RichText 태그
+
+`RichTextWidget`은 HTML과 비슷한 태그로 텍스트를 꾸밉니다. RichText Format 문서가 설명하는 주요 태그는 다음과 같습니다.
+
+```xml
+<b>굵게</b> <i>기울임</i>
+<color rgba="255,0,0,255">빨강</color> <color name="green">초록</color>
+첫째 줄<br/>둘째 줄
+<p align="center">가운데 정렬 문단</p>
+<h1 align="center">제목</h1>
+<image set="{134A30222457B142}UI/Imagesets/game_template.imageset" name="ImageIncubatorLogo"/>
+<action name="CharacterFire" scale="1.5"/>
+```
+
+- `<color>`는 `rgba`(0~255, 쉼표로 구분), `hex`(ARGB 16진수), `name`(`red`, `green`, `blue`, `orange` 등) 가운데 하나로 색을 정합니다.
+- `<image>`는 이미지 세트(`set`)에서 이름(`name`)으로 이미지를 골라 넣습니다. 둘 다 대소문자를 구별하고, `scale`로 크기를 바꿀 수 있습니다.
+- `<action name="...">`은 그 액션에 연결된 키나 버튼의 아이콘(또는 `mode="text"`로 텍스트)을 넣습니다. 키를 직접 적지 않으므로 플레이어마다 키 설정이 달라도 그 플레이어의 키가 표시됩니다.
+- `<b>`와 `<i>`는 SDF 글꼴에서만 지원됩니다.
+- 문서는 태그가 서로 엇갈리면(`<b>...<i>...</b>...</i>`) 파서가 올바로 처리하지 못한다고 경고합니다. 열린 순서의 반대로 닫으세요.
+
+스크립트 문자열 안에서는 따옴표가 겹치지 않게 속성 값을 작은따옴표로 감싸는 것이 공식 코드의 습관입니다.
+
+```enforce
+string text = string.Format("<color rgba='%2'><action name='%1' scale='1.7'/></color>",
+	actionName, rgba);
+```
+
+또 문서는 긴 RichText의 크기나 내용을 실행 중에 자주 바꾸면 줄바꿈을 다시 계산하느라 느려질 수 있다고 경고합니다. 자주 바뀌는 숫자는 짧은 별도 텍스트 위젯으로 나누는 것이 좋습니다.
+
+## 정리
+
+<Summary>
+
+- UI는 위젯을 배치한 레이아웃(`.layout`)으로 만들고, 정보만 보이는 디스플레이, 기능을 제공하는 메뉴, 입력을 요구하는 대화상자로 나뉩니다. 스크립트는 위젯을 **이름**으로 찾습니다.
+- `GetGame().GetWorkspace().CreateWidgets(layout)`으로 레이아웃을 띄우고, `FindAnyWidget()`으로 찾아 `TextWidget.Cast()` 등으로 형변환한 뒤 `SetText`, `SetVisible`, `SetColor` 등으로 바꿉니다. 지울 때는 `RemoveFromHierarchy()`를 씁니다.
+- 위젯 참조는 `ref` 없이 약하게 들고, 이름에 `m_w` 접두사를 붙입니다.
+- 위젯 이벤트는 `ScriptedWidgetComponent`를 상속한 핸들러에서 `HandlerAttached`, `OnClick` 등을 오버라이드해 받습니다. `bool` 이벤트에서 true를 돌려주면 처리한 것으로 봅니다.
+- 메뉴는 `modded enum ChimeraMenuPreset` 값과 같은 이름의 `chimeraMenus.conf` 항목으로 등록하고, `ChimeraMenuBase` 등을 상속한 클래스에서 `OnMenuOpen`/`OnMenuClose`를 구현합니다. `GetGame().GetMenuManager().OpenMenu()`로 엽니다.
+- 힌트는 `SCR_HintManagerComponent.ShowHint(SCR_HintUIInfo)`로 띄웁니다. 알림은 `ENotification` 값과 `Notifications.conf` 항목을 만들고 `SCR_NotificationsComponent.SendLocal()` 등으로 보내며, 모두에게 보내기는 서버에서만 됩니다.
+- UI 문장은 `#` 로컬라이즈 키로 적고 `LocalizedString` 타입과 `UIWidgets.LocaleEditBox`를 씁니다. RichText는 `<b>`, `<color>`, `<br/>`, `<action>` 같은 태그로 꾸밉니다.
+
+</Summary>
+
+**더 읽을거리**
+
+- [Layout Creation](https://community.bistudio.com/wiki/Arma_Reforger:Layout_Creation)
+- [Dialog Configuration Tutorial](https://community.bistudio.com/wiki/Arma_Reforger:Dialog_Configuration_Tutorial)
+- [Hint Usage](https://community.bistudio.com/wiki/Arma_Reforger:Hint_Usage)
+- [Notification Creation](https://community.bistudio.com/wiki/Arma_Reforger:Notification_Creation)
+- [Mod Localisation](https://community.bistudio.com/wiki/Arma_Reforger:Mod_Localisation)
+- [RichText Format](https://community.bistudio.com/wiki/Arma_Reforger:RichText_Format)
+- [Modular Button Component Tutorial](https://community.bistudio.com/wiki/Arma_Reforger:Modular_Button_Component_Tutorial)
+- Workbench에 포함된 엔진 문서의 Menu System 페이지
+
+## 연습문제
+
+<Exercise id="13-1" level="기초" title="점수판 갱신하기">
+
+레이아웃에 `ScoreText`라는 텍스트 위젯과 `WarningIcon`이라는 이미지 위젯이 있습니다. 루트 위젯과 점수를 받아 `ScoreText`에 "점수: 점수값"을 표시하고, 점수가 0보다 작으면 텍스트를 빨갛게 하고 `WarningIcon`을 보이게, 아니면 흰색과 숨김으로 만드는 메서드 `void UpdateScore(Widget root, int score)`를 작성하세요.
+
+</Exercise>
+
+<Exercise id="13-2" level="기초" title="RichText 문장 만들기">
+
+플레이어 이름은 초록색 굵은 글씨로, 그 뒤에 "님, 환영합니다"를 붙이고, 줄을 바꿔 "`CharacterAction` 액션 키를 눌러 시작하세요"라는 안내에서 액션 부분에 실제 키 아이콘이 나오게 하는 RichText 문자열을 만드는 함수 `string TAG_MakeWelcomeText(string playerName)`을 작성하세요.
+
+</Exercise>
+
+<Exercise id="13-3" level="응용" title="접기 버튼">
+
+버튼 위젯에 붙이는 `TAG_ToggleVisibilityComponent`를 만드세요. 어트리뷰트로 대상 위젯의 이름을 받고, 버튼을 누를 때마다 대상 위젯을 숨기거나 보이게 합니다. 대상 위젯은 버튼과 같은 레이아웃 안 어디에든 있을 수 있습니다. `HandlerAttached` 시점에 대상 위젯을 찾을 수 있을지 생각해 보고, 안전하게 찾는 방법을 고르세요.
+
+</Exercise>
+
+<Exercise id="13-4" level="응용" title="키로 여는 메뉴">
+
+본문의 `TAG_InfoMenuUI`를 쓰는 메뉴가 등록되어 있다고 합시다. 이 메뉴를 입력 액션 `TAG_OpenInfo`(입력 설정에 정의되어 있다고 가정)를 누르면 열고, 이미 열려 있으면 다시 열지 않는 컴포넌트를 작성하세요. 등록과 해제를 어디서 할지도 정하세요.
+
+</Exercise>
+
+<Exercise id="13-5" level="도전" title="카운트다운 디스플레이">
+
+`TAG_MessageDisplay`를 응용해, `Start(ResourceName layout, int seconds)`를 부르면 레이아웃을 띄우고 `Message` 텍스트에 "남은 시간: N초"를 1초마다 갱신하다가 0이 되면 "시작!"을 2초 동안 보여 준 뒤 레이아웃을 지우는 클래스 `TAG_CountdownDisplay`를 만드세요. 11장의 콜 큐를 쓰고, 도중에 `Stop()`을 부르면 즉시 지우고 예약도 모두 취소해야 합니다.
+
+</Exercise>

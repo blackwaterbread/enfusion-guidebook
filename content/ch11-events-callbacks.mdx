@@ -1,0 +1,597 @@
+---
+title: 이벤트, 콜백, 타이머
+description: 무언가가 일어났을 때 다른 코드에 알리는 ScriptInvoker, 나중에 또는 반복해서 함수를 부르는 콜 큐, 게임 모드와 입력 시스템의 이벤트를 배웁니다. 매 프레임 확인하는 대신 필요한 순간에만 코드를 실행하는 방법을 익힙니다.
+---
+
+<Objectives>
+
+- 공식 패턴대로 시그니처를 고정한 `ScriptInvoker`를 선언하고 `Insert`, `Remove`, `Invoke`로 이벤트를 주고받을 수 있다.
+- 구독을 언제 해제해야 하는지 알고 수명 문제를 피할 수 있다.
+- `GetGame().GetCallqueue()`의 `CallLater`, `Call`, `Remove`로 지연 호출과 반복 호출을 만들 수 있다.
+- 매 프레임 처리, 타이머, 이벤트 가운데 상황에 맞는 방법을 고를 수 있다.
+- `SCR_BaseGameMode`의 이벤트에 구독하거나 게임 모드 컴포넌트로 끼어들 수 있다.
+- 입력 액션 리스너와 엔진 Event System의 구조를 설명할 수 있다.
+
+</Objectives>
+
+10장에서는 `EOnFrame`으로 매 프레임 일을 하는 컴포넌트를 만들었습니다. 하지만 게임 로직의 대부분은 "매 프레임"이 아니라 "무언가가 일어났을 때" 실행되어야 합니다. 체력이 줄었을 때, 플레이어가 접속했을 때, 3초가 지났을 때처럼 말입니다. 그때마다 매 프레임 상태를 확인하면 CPU를 낭비하고 코드도 복잡해집니다.
+
+이 장에서는 이벤트를 알리고 받는 `ScriptInvoker`, 시간을 다루는 콜 큐(call queue), 그리고 게임 모드·입력·엔진이 제공하는 이벤트를 차례로 다룹니다. 4장에서 함수를 값처럼 넘기는 `func` 타입을 잠깐 보았는데, 이 장의 모든 기능이 그 위에 서 있습니다.
+
+## 함수를 값으로 넘기기
+
+Enforce Script에서는 메서드 이름을 괄호 없이 쓰면 그 메서드를 값으로 넘길 수 있습니다. 이렇게 넘겨 두었다가 나중에 불리는 함수를 콜백(callback)이라고 합니다.
+
+```enforce
+GetGame().GetCallqueue().CallLater(Ping, 2000);	// Ping()을 호출하는 것이 아니라 Ping을 넘긴다
+m_Health.GetOnHealthChanged().Insert(OnHealthChanged);
+```
+
+넘긴 메서드는 그 메서드를 가진 객체와 함께 기억됩니다. 그래서 콜백이 불리면 원래 객체의 멤버에 그대로 접근할 수 있습니다.
+
+## ScriptInvoker: 이벤트 알리기
+
+### 구조
+
+`ScriptInvoker`는 콜백 여러 개를 등록해 두었다가 한 번에 호출하는 이벤트 객체입니다. 정의는 `GameLib/tools.c`에 있습니다.
+
+```enforce
+class ScriptInvokerBase<Class T>: Managed
+{
+	proto void Invoke(void param1 = NULL, /* ... */ void param9 = NULL);	// 등록된 콜백을 모두 호출
+	proto void Insert(T fn);	// 콜백 등록
+	proto void Remove(T fn);	// 콜백 해제
+	proto native void Clear();	// 모두 해제
+}
+
+typedef ScriptInvokerBase<func> ScriptInvoker;
+```
+
+템플릿 매개변수 `T`가 콜백의 시그니처를 정합니다. `ScriptInvoker`는 `T`가 아무 함수나 되는 `func`인 별칭이므로 어떤 메서드든 받아 버립니다. 위키의 Event Handlers 문서는 `ScriptInvoker`를 그대로 쓰는 것을 나쁜 습관으로 규정하고, 시그니처를 고정한 타입을 만들어 쓰라고 합니다. 그래야 맞지 않는 메서드를 넣을 때 컴파일러가 알려 줍니다. 공식 코드에는 `ScriptInvoker`를 그대로 쓰는 곳도 많이 남아 있지만, 위키의 지침과 공식 `SCR_ScriptInvokerHelper.c`의 예제는 시그니처를 고정한 타입을 씁니다.
+
+<Compare title="JavaScript의 EventEmitter, C#의 event">
+
+Node.js의 `EventEmitter`나 C#의 `event`와 같은 역할입니다.
+
+```javascript
+emitter.on("healthChanged", onHealthChanged);   // 구독
+emitter.off("healthChanged", onHealthChanged);  // 해제
+emitter.emit("healthChanged", 50, 100);         // 알림
+```
+
+`ScriptInvoker`는 문자열 이벤트 이름 대신 이벤트마다 객체를 하나씩 둡니다.
+
+```enforce
+m_OnHealthChanged.Insert(OnHealthChanged);	// 구독
+m_OnHealthChanged.Remove(OnHealthChanged);	// 해제
+m_OnHealthChanged.Invoke(50, 100);			// 알림
+```
+
+</Compare>
+
+### 시그니처를 고정하는 공식 패턴
+
+시그니처를 고정하려면 세 줄을 씁니다. 몸체 없는 함수를 선언해 모양을 정하고, `typedef func`로 그 이름을 함수 타입으로 만든 뒤, 그 타입으로 `ScriptInvokerBase`를 구체화합니다.
+
+```enforce
+void TAG_OnHealthChangedMethod(float newHealth, float oldHealth);
+typedef func TAG_OnHealthChangedMethod;
+typedef ScriptInvokerBase<TAG_OnHealthChangedMethod> TAG_OnHealthChangedInvoker;
+```
+
+공식 `SCR_BaseScoringSystemComponent.c`의 맨 위에도 같은 모양의 선언이 있습니다. 이 세 줄은 전역에 놓이므로, 모드에서 만들 때는 이름에 꼭 자기 태그를 붙입니다.
+
+```enforce
+void OnPlayerScoreChangedDelegate(int playerId, SCR_ScoreInfo scoreInfo);
+typedef func OnPlayerScoreChangedDelegate;
+typedef ScriptInvokerBase<OnPlayerScoreChangedDelegate> OnPlayerScoreChangedInvoker;
+```
+
+자주 쓰는 모양은 공식 `Game/Helpers/SCR_ScriptInvokerHelper.c`에 미리 정의되어 있으니 그대로 써도 됩니다.
+
+| 타입 | 콜백 시그니처 |
+|---|---|
+| `ScriptInvokerVoid` | `void ()` |
+| `ScriptInvokerInt`, `ScriptInvokerInt2` ~ `ScriptInvokerInt5` | `void (int i)`, `void (int i1, int i2)` … |
+| `ScriptInvokerBool`, `ScriptInvokerFloat`, `ScriptInvokerString` (각각 `2`~`5`까지) | `void (bool b)`, `void (float f)`, `void (string s)` … |
+| `ScriptInvokerEntity`, `ScriptInvokerEntity2` | `void (IEntity e)`, `void (IEntity e1, IEntity e2)` |
+| `ScriptInvokerVector`, `ScriptInvokerWidget` | `void (vector v)`, `void (Widget w)` |
+
+### 이벤트를 알리는 쪽
+
+10장 스타일의 체력 컴포넌트를 만들어, 체력이 바뀔 때마다 이벤트를 알리게 해 봅시다.
+
+```enforce title="Scripts/Game/TAG_HealthComponent.c"
+void TAG_OnHealthChangedMethod(float newHealth, float oldHealth);
+typedef func TAG_OnHealthChangedMethod;
+typedef ScriptInvokerBase<TAG_OnHealthChangedMethod> TAG_OnHealthChangedInvoker;
+
+[ComponentEditorProps(category: "TAG/Tutorial", description: "체력을 관리합니다")]
+class TAG_HealthComponentClass : ScriptComponentClass
+{
+}
+
+class TAG_HealthComponent : ScriptComponent
+{
+	[Attribute(defvalue: "100", desc: "최대 체력")]
+	protected float m_fMaxHealth;
+
+	protected float m_fHealth;
+	protected ref TAG_OnHealthChangedInvoker m_OnHealthChanged;	// 필요할 때 만든다
+
+	TAG_OnHealthChangedInvoker GetOnHealthChanged()
+	{
+		if (!m_OnHealthChanged)
+			m_OnHealthChanged = new TAG_OnHealthChangedInvoker();
+
+		return m_OnHealthChanged;
+	}
+
+	void ApplyDamage(float amount)
+	{
+		float oldHealth = m_fHealth;
+		m_fHealth = Math.Clamp(m_fHealth - amount, 0, m_fMaxHealth);
+
+		if (m_OnHealthChanged && m_fHealth != oldHealth)
+			m_OnHealthChanged.Invoke(m_fHealth, oldHealth);
+	}
+
+	override void OnPostInit(IEntity owner)
+	{
+		m_fHealth = m_fMaxHealth;
+	}
+}
+```
+
+공식 코드와 위키가 함께 지키는 습관이 세 가지 보입니다.
+
+- **필요할 때 만들기.** 위키는 ScriptInvoker가 작은 객체가 아니므로 기본으로 만들어 두지 말고, 게터가 처음 불릴 때 만들라고 권합니다. 구독자가 없으면 객체를 만들지 않아 메모리를 아낍니다.
+- **null이면 알리지 않기.** 아무도 구독하지 않았다면 `m_OnHealthChanged`가 null이므로 `Invoke` 전에 확인합니다. 공식 `OnPlayerScoreChanged()`도 똑같이 `if (m_OnPlayerScoreChangedInvoker)`로 확인합니다.
+- **변수는 감추고 게터만 공개하기.** 위키 예제는 변수를 직접 공개하면 누구든 지울 수 있으니 게터로만 내보내라고 적고 있습니다. 변수는 `ref`로 들고 있어야 합니다. ScriptInvoker도 `Managed`이기 때문입니다(7장).
+
+### 이벤트를 받는 쪽
+
+같은 엔티티에 붙은 다른 컴포넌트가 체력 변화를 로그로 남기게 해 봅시다.
+
+```enforce title="Scripts/Game/TAG_HealthLoggerComponent.c"
+[ComponentEditorProps(category: "TAG/Tutorial", description: "체력 변화를 기록합니다")]
+class TAG_HealthLoggerComponentClass : ScriptComponentClass
+{
+}
+
+class TAG_HealthLoggerComponent : ScriptComponent
+{
+	protected TAG_HealthComponent m_Health;
+
+	override void OnPostInit(IEntity owner)
+	{
+		m_Health = TAG_HealthComponent.Cast(owner.FindComponent(TAG_HealthComponent));
+		if (m_Health)
+			m_Health.GetOnHealthChanged().Insert(OnHealthChanged);
+	}
+
+	override void OnDelete(IEntity owner)
+	{
+		if (m_Health)
+			m_Health.GetOnHealthChanged().Remove(OnHealthChanged);
+	}
+
+	protected void OnHealthChanged(float newHealth, float oldHealth)
+	{
+		PrintFormat("체력 %1 -> %2", oldHealth, newHealth);
+	}
+}
+```
+
+`OnHealthChanged`의 매개변수 목록은 `TAG_OnHealthChangedMethod`와 같아야 합니다. 위키에 따르면 시그니처가 맞지 않으면 컴파일러가 `Insert` 줄에서 알려 줍니다. 콜백은 `protected`여도 됩니다. 등록을 그 클래스 안에서 하기 때문입니다.
+
+### 구독 해제와 수명
+
+구독은 반드시 짝을 맞춰 해제합니다. 위키는 구독자의 소멸자에서 `Remove`를 호출하는 예제를 보여 주며, 구독 해제를 잊지 않는 것이 깔끔한 코드이자 메모리 누수를 피하는 방법이라고 설명합니다. 해제 시점은 구독자가 무엇이냐에 따라 다릅니다.
+
+| 구독자 | 구독 | 해제 |
+|---|---|---|
+| 컴포넌트 | `OnPostInit` 또는 `EOnInit` | `OnDelete` |
+| 일반 클래스(`Managed`) | 생성자나 초기화 메서드 | 소멸자 |
+| 메뉴(13장) | `OnMenuOpen` | `OnMenuClose` |
+
+컴포넌트는 소멸자 대신 `OnDelete`에서 해제합니다. 10장에서 보았듯이 컴포넌트 소멸자가 불릴 때는 소유 엔티티가 이미 지워진 뒤라, 다른 컴포넌트에 손을 대기에 안전하지 않습니다.
+
+구독자는 이벤트를 가진 객체를 약한 참조로 들고 있습니다. 위의 `m_Health`에 `ref`가 없는 것도 이 때문입니다. 위키의 예제는 같은 객체를 두 번 구독하지 않도록, 새로 구독하기 전에 이전 구독부터 해제합니다.
+
+```enforce
+void Subscribe(notnull TAG_HealthComponent health)
+{
+	Unsubscribe();					// 이전 구독이 있으면 먼저 정리
+	health.GetOnHealthChanged().Insert(OnHealthChanged);
+	m_Health = health;
+}
+
+void Unsubscribe()
+{
+	if (!m_Health)
+		return;
+
+	m_Health.GetOnHealthChanged().Remove(OnHealthChanged);
+	m_Health = null;
+}
+```
+
+<Warning title="Remove에는 Insert에 넘긴 바로 그 메서드를">
+
+`Remove`는 등록된 목록에서 넘겨받은 콜백을 찾아 지웁니다. 그러니 `Insert`에 넘긴 것과 같은 객체의 같은 메서드를 넘겨야 합니다. 구독할 때와 다른 메서드를 넘기면 원래 콜백은 목록에 남아 계속 불립니다. 구독과 해제 코드는 가까운 곳에 나란히 두고 함께 고치세요.
+
+</Warning>
+
+## 콜 큐: 나중에, 그리고 반복해서
+
+### 기본 사용법
+
+"3초 뒤에", "2초마다"처럼 시간을 기준으로 함수를 부를 때는 콜 큐를 씁니다. 게임 객체 `GetGame()`이 돌려주는 `ArmaReforgerScripted`에는 `ScriptCallQueue`가 하나 있고, `GetGame().GetCallqueue()`로 얻습니다. 이 큐는 게임이 매 업데이트(`OnUpdate`)마다 진행시킵니다.
+
+`ScriptCallQueue`(`GameLib/tools.c`)의 주요 메서드는 다음과 같습니다.
+
+| 메서드 | 하는 일 |
+|---|---|
+| `CallLater(func fn, int delay = 0, bool repeat = false, void param1 = NULL, ...)` | `delay`밀리초 뒤에 `fn`을 호출. `repeat`가 true면 같은 간격으로 반복 |
+| `Call(func fn, void param1 = NULL, ...)` | 다음 프레임(다음 `Tick`)에 호출 |
+| `Remove(func fn)` | 예약한 호출을 큐에서 지움 |
+| `GetRemainingTime(func fn)` | 호출까지 남은 시간(밀리초) |
+| `CallLaterByName`, `RemoveByName` | 메서드를 이름 문자열로 지정하는 판 |
+| `Clear()` | 큐의 모든 호출을 지움 |
+
+`delay`의 단위가 **밀리초**라는 점에 주의하세요. `EOnFrame`의 `timeSlice`는 초 단위였습니다. 콜백에 넘길 인수는 `repeat` 뒤에 차례로 적으며 9개까지 넘길 수 있습니다. 공식 주석에 따르면 인수는 호출이 실행되거나 지워질 때까지 큐가 보관합니다.
+
+```enforce
+ScriptCallQueue queue = GetGame().GetCallqueue();
+
+queue.CallLater(ShowMessage, 3000, false, "3초가 지났습니다");	// 한 번, 인수 하나
+queue.CallLater(Ping, 2000, true);								// 2초마다 반복
+queue.Call(RefreshUI);											// 다음 프레임에 한 번
+
+queue.Remove(Ping);												// 반복 중지
+```
+
+`Clear()`는 큐 전체를 비웁니다. `GetGame().GetCallqueue()`는 게임 전체가 함께 쓰는 큐이므로, 여기에 `Clear()`를 부르면 다른 코드가 예약한 호출까지 사라집니다. 자기가 예약한 것은 `Remove`로 하나씩 지웁니다.
+
+<Compare title="JavaScript의 setTimeout, setInterval">
+
+```javascript
+setTimeout(() => showMessage("3초가 지났습니다"), 3000);
+const id = setInterval(ping, 2000);
+clearInterval(id);   // 타이머 ID로 취소
+```
+
+Enforce Script에는 타이머 ID가 없습니다. 취소할 때 예약한 메서드 자체를 `Remove`에 넘깁니다. 반복 여부도 별도 함수가 아니라 `CallLater`의 세 번째 인수로 정합니다.
+
+```enforce
+GetGame().GetCallqueue().CallLater(ShowMessage, 3000, false, "3초가 지났습니다");
+GetGame().GetCallqueue().CallLater(Ping, 2000, true);
+GetGame().GetCallqueue().Remove(Ping);
+```
+
+</Compare>
+
+### 반복 타이머 컴포넌트
+
+일정 간격으로 신호를 보내는 컴포넌트를 만들어 봅시다. 10장의 `TAG_TickerEntity`는 `EOnFrame`에서 시간을 직접 더했지만, 콜 큐를 쓰면 프레임 이벤트 없이 같은 일을 할 수 있습니다.
+
+```enforce title="Scripts/Game/TAG_BeaconComponent.c"
+[ComponentEditorProps(category: "TAG/Tutorial", description: "일정 간격으로 신호를 보냅니다")]
+class TAG_BeaconComponentClass : ScriptComponentClass
+{
+}
+
+class TAG_BeaconComponent : ScriptComponent
+{
+	[Attribute(defvalue: "2", desc: "신호 간격(초)", params: "0.1 60")]
+	protected float m_fInterval;
+
+	protected int m_iPingCount;
+
+	protected void Ping()
+	{
+		m_iPingCount++;
+		PrintFormat("%1: 신호 %2", GetOwner().GetName(), m_iPingCount);
+	}
+
+	override void OnPostInit(IEntity owner)
+	{
+		if (SCR_Global.IsEditMode(owner))	// World Editor 편집 중에는 시작하지 않는다
+			return;
+
+		int delayMs = m_fInterval * 1000;	// 초를 밀리초로
+		GetGame().GetCallqueue().CallLater(Ping, delayMs, true);
+	}
+
+	override void OnDelete(IEntity owner)
+	{
+		GetGame().GetCallqueue().Remove(Ping);
+	}
+}
+```
+
+`OnDelete`에서 `Remove`를 부르는 데 주목하세요. 공식 `SCR_NetworkedStatsComponent`도 반복 호출을 `OnDelete`에서 지우고, 엔티티인 `SCR_PlayerSpawnPoint`는 소멸자에서 지웁니다. 객체가 사라진 뒤에 그 메서드를 부르는 예약이 큐에 남지 않도록 정리하는 것입니다.
+
+### 다시 예약하기
+
+"마지막 요청 뒤 2초 동안 조용하면 한 번 실행" 같은 동작은 `Remove`로 이전 예약을 지우고 곧바로 `CallLater`로 다시 예약해서 만듭니다. 공식 `SCR_CharacterDamageManagerComponent`도 이렇게 타이머를 다시 시작합니다. 이 장의 연습문제 11-5에서 직접 만들어 봅니다.
+
+```enforce
+void RequestSave()
+{
+	ScriptCallQueue queue = GetGame().GetCallqueue();
+	queue.Remove(DoSave);			// 이미 예약된 저장이 있으면 취소하고
+	queue.CallLater(DoSave, 2000);	// 2초 뒤로 다시 예약
+}
+```
+
+## 매 프레임, 타이머, 이벤트 가운데 무엇을 쓸까
+
+같은 기능도 세 가지 방식으로 만들 수 있습니다. 위키의 Scripting: Performance 문서는 성능 문제를 피하는 질문으로 "정말 필요한가, 그렇게 자주 필요한가, 지금 당장 필요한가"를 제시하고, 자주 할 필요가 없는 일은 몇 초마다 실행하라고 권합니다.
+
+| 방식 | 알맞은 경우 | 주의할 점 |
+|---|---|---|
+| 이벤트(`ScriptInvoker` 등) | 무언가가 바뀌었을 때만 반응하면 되는 일 | 구독 해제를 잊지 않기 |
+| 콜 큐(`CallLater`) | 몇백 밀리초~몇 초 간격의 확인, 한 번의 지연 실행 | 간격이 프레임과 정확히 맞지 않음. `Remove` 잊지 않기 |
+| `EOnFrame` | 움직임이나 보간처럼 매 프레임 값이 바뀌어야 하는 일 | `FRAME` 마스크가 엔티티를 매 프레임 시뮬레이션 대상으로 만듦. 필요 없을 때 끄기 |
+| `EOnFixedFrame` | 프레임률과 무관한 고정 주기(초당 30회)가 필요한 일 | `FIXEDFRAME` 마스크 필요 |
+
+먼저 이벤트로 해결할 수 있는지 생각하고, 안 되면 타이머, 그래도 안 되면 매 프레임 처리를 고르는 순서가 무난합니다. 엔티티 수백 개가 같은 계산을 매 프레임 한다면 엔진 문서의 월드 시스템(`WorldSystem`)처럼 한곳에 모아 처리하는 구조도 있지만, 이 책에서는 다루지 않습니다.
+
+## 게임 모드 이벤트에 끼어들기
+
+### SCR_BaseGameMode의 ScriptInvoker
+
+게임의 흐름은 게임 모드 엔티티가 관리합니다. Arma Reforger의 게임 모드는 `SCR_BaseGameMode`를 상속하며, 현재 게임 모드는 `GetGame().GetGameMode()`로 얻습니다. 반환 타입이 엔진 쪽 `BaseGameMode`이므로 `SCR_BaseGameMode.Cast()`로 형변환합니다. 게임 모드는 주요 사건마다 ScriptInvoker를 게터로 내놓습니다.
+
+| 게터 | 콜백 시그니처 | 공식 주석의 설명 |
+|---|---|---|
+| `GetOnGameStart()` | `void ()` (`ScriptInvoker`) | 게임 시작 |
+| `GetOnPlayerConnected()` | `void (int playerId)` | 플레이어 접속. 서버에서만 |
+| `GetOnPlayerRegistered()` | `void (int playerId)` | 플레이어 등록(이름 등). 모든 기계, 접속 뒤 |
+| `GetOnPlayerDisconnected()` | `void (int playerId, KickCauseCode cause, int timeout)` | 플레이어 접속 해제 |
+| `GetOnPlayerSpawned()` | `void (int playerId, IEntity player)` | 플레이어 캐릭터 생성 완료. 권한자에서만 |
+| `GetOnPlayerKilled()` | `void (notnull SCR_InstigatorContextData data)` | 플레이어 사망 |
+| `GetOnGameModeEnd()` | `ScriptInvoker`, `SCR_GameModeEndData`를 넘김 | 게임 모드 종료. 모든 기계 |
+
+다음은 다른 엔티티에 붙인 컴포넌트가 플레이어 사망 이벤트를 구독하는 예입니다. 공식 `SCR_PlayerSupplyAllocationComponent`도 `OnPostInit`에서 같은 방식으로 구독합니다.
+
+```enforce
+[ComponentEditorProps(category: "TAG/Tutorial", description: "플레이어 사망을 기록합니다")]
+class TAG_DeathLogComponentClass : ScriptComponentClass
+{
+}
+
+class TAG_DeathLogComponent : ScriptComponent
+{
+	override void OnPostInit(IEntity owner)
+	{
+		if (SCR_Global.IsEditMode(owner))
+			return;
+
+		SCR_BaseGameMode gameMode = SCR_BaseGameMode.Cast(GetGame().GetGameMode());
+		if (gameMode)	// 게임 모드가 없는 월드도 있다
+			gameMode.GetOnPlayerKilled().Insert(OnPlayerKilled);
+	}
+
+	override void OnDelete(IEntity owner)
+	{
+		SCR_BaseGameMode gameMode = SCR_BaseGameMode.Cast(GetGame().GetGameMode());
+		if (gameMode)
+			gameMode.GetOnPlayerKilled().Remove(OnPlayerKilled);
+	}
+
+	protected void OnPlayerKilled(SCR_InstigatorContextData data)
+	{
+		PrintFormat("플레이어 %1 사망, 가해 플레이어 %2", data.GetVictimPlayerID(), data.GetKillerPlayerID());
+	}
+}
+```
+
+`SCR_InstigatorContextData`는 피해자와 가해자 정보를 담습니다. `GetVictimPlayerID()`, `GetKillerPlayerID()`, `GetVictimEntity()`, `GetKillerEntity()`가 있고, 가해자 ID는 `Instigator.GetInstigatorPlayerID()`에서 오는데 그 주석에 따르면 가해자가 플레이어가 아니면 0입니다. 자살 여부 같은 관계는 `HasAnyVictimKillerRelation(SCR_ECharacterDeathStatusRelations.SUICIDE)`처럼 확인합니다.
+
+### 게임 모드 컴포넌트로 끼어들기
+
+두 번째 방법은 게임 모드 엔티티에 직접 붙는 컴포넌트를 만드는 것입니다. `SCR_BaseGameModeComponent`를 상속하면 게임 모드가 주요 사건마다 이 컴포넌트의 메서드를 직접 불러 줍니다. 공식 점수 시스템(`SCR_BaseScoringSystemComponent`)도 이 방식으로 만들어져 있습니다.
+
+```enforce title="Scripts/Game/TAG_PlayerLogComponent.c"
+[ComponentEditorProps(category: "TAG/GameMode", description: "플레이어 등록과 사망을 기록합니다")]
+class TAG_PlayerLogComponentClass : SCR_BaseGameModeComponentClass
+{
+}
+
+class TAG_PlayerLogComponent : SCR_BaseGameModeComponent
+{
+	override void OnPlayerRegistered(int playerId)
+	{
+		string playerName = GetGame().GetPlayerManager().GetPlayerName(playerId);
+		PrintFormat("등록: %1 (ID %2)", playerName, playerId);
+	}
+
+	override void OnPlayerKilled(notnull SCR_InstigatorContextData instigatorContextData)
+	{
+		PrintFormat("사망: ID %1", instigatorContextData.GetVictimPlayerID());
+	}
+}
+```
+
+`SCR_BaseGameModeComponent`에서 오버라이드할 수 있는 주요 메서드는 `OnGameModeStart()`, `OnGameModeEnd(SCR_GameModeEndData data)`, `OnPlayerConnected(int playerId)`, `OnPlayerRegistered(int playerId)`, `OnPlayerDisconnected(int playerId, KickCauseCode cause, int timeout)`, `OnPlayerKilled(notnull SCR_InstigatorContextData instigatorContextData)`, `OnPlayerDeleted(int playerId, IEntity player)`, `OnControllableSpawned(IEntity entity)` 등입니다. 오버라이드할 때는 매개변수의 `notnull`까지 그대로 맞춥니다.
+
+이름을 `OnPlayerConnected`가 아니라 `OnPlayerRegistered`에서 읽은 데는 이유가 있습니다. 공식 주석에 따르면 `OnPlayerConnected`는 서버에서만 불리고, `OnPlayerRegistered`는 이름 같은 신원 정보가 등록된 뒤 모든 기계에서 불리며 언제나 `OnPlayerConnected` 다음입니다. 이처럼 **이벤트가 어느 기계에서 불리는지는 이벤트마다 다르므로** 공식 주석을 꼭 확인하세요. 서버와 클라이언트의 구분은 14장에서 자세히 다룹니다.
+
+이 컴포넌트는 게임 모드 엔티티에 붙여야 합니다. `SCR_BaseGameModeComponent`의 생성자는 소유 엔티티가 `SCR_BaseGameMode`가 아니면 오류를 남깁니다. 세 번째 방법인 `SCR_BaseGameMode`를 modded 클래스로 고치는 방식은 12장에서 다룹니다.
+
+### 컴포넌트 이벤트 핸들러
+
+차량이 파괴되었을 때처럼 엔진 쪽 컴포넌트가 내는 사건은 `EventHandlerManagerComponent`로 받습니다. 위키의 Event Handlers 문서가 이 컴포넌트가 묶어 내는 이벤트(`OnDestroyed`, `OnCompartmentEntered`, `OnAmmoCountChanged` 등)를 표로 정리해 두었습니다. 이벤트 이름은 문자열로 지정합니다.
+
+```enforce
+protected void WatchVehicle(IEntity vehicle)
+{
+	EventHandlerManagerComponent handler = EventHandlerManagerComponent.Cast(
+		vehicle.FindComponent(EventHandlerManagerComponent));
+	if (handler)
+		handler.RegisterScriptHandler("OnDestroyed", this, OnVehicleDestroyed);
+	// 해제할 때: handler.RemoveScriptHandler("OnDestroyed", this, OnVehicleDestroyed);
+}
+
+protected void OnVehicleDestroyed(IEntity vehicle)
+{
+	Print("차량이 파괴되었습니다");
+}
+```
+
+`RegisterScriptHandler(string eventName, Managed inst, func callback, bool delayed = true, bool singleUse = false)`의 두 번째 인수는 콜백을 가진 객체입니다. 공식 `SCR_AmbientVehicleSpawnPointComponent`가 이 방식으로 차량 파괴를 감지합니다.
+
+다만 1.8.0.13에서 차 한 대를 `SCR_DamageManagerComponent.Kill`로 부숴 보면 이 콜백이 45번 불렸고, 지켜보는 차량이 인수로 온 것은 첫 번째 한 번뿐이었습니다. 나머지 호출의 인수는 null이거나 다른 엔티티였습니다. 위 예제대로면 "차량이 파괴되었습니다"가 여러 번 찍히므로, 지켜보는 차량을 멤버에 저장해 두고 콜백 첫머리에서 인수가 그 차량이 아니면 바로 돌아가게 합니다. 앞의 공식 컴포넌트도 이렇게 거릅니다.
+
+## 입력 액션 이벤트
+
+### 액션과 컨텍스트
+
+게임 코드는 키보드 키나 마우스 버튼을 직접 다루지 않고 **액션**(action)을 다룹니다. Input Manager 문서에 따르면 액션은 `CharacterFire`처럼 이름이 붙은 입력이고, 어떤 키가 그 액션을 일으키는지는 설정 파일(`chimeraInputCommon.conf`)이 정합니다. 덕분에 플레이어가 키를 바꿔도 코드는 그대로입니다.
+
+액션은 **컨텍스트**(context)로 묶입니다. 컨텍스트에는 우선순위와 플래그가 있고, 게임은 지금 쓸 컨텍스트를 켭니다. 엔진 문서는 컨텍스트를 계속 활성 상태로 두려면 매 프레임 다시 켜야 하고, 메뉴는 열릴 때 자기 컨텍스트를 자동으로 켠다고 설명합니다. 컨텍스트는 `ActivateContext(string contextName, int duration = 0)`로 켭니다.
+
+### 액션 리스너
+
+입력 관리자(`InputManager`)는 `GetGame().GetInputManager()`로 얻습니다. 액션에 반응하는 방법은 두 가지입니다. `GetActionTriggered(string actionName)`, `GetActionValue(string actionName)`로 매 프레임 상태를 묻거나, 리스너를 등록해 입력이 들어올 때만 콜백을 받습니다.
+
+```enforce
+[ComponentEditorProps(category: "TAG/Tutorial", description: "스코어보드 키 입력을 기록합니다")]
+class TAG_ScoreboardKeyComponentClass : ScriptComponentClass
+{
+}
+
+class TAG_ScoreboardKeyComponent : ScriptComponent
+{
+	override void OnPostInit(IEntity owner)
+	{
+		InputManager inputManager = GetGame().GetInputManager();
+		if (inputManager && !SCR_Global.IsEditMode(owner))
+			inputManager.AddActionListener("ShowScoreboard", EActionTrigger.DOWN, OnScoreboardKey);
+	}
+
+	override void OnDelete(IEntity owner)
+	{
+		InputManager inputManager = GetGame().GetInputManager();
+		if (inputManager)
+			inputManager.RemoveActionListener("ShowScoreboard", EActionTrigger.DOWN, OnScoreboardKey);
+	}
+
+	protected void OnScoreboardKey(float value = 0.0, EActionTrigger reason = 0,
+		string actionName = string.Empty)
+	{
+		Print("액션 입력: " + actionName);
+	}
+}
+```
+
+`ShowScoreboard`는 공식 게임 코드(`game.c`)가 같은 방식으로 리스너를 등록하는 기존 액션입니다. 새 액션이 필요하면 입력 설정 파일에 먼저 정의해야 합니다.
+
+콜백의 시그니처는 `GameLib/inputManager.c`에 `void ActionListenerCallback(float value = 0.0, EActionTrigger reason = 0, string actionName = string.Empty)`로 정의되어 있습니다. 공식 코드에는 이 시그니처를 그대로 쓰는 콜백도, 매개변수 없는 콜백도 있습니다. 언제 콜백을 부를지는 `EActionTrigger`로 정합니다.
+
+| `EActionTrigger` | 부르는 때 |
+|---|---|
+| `DOWN` | 키를 누른 순간 한 번 |
+| `UP` | 키를 뗀 순간 한 번 |
+| `PRESSED` | 누르고 있는 동안 매 틱 |
+| `VALUE` | 매 틱 현재 값과 함께 |
+
+## 엔진의 Event System
+
+엔진에는 `ScriptInvoker`와 별도로 Event System이라는 이벤트 구조가 있습니다. 엔진 문서에 따르면 이벤트를 내는 **제공자**(provider)와 받는 **수신자**(receiver)로 나뉘며, 연결이 맞는지 컴파일할 때 검사합니다.
+
+- 제공자는 `EventProvider`를 상속해야 합니다. 이 클래스는 스크립트에서 `sealed`라 직접 상속할 수 없고, 엔진이 허용한 클래스만 제공자가 됩니다. 문서는 `WorldSystem`과 `WorldController`를 예로 들며, 게임 쪽에서는 `SaveGameManager`도 제공자입니다.
+- 제공자의 이벤트 메서드에는 `[EventAttribute()]`, 수신자의 콜백 메서드에는 `[ReceiverAttribute()]`가 붙습니다.
+- 연결과 해제는 정적 메서드 `EventProvider.ConnectEvent(이벤트, 콜백)`과 `EventProvider.DisconnectEvent(이벤트, 콜백)`으로 합니다. 연결은 내부적으로 약한 참조를 쓰지만, 문서는 수신자가 사라질 때 명시적으로 해제하라고 강하게 권합니다.
+
+다음은 공식 `SCR_RewindComponent`가 쓰는 방식 그대로, 저장 파일이 만들어질 때 알림을 받는 컴포넌트입니다. `SaveGameManager`에는 `[EventAttribute()]`가 붙은 `OnSaveCreated(SaveGame save)`가 선언되어 있습니다.
+
+```enforce
+[ComponentEditorProps(category: "TAG/Tutorial", description: "저장 파일 생성을 알립니다")]
+class TAG_SaveWatcherComponentClass : ScriptComponentClass
+{
+}
+
+class TAG_SaveWatcherComponent : ScriptComponent
+{
+	override void OnPostInit(IEntity owner)
+	{
+		SaveGameManager manager = GetGame().GetSaveGameManager();
+		if (manager && !SCR_Global.IsEditMode(owner))
+			EventProvider.ConnectEvent(manager.OnSaveCreated, OnSaveCreated);
+	}
+
+	override void OnDelete(IEntity owner)
+	{
+		SaveGameManager manager = GetGame().GetSaveGameManager();
+		if (manager)
+			EventProvider.DisconnectEvent(manager.OnSaveCreated, OnSaveCreated);
+	}
+
+	[ReceiverAttribute()]
+	protected void OnSaveCreated(SaveGame save)
+	{
+		Print("저장 파일이 만들어졌습니다");
+	}
+}
+```
+
+모드에서 새 이벤트를 만들 때는 범용 도구인 ScriptInvoker를 쓰고, Event System은 엔진이 정해 둔 제공자의 이벤트를 받을 때 씁니다.
+
+## 정리
+
+<Summary>
+
+- 메서드는 괄호 없이 이름만 써서 콜백으로 넘깁니다. 넘긴 메서드는 그 객체와 함께 기억됩니다.
+- `ScriptInvoker`는 시그니처 함수 선언 + `typedef func` + `typedef ScriptInvokerBase<...>` 세 줄로 고정한 타입을 만들어 씁니다. 자주 쓰는 모양은 `ScriptInvokerVoid`, `ScriptInvokerInt` 등으로 미리 정의되어 있습니다.
+- 이벤트를 가진 쪽은 `ref` 변수를 게터에서 필요할 때 만들고, `Invoke` 전에 null을 확인합니다.
+- 구독자는 이벤트 객체를 약한 참조로 들고, 컴포넌트라면 `OnDelete`에서 같은 메서드로 `Remove`합니다.
+- `GetGame().GetCallqueue()`의 `CallLater(fn, 밀리초, 반복, 인수...)`로 지연·반복 호출을 만들고, `Remove(fn)`으로 취소합니다. 게임 전체가 쓰는 큐이므로 `Clear()`는 쓰지 않습니다.
+- 이벤트로 해결할 수 있으면 이벤트, 아니면 타이머, 그래도 안 되면 `EOnFrame` 순서로 고릅니다.
+- 게임 모드 사건은 `SCR_BaseGameMode`의 게터(`GetOnPlayerKilled()` 등)로 구독하거나 `SCR_BaseGameModeComponent`를 상속한 컴포넌트를 게임 모드에 붙여 받습니다. 어느 기계에서 불리는지는 이벤트마다 다릅니다.
+- 입력은 액션 이름으로 다루고 `AddActionListener`/`RemoveActionListener`로 구독합니다. 엔진의 Event System은 `ConnectEvent`/`DisconnectEvent`와 `[ReceiverAttribute()]`로 받습니다.
+
+</Summary>
+
+**더 읽을거리**
+
+- [ScriptInvoker Usage](https://community.bistudio.com/wiki/Arma_Reforger:ScriptInvoker_Usage)
+- [Event Handlers](https://community.bistudio.com/wiki/Arma_Reforger:Event_Handlers)
+- [Input Manager](https://community.bistudio.com/wiki/Arma_Reforger:Input_Manager)
+- [Scripting: Performance](https://community.bistudio.com/wiki/Arma_Reforger:Scripting:_Performance)
+- Workbench에 포함된 엔진 문서의 Event System, Input System 페이지
+
+## 연습문제
+
+<Exercise id="11-1" level="기초" title="채팅 이벤트 선언하기">
+
+플레이어 ID(`int`)와 메시지(`string`)를 전달하는 이벤트 타입 `TAG_OnMessageInvoker`를 공식 패턴대로 선언하세요. 그리고 이 이벤트를 가진 클래스 `TAG_MessageBoard`를 만들어, 게터 `GetOnMessage()`와 메시지를 받으면 이벤트를 알리는 `Post(int playerId, string message)`를 작성하세요.
+
+</Exercise>
+
+<Exercise id="11-2" level="기초" title="카운트다운">
+
+`StartCountdown()`을 호출하면 1초 간격으로 "5", "4", "3", "2", "1"을 출력하고 마지막에 "발사!"를 출력한 뒤 멈추는 컴포넌트 `TAG_CountdownComponent`를 콜 큐로 만드세요. 카운트다운 중에 다시 `StartCountdown()`을 부르면 처음부터 다시 셉니다.
+
+</Exercise>
+
+<Exercise id="11-3" level="응용" title="쓰러지면 3초 뒤 정리">
+
+본문의 `TAG_HealthComponent`를 쓰는 컴포넌트 `TAG_CleanupOnDeathComponent`를 만드세요. 같은 엔티티의 체력이 0이 되면 3초 뒤에 그 엔티티를 지웁니다. 엔티티가 그 전에 다른 이유로 지워지는 경우까지 생각해 정리 코드를 작성하세요.
+
+</Exercise>
+
+<Exercise id="11-4" level="응용" title="처치 수 집계">
+
+게임 모드에 붙는 `TAG_KillCounterComponent`(`SCR_BaseGameModeComponent` 상속)를 만드세요. 플레이어가 다른 플레이어를 처치할 때마다 가해 플레이어의 처치 수를 1 늘리고, 게임 모드가 끝나면 모든 플레이어의 처치 수를 출력합니다. 가해자가 플레이어가 아니거나 자살인 경우는 세지 않습니다.
+
+</Exercise>
+
+<Exercise id="11-5" level="도전" title="몰아서 한 번에 저장하기">
+
+설정이 바뀔 때마다 `RequestSave()`가 불리는데, 매번 저장하면 너무 잦습니다. 마지막 `RequestSave()` 뒤 2초 동안 추가 요청이 없을 때 `DoSave()`를 한 번만 부르도록 만드세요. 단, 첫 요청 뒤 10초가 지나도록 요청이 계속 이어지면 그때는 기다리지 않고 저장합니다. 컴포넌트가 지워질 때 저장이 예약되어 있었다면 바로 저장하고 끝냅니다.
+
+</Exercise>

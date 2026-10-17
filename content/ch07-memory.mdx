@@ -1,0 +1,542 @@
+---
+title: "메모리 관리: 참조와 ARC"
+description: 객체가 언제 만들어지고 언제 사라지는지 정하는 자동 참조 카운팅을 배웁니다. 강한 참조와 약한 참조, 컬렉션의 ref, 순환 참조, delete와 엔진이 관리하는 객체를 다룹니다.
+---
+
+<Objectives>
+
+- 참조 카운팅이 객체의 수명을 정하는 방식을 설명할 수 있다.
+- 강한 참조(`ref`)와 약한 참조의 차이를 알고, 멤버 변수와 컬렉션에 알맞게 붙일 수 있다.
+- 순환 참조가 생기는 구조를 찾아 약한 참조로 끊을 수 있다.
+- `null` 대입, `delete`, `autoptr`의 쓰임을 구분할 수 있다.
+- 엔티티와 컴포넌트처럼 엔진이 수명을 관리하는 객체를 안전하게 참조할 수 있다.
+
+</Objectives>
+
+Python, JavaScript, C#에서는 객체를 만들고 잊어버려도 가비지 컬렉터가 알아서 치워 줍니다. Enforce Script는 다릅니다. 가비지 컬렉션 대신 **자동 참조 카운팅**(Automatic Reference Counting, ARC)을 쓰기 때문에, 변수를 어떻게 선언했느냐에 따라 객체가 계속 살아 있기도 하고 만든 직후 사라지기도 합니다.
+
+5장에서 소멸자가 실행되는 시점을, 6장에서 `array<ref TAG_Weapon>` 같은 선언을 미리 보았습니다. 이 장에서는 그 뒤에 있는 규칙을 정리합니다. Enforce Script 초보자가 자주 겪는 버그가 이 장의 내용과 관련되어 있으니 예제의 출력을 하나씩 따라가 보세요.
+
+## 가비지 컬렉션 대신 참조 카운팅
+
+엔진은 객체마다 그 객체를 붙잡고 있는 **강한 참조**(strong reference)의 수를 셉니다. 이 수가 0이 되는 순간 객체는 메모리에서 해제되고 소멸자가 실행됩니다. 객체를 가리키기만 하고 수를 늘리지 않는 참조는 **약한 참조**(weak reference)입니다. 객체가 해제되면 그 객체를 가리키던 약한 참조는 모두 `null`로 바뀝니다.
+
+엔진 문서와 위키는 이 방식의 장단점을 다음과 같이 정리합니다.
+
+- 가비지 컬렉터가 한꺼번에 메모리를 정리하느라 게임이 멈칫하는 일이 없습니다.
+- 메모리 관리 비용이 객체 수에 따라 늘어나지 않습니다.
+- 대신 두 객체가 서로를 강하게 붙잡는 **순환 참조**는 스스로 풀리지 않습니다.
+
+약한 참조를 쓰는 코드는 언제든 `null`을 만날 수 있으므로 null 검사가 더 중요해집니다.
+
+<Compare title="메모리 관리 방식 비교">
+
+```python
+import weakref
+
+class Radio:
+    pass
+
+a = Radio()            # 참조 카운트 + 순환 참조용 가비지 컬렉터
+w = weakref.ref(a)     # 약한 참조는 따로 만들어야 함
+```
+
+```javascript
+let radio = { channel: "Alpha" }; // 추적형 가비지 컬렉터가 도달할 수 없는 객체를 정리
+radio = null;                     // 언제 정리될지는 알 수 없음
+```
+
+```enforce
+class TAG_Owner
+{
+	protected ref TAG_Radio m_Radio; // ref: 강한 참조, 객체를 살려 둠
+	protected TAG_Radio m_Watched;   // 표시 없음: 약한 참조
+}
+```
+
+</Compare>
+
+Python도 참조 카운팅을 쓰지만 순환 참조를 치우는 가비지 컬렉터가 함께 돌고, 멤버는 기본이 강한 참조입니다. Enforce Script에는 순환 참조를 치워 주는 장치가 없고, **멤버 변수는 기본이 약한 참조**입니다. 이 두 가지가 Enforce Script의 큰 차이입니다.
+
+## 강한 참조와 약한 참조
+
+### 무엇이 강한 참조인가
+
+엔진 문서에 따르면 Enforce Script의 변수는 기본적으로 약한 참조이고, `ref` 키워드를 붙여야 강한 참조가 됩니다. 다만 다음 세 가지는 `ref`가 없어도 강한 참조이며, 자기 스코프가 끝나면 놓아줍니다.
+
+- 함수 안의 지역 변수
+- 함수 매개변수
+- 함수 반환값
+
+다만 1.8.0.13에서 실행해 보면 매개변수는 객체를 붙잡지 않습니다. 메서드 안에서 다른 강한 참조가 모두 사라지면 매개변수가 가리키던 객체도 바로 해제되고 매개변수는 `null`이 됩니다. 호출하는 쪽이 지역 변수 등으로 붙잡고 있으면 호출이 끝날 때까지 남습니다.
+
+정리하면 다음과 같습니다.
+
+| 위치 | `ref` 없이 선언하면 | 객체를 붙잡으려면 |
+|---|---|---|
+| 지역 변수, 반환값 | 강한 참조 | 그대로 둡니다 |
+| 매개변수 | 붙잡지 않음(엔진 문서와 다름) | 호출하는 쪽이 붙잡고 있어야 합니다 |
+| 멤버 변수 | 약한 참조 | `ref TAG_Item m_Item;` |
+| 정적 변수, 전역 변수 | 약한 참조 | `static ref TAG_Item s_Item;` |
+| 동적 배열·집합·맵의 원소 | 약한 참조 | `array<ref TAG_Item>` |
+| 멤버로 둔 정적 배열의 원소 | 약한 참조 | `ref TAG_Item m_aSlots[4];` |
+
+`int`, `float`, `bool`, `string`, `vector`는 값으로 다루는 타입이라 `ref`와 관계가 없습니다. `ref`는 클래스 객체(배열·집합·맵 같은 컬렉션 포함)를 가리키는 변수에만 붙입니다.
+
+예제에는 5장의 무전기 클래스를 다시 씁니다. 생성자와 소멸자에서 로그를 남기므로 객체가 언제 사라지는지 눈으로 확인할 수 있습니다.
+
+```enforce title="Scripts/Game/TAG_Radio.c"
+class TAG_Radio
+{
+	protected string m_sChannel;
+
+	void TAG_Radio(string channel)
+	{
+		m_sChannel = channel;
+		PrintFormat("Radio on: %1", m_sChannel);
+	}
+
+	void ~TAG_Radio()
+	{
+		PrintFormat("Radio off: %1", m_sChannel);
+	}
+}
+```
+
+### 흔한 함정: 만든 직후 사라지는 객체
+
+멤버 변수가 기본으로 약한 참조라는 사실을 모르면 만든 객체가 바로 사라지는 버그를 만들게 됩니다. 가장 단순한 경우는 컴파일러가 막아 줍니다. `ref`가 없는 멤버에 `new`로 만든 객체를 바로 넣으면 컴파일 오류가 납니다.
+
+```enforce
+class TAG_BrokenSquad
+{
+	protected TAG_Radio m_Radio;    // 약한 참조
+
+	void TAG_BrokenSquad()
+	{
+		m_Radio = new TAG_Radio("Alpha");    // 컴파일 오류: Variable 'm_Radio' is not strong ref
+	}
+}
+```
+
+정적 변수에 넣을 때와, 멤버 선언에서 `= new …`나 `= {}`로 초기화할 때도 같은 오류가 납니다. 하지만 컴파일러가 모든 경우를 잡지는 못합니다. 메서드가 돌려준 객체를 거쳐 넣으면 컴파일은 되고, 객체는 그대로 사라집니다. 다음 분대 클래스는 생성자에서 무전기 두 대를 만들어 멤버에 저장합니다. 한 멤버에는 `ref`가 없습니다.
+
+```enforce title="Scripts/Game/TAG_Squad.c"
+class TAG_Squad
+{
+	protected TAG_Radio m_Radio;           // 약한 참조
+	protected ref TAG_Radio m_BackupRadio; // 강한 참조
+
+	void TAG_Squad()
+	{
+		m_Radio = CreateRadio("Alpha");
+		m_BackupRadio = CreateRadio("Bravo");
+
+		if (!m_Radio)
+			Print("Alpha radio is already gone");
+	}
+
+	TAG_Radio CreateRadio(string channel)
+	{
+		return new TAG_Radio(channel);
+	}
+}
+
+class TAG_SquadDemo
+{
+	static void Run()
+	{
+		TAG_Squad squad = new TAG_Squad();
+		Print("squad ready");
+	}
+}
+```
+
+실행 결과는 다음과 같습니다.
+
+```text
+Radio on: Alpha
+Radio off: Alpha
+Radio on: Bravo
+Alpha radio is already gone
+squad ready
+Radio off: Bravo
+```
+
+`CreateRadio("Alpha")`가 돌려준 객체를 붙잡는 강한 참조가 하나도 없으므로, 대입문이 끝나자마자 객체가 해제되고 `m_Radio`는 `null`이 되었습니다. `m_BackupRadio`는 강한 참조라서 분대가 살아 있는 동안 무전기도 살아 있습니다. `Run`이 끝나 지역 변수 `squad`가 사라지면 분대 객체가 해제되고, 분대가 붙잡고 있던 Bravo 무전기도 함께 해제됩니다.
+
+<Warning title="new로 만든 객체는 누군가 ref로 붙잡아야 합니다">
+
+멤버 변수, 정적 변수, 컬렉션에 새로 만든 객체를 넣을 때는 그 자리가 강한 참조인지 확인하세요. `new`로 만든 객체를 약한 멤버나 정적 변수에 바로 넣으면 컴파일러가 막지만, 메서드의 반환값을 거치거나 원소가 약한 참조인 컬렉션에 넣으면 컴파일 오류 없이 조용히 사라집니다. 그러면 나중에 그 객체를 쓰는 곳에서 null 접근 오류로 드러납니다. 원인과 증상이 멀리 떨어져 있어 찾기 어려운 버그입니다.
+
+</Warning>
+
+### 소유자를 정하기
+
+엔진 문서는 참조를 쓰는 가장 좋은 방법으로 "객체 하나에 강한 참조는 정확히 하나, 그것도 그 객체를 만든 **소유자** 안에 두라"고 권합니다. 이렇게 하면 순환 참조가 생기지 않고, 소유자가 사라질 때 소유한 객체도 함께 정리됩니다.
+
+설계할 때는 객체마다 "누가 이 객체를 소유하는가"를 먼저 정하세요. 소유자만 `ref`로 붙잡고, 그 객체를 쓰기만 하는 다른 객체는 약한 참조로 가리킵니다. 약한 참조는 쓰기 전에 null을 확인합니다. 공식 스크립트도 이 원칙을 따릅니다. 스크립트가 직접 만드는 싱글턴 객체는 `protected static ref SCR_AIDebug s_Instance;`처럼 `ref`로 붙잡고, 엔진이 만든 컴포넌트를 가리키는 정적 변수는 `protected static SCR_CommandingManagerComponent s_Instance;`처럼 약한 참조로 둡니다.
+
+## 멤버 변수와 컬렉션의 ref
+
+### 배열 선언 읽는 법
+
+컬렉션을 멤버로 둘 때는 `ref`가 두 군데 붙을 수 있습니다. 공식 스크립트에서 자주 보는 형태는 다음과 같습니다.
+
+```enforce
+protected ref array<ref TAG_Item> m_aItems = {};
+```
+
+- 앞의 `ref`: 이 멤버가 **배열 객체**를 강하게 붙잡습니다. 배열도 `Managed`를 상속한 객체이므로, 이 `ref` 없이 `{}`나 `new`로 만든 배열을 넣으면 컴파일 오류가 납니다.
+- 꺾쇠 안의 `ref`: 배열이 **원소**를 강하게 붙잡습니다. 이 `ref`가 없으면 배열에 넣은 객체가 바로 사라집니다.
+
+엔진 문서의 예제를 바탕으로 조합을 정리하면 다음과 같습니다.
+
+| 멤버 선언 | 배열 자체 | 원소 |
+|---|---|---|
+| `array<TAG_Item> m_a;` | 약한 참조 | 약한 참조 |
+| `ref array<TAG_Item> m_a;` | 강한 참조 | 약한 참조 |
+| `ref array<ref TAG_Item> m_a;` | 강한 참조 | 강한 참조 |
+| `ref TAG_Item m_a[10];` | 정적 배열(멤버의 일부) | 강한 참조 |
+
+`set`과 `map`도 같은 방식입니다. `ref map<string, ref TAG_Item>`은 맵 객체와 값 객체를 모두 붙잡습니다. 컬렉션 안에 컬렉션을 넣을 때도 안쪽 컬렉션에 `ref`가 필요합니다. 공식 코드의 `ref map<typename, ref array<ref SCR_AISettingBase>> m_mSettings`가 좋은 예입니다.
+
+### 약한 원소 배열을 쓰는 경우
+
+원소가 약한 참조인 `ref array<TAG_Item>`도 쓸모가 있습니다. 다른 곳에서 소유하는 객체의 **목록**만 만들고 싶을 때입니다. 예를 들어 근처에 있는 엔티티 목록은 엔티티를 소유하지 않으므로 공식 스크립트도 `array<IEntity>`를 씁니다. 원소가 약한 참조인 배열에서는 원래 소유자가 객체를 해제하면 그 자리가 `null`이 될 수 있습니다. 반복문에서 원소를 쓰기 전에 null을 확인하세요.
+
+정리하면, <strong>배열이 객체를 소유하면 `array<ref T>`, 다른 곳의 객체를 가리키기만 하면 `array<T>`</strong>입니다. 컬렉션의 메서드와 사용법은 8장에서 다룹니다.
+
+## 순환 참조
+
+### 서로 붙잡으면 풀리지 않습니다
+
+참조 카운팅의 약점은 순환 참조입니다. 엔진 문서는 이를 "고립된 섬"(island of isolation)이라고 부릅니다. 다음 코드에서 팀은 리더를, 리더는 팀을 강하게 붙잡습니다.
+
+```enforce
+class TAG_BadTeam
+{
+	ref TAG_BadMember m_Leader;
+}
+
+class TAG_BadMember
+{
+	ref TAG_BadTeam m_Team; // 문제: 소유자를 거꾸로 강하게 붙잡음
+}
+
+class TAG_CycleDemo
+{
+	static void Run()
+	{
+		TAG_BadTeam team = new TAG_BadTeam();       // 팀: 강한 참조 1
+		TAG_BadMember leader = new TAG_BadMember(); // 리더: 강한 참조 1
+		team.m_Leader = leader;                     // 리더: 2
+		leader.m_Team = team;                       // 팀: 2
+	} // 지역 변수가 사라져도 각각 1이 남아 해제되지 않음
+}
+```
+
+함수가 끝나면 지역 변수 두 개가 사라져 각 객체의 강한 참조가 1씩 줄어듭니다. 하지만 서로가 서로를 붙잡고 있으므로 수가 0이 되지 않습니다. 두 객체는 어떤 코드로도 접근할 수 없는데 메모리에 남습니다. 소멸자도 실행되지 않습니다.
+
+### 거꾸로 가리키는 참조는 약하게
+
+해결 방법은 한쪽을 약한 참조로 바꾸는 것입니다. 소유 관계를 따라 **아래로 가는 참조는 강하게, 위로 거슬러 가는 참조는 약하게** 둡니다.
+
+```enforce title="Scripts/Game/TAG_Team.c"
+class TAG_Team
+{
+	protected ref array<ref TAG_Member> m_aMembers = {};
+
+	//------------------------------------------------------------------------------------------------
+	TAG_Member AddMember(string name)
+	{
+		TAG_Member member = new TAG_Member(name, this);
+		m_aMembers.Insert(member);
+		return member;
+	}
+}
+
+class TAG_Member
+{
+	protected string m_sName;
+	protected TAG_Team m_Team; // 약한 참조: 소유자를 거꾸로 가리킴
+
+	//------------------------------------------------------------------------------------------------
+	void TAG_Member(string name, TAG_Team team)
+	{
+		m_sName = name;
+		m_Team = team;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	TAG_Team GetTeam()
+	{
+		return m_Team;
+	}
+}
+```
+
+이제 팀을 가리키는 강한 참조가 모두 사라지면 팀이 해제되고, 팀이 소유하던 배열과 멤버들도 차례로 해제됩니다. 멤버가 팀보다 오래 살아남는 경우(예를 들어 다른 곳에서 멤버를 붙잡고 있는 경우)에는 `m_Team`이 `null`이 되므로, 멤버 쪽 코드는 `GetTeam()`의 결과를 확인하고 써야 합니다.
+
+<Tip title="순환을 직접 끊는 방법">
+
+구조상 양쪽 모두 강한 참조가 필요하다면, 더 이상 쓰지 않을 때 한쪽 참조에 `null`을 대입해 순환을 직접 끊을 수 있습니다. 하지만 끊는 코드를 빠뜨리기 쉽습니다. 가능하면 처음부터 소유 관계를 정해 거꾸로 가는 참조를 약하게 두세요.
+
+</Tip>
+
+## 객체를 직접 놓아주기
+
+### null 대입
+
+객체를 일찍 해제하고 싶다면 그 객체를 붙잡은 강한 참조에 `null`을 대입합니다. 그것이 마지막 강한 참조였다면 그 즉시 객체가 해제되고, 약한 참조들은 `null`이 됩니다. 5장의 `bravo = null` 예제가 이 경우였습니다.
+
+공식 스크립트도 정적 싱글턴을 정리할 때 이 방법을 씁니다. `SCR_AIDebug`는 게임이 끝날 때 `s_Instance = null;`로 자신을 붙잡던 정적 참조를 놓아줍니다. 엔진 문서의 예제처럼 전역이나 정적 `ref`로 붙잡은 객체는 스크립트 모듈이 끝날 때까지 살아 있으므로, 다 쓴 뒤에는 직접 놓아주세요.
+
+### delete
+
+`delete`는 객체를 **즉시** 파괴하고, `delete`한 변수와 그 객체를 가리키던 약한 참조를 모두 `null`로 만듭니다.
+
+```enforce
+class TAG_RadioSlot
+{
+	TAG_Radio m_Radio;    // 약한 참조
+}
+
+class TAG_DeleteDemo
+{
+	static void Run()
+	{
+		TAG_Radio radio = new TAG_Radio("Charlie");
+		TAG_RadioSlot slot = new TAG_RadioSlot();
+		slot.m_Radio = radio;
+
+		delete radio;
+
+		if (!slot.m_Radio)
+			Print("slot is empty too");
+	}
+}
+```
+
+실행 결과는 다음과 같습니다.
+
+```text
+Radio on: Charlie
+Radio off: Charlie
+slot is empty too
+```
+
+단, `delete`하는 변수 말고 다른 강한 참조가 그 객체를 붙잡고 있으면 파괴하지 못하고 VM 예외(`Can't delete instance (of class: 'TAG_Radio') with non-zero references`)가 납니다. 위키는 배열처럼 객체를 붙잡고 있는 외부 참조가 있으면 `delete`할 수 없다고 경고하는데, 실제로는 지역 변수 하나가 더 붙잡고 있어도 마찬가지입니다. 엔진 문서는 참조 수와 관계없이 파괴하고 모든 참조를 `null`로 만든다고 설명하지만, 1.8에서는 그렇게 동작하지 않습니다.
+
+```enforce
+TAG_Radio radio = new TAG_Radio("Charlie");
+TAG_Radio alias = radio;    // 두 번째 강한 참조
+delete radio;               // VM 예외: 다른 강한 참조가 남아 있음
+```
+
+`delete`는 신중하게 써야 합니다. 다른 코드가 약한 참조로 가리키던 객체도 사라지므로, 그 코드는 갑자기 `null`을 만나게 됩니다. 스크립트가 직접 만든 객체는 보통 소유자의 `ref`에 `null`을 대입하는 것으로 충분합니다. 공식 스크립트에서 `delete`는 주로 디버그 도형(`delete m_DebugShape;`)이나 위젯, 엔티티처럼 화면이나 월드에서 즉시 없애야 하는 대상에 쓰입니다. 엔티티를 지우는 올바른 방법은 10장에서 다룹니다.
+
+### autoptr
+
+`autoptr`는 엔진 문서에서 "Managed가 아닌 객체를 변수의 수명이 끝날 때 자동으로 파괴하는" 수식어로 설명합니다. 같은 문서는 Managed 객체에는 `ref`를 쓰라고 권합니다. 공식 게임 스크립트에도 `autoptr TraceParam trace = new TraceParam();` 같은 코드가 몇 군데 있지만, 대부분의 코드는 `ref`와 지역 변수만으로 수명을 관리합니다. 이 책의 예제도 `autoptr`를 쓰지 않습니다.
+
+## Managed와 게임 스크립트의 클래스
+
+엔진 문서는 Enforce Script의 클래스를 두 종류로 나눕니다.
+
+- `Managed`를 상속한 클래스: 참조 카운팅으로 자동 해제되고, 약한 참조는 객체가 사라지면 `null`이 됩니다. 문서는 일반적인 게임플레이 스크립트와 모드에 이쪽을 권합니다.
+- `Managed`를 상속하지 않은 C++식 클래스: 일반 포인터로 다루며 자동 관리가 없어 소유자가 직접 `delete`해야 합니다. 문서는 성능이 중요한 곳을 위한 선택지로 설명합니다.
+
+엔진이 제공하는 `array`, `set`, `map`, `IEntity`, `Widget` 등은 모두 `Managed`를 상속합니다(`Core/proto/Types.c` 등의 공식 정의).
+
+<Note title="직접 만드는 클래스에 : Managed가 필요한가">
+
+엔진 문서는 Managed 사용을 스크립트 모듈 전체에 강제할 수도 있다고 설명하며, 그 예로 게임플레이 모듈과 모드를 듭니다. Arma Reforger의 공식 게임 스크립트는 부모 없이 선언한 클래스도 `ref`로 소유하고 약한 참조로 가리킵니다. 예를 들어 부모 없이 선언된 `SCR_TaskSolverBase`의 객체는 `typename.Spawn()`이 돌려준 `ref Managed` 값을 `Cast`해서 얻습니다. 위키의 ARC 문서도 부모를 적지 않은 클래스로 참조 카운팅을 설명합니다. 따라서 이 책의 예제처럼 `Scripts/Game`에 만드는 클래스에는 `: Managed`를 적지 않아도 이 장의 규칙이 그대로 적용됩니다. 공식 코드에는 `: Managed`를 명시한 클래스도 있으며, 적어도 문제는 없습니다.
+
+</Note>
+
+## 엔진이 수명을 관리하는 객체
+
+엔티티와 컴포넌트는 스크립트가 아니라 **엔진이 만들고 지웁니다**. 엔티티는 월드에 배치되거나 프리팹에서 생성되며, 컴포넌트는 엔티티와 함께 만들어집니다. 컴포넌트의 공통 부모인 `GenericComponent`도 생성자와 소멸자를 `private`으로 선언해 두었습니다. 컴포넌트는 스크립트에서 `new`로 만드는 대상이 아니라 프리팹에 추가해 엔진이 만드는 대상입니다(10장).
+
+그래서 스크립트는 이런 객체를 **소유하지 않고 가리키기만** 합니다. 공식 게임 스크립트에서 엔티티를 `ref IEntity`로 붙잡는 코드는 찾아볼 수 없고, 엔티티 목록도 `array<IEntity>`로 둡니다. 엔티티의 부모인 `IEntity`는 `Managed`를 상속하므로, 엔티티가 지워지면 그 엔티티를 가리키던 약한 참조는 `null`이 됩니다.
+
+```enforce title="Scripts/Game/TAG_Escort.c"
+class TAG_Escort
+{
+	protected IEntity m_Target; // 엔진이 소유하는 엔티티: 약한 참조로 가리킴
+
+	//------------------------------------------------------------------------------------------------
+	void SetTarget(IEntity target)
+	{
+		m_Target = target;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	//! 대상이 지워졌으면 false를 반환합니다.
+	bool GetTargetPosition(out vector position)
+	{
+		if (!m_Target)
+			return false;
+
+		position = m_Target.GetOrigin();
+		return true;
+	}
+}
+```
+
+엔티티를 가리키는 멤버는 저장한 시점에는 유효했어도 나중에 쓸 때는 사라졌을 수 있습니다. 엔티티와 컴포넌트를 가리키는 변수는 **쓸 때마다** null을 확인하세요.
+
+## 흔한 버그 사례
+
+이 장에서 본 내용을 증상별로 정리합니다.
+
+| 증상 | 원인 | 해결 |
+|---|---|---|
+| 생성자에서 만든 객체가 나중에 null임 | 메서드가 돌려준 객체를 약한 멤버 변수에 넣음(`new`를 바로 넣으면 컴파일 오류) | 멤버를 `ref`로 선언 |
+| 배열에 넣은 객체가 사라지고 원소가 null | `array<T>`에 `new`로 만든 객체를 넣음 | 배열이 소유하면 `array<ref T>` |
+| 맵에 넣은 배열이 사라짐 | `map<K, array<T>>`처럼 안쪽 컬렉션에 `ref`가 없음 | `map<K, ref array<T>>` |
+| 소멸자가 끝내 실행되지 않고 메모리가 남음 | 두 객체가 서로를 `ref`로 붙잡는 순환 참조 | 거꾸로 가는 참조를 약하게 |
+| 잘 쓰던 객체에서 갑자기 null 접근 오류 | 소유자가 해제했거나 `delete`된 객체를 약한 참조로 씀 | 쓰기 전에 null 확인 |
+| 지워진 엔티티를 쓰다가 null 접근 오류 | 엔티티를 가리키는 멤버를 저장해 두고 확인 없이 씀 | 엔티티는 약한 참조로 두고 쓸 때마다 확인 |
+| 배열에서 뺐는데 소멸자가 불리지 않음 | 지역 변수나 다른 `ref`가 아직 붙잡고 있음 | 남은 강한 참조를 찾아 `null` 대입 |
+
+<Pitfall title="지역 변수가 객체를 붙잡고 있는 경우">
+
+지역 변수는 강한 참조이므로, 객체를 일찍 놓아주려 해도 지역 변수가 남아 있으면 해제되지 않습니다.
+
+```enforce
+TAG_Radio radio = m_Radios.Get(0); // 지역 변수가 강한 참조를 하나 더 만듦
+m_Radios.Remove(0);                // 배열은 놓았지만 radio가 아직 붙잡고 있음
+radio = null;                      // 이제 해제됨
+```
+
+"배열에서 뺐는데 소멸자가 안 불린다"면 그 객체를 가리키는 지역 변수나 다른 `ref`가 남아 있는지 찾아보세요.
+
+</Pitfall>
+
+## 정리
+
+<Summary>
+
+- Enforce Script는 가비지 컬렉터 대신 자동 참조 카운팅을 씁니다. 강한 참조가 0이 되는 즉시 객체가 해제되고, 약한 참조는 `null`이 됩니다.
+- 지역 변수와 반환값은 강한 참조입니다. 매개변수는 엔진 문서와 달리 객체를 붙잡지 않습니다. 멤버 변수, 정적 변수, 컬렉션 원소는 기본이 약한 참조이며 `ref`를 붙여야 객체를 붙잡습니다.
+- 새로 만든 객체를 약한 자리에만 넣으면 그 즉시 사라집니다. `new`를 약한 멤버나 정적 변수에 바로 넣으면 컴파일러가 막지만, 반환값을 거치거나 원소가 약한 컬렉션에 넣으면 오류 없이 사라지는 흔한 버그가 됩니다.
+- `ref array<ref T>`에서 앞의 `ref`는 배열을, 안의 `ref`는 원소를 붙잡습니다. 컬렉션 안의 컬렉션에도 `ref`가 필요합니다.
+- 객체 하나에 강한 참조 하나, 그것도 소유자 안에 두는 것이 원칙입니다. 소유자를 거꾸로 가리키는 참조는 약하게 두어 순환 참조를 막습니다.
+- 객체를 일찍 놓아줄 때는 소유자의 `ref`에 `null`을 대입합니다. `delete`는 객체를 즉시 파괴하고 약한 참조를 `null`로 만들며, 다른 강한 참조가 남아 있으면 VM 예외가 나므로 신중히 씁니다.
+- 엔티티와 컴포넌트는 엔진이 소유합니다. `ref`로 붙잡지 말고 약한 참조로 가리키며, 쓸 때마다 null을 확인합니다.
+
+</Summary>
+
+**더 읽을거리**
+
+- [Scripting: Automatic Reference Counting](https://community.bistudio.com/wiki/Arma_Reforger:Scripting:_Automatic_Reference_Counting)
+- [Scripting: Do's and Don'ts](https://community.bistudio.com/wiki/Arma_Reforger:Scripting:_Do's_and_Don'ts)
+
+## 연습문제
+
+<Exercise id="7-1" level="기초" title="강한 참조인가 약한 참조인가">
+
+다음 클래스의 각 선언이 객체를 붙잡는 강한 참조인지, 붙잡지 않는 약한 참조인지 답하세요. 배열은 배열 자체와 원소를 나눠서 답합니다.
+
+```enforce
+class TAG_Base
+{
+	TAG_Radio m_Radio;
+	ref TAG_Radio m_MainRadio;
+	ref array<TAG_Radio> m_aNearbyRadios;
+	ref array<ref TAG_Radio> m_aOwnedRadios;
+	static TAG_Radio s_LastRadio;
+
+	TAG_Radio Pick(TAG_Radio candidate)
+	{
+		TAG_Radio chosen = candidate;
+		return chosen;
+	}
+}
+```
+
+</Exercise>
+
+<Exercise id="7-2" level="기초" title="사라지는 인벤토리">
+
+다음 클래스는 컴파일되지 않습니다. 원인을 설명하고 고치세요. 컴파일 오류를 없앤 뒤에도 넣은 아이템이 남지 않는 문제가 하나 더 있으니 함께 찾아 고치세요. `TAG_Item`은 이름 하나를 받는 생성자를 가진 클래스라고 가정합니다.
+
+```enforce
+class TAG_Inventory
+{
+	protected array<TAG_Item> m_aItems;
+
+	void TAG_Inventory()
+	{
+		m_aItems = new array<TAG_Item>();
+	}
+
+	void AddItem(string name)
+	{
+		m_aItems.Insert(new TAG_Item(name));
+	}
+}
+```
+
+</Exercise>
+
+<Exercise id="7-3" level="응용" title="출력 예측하기">
+
+본문의 `TAG_Radio`를 쓴다고 할 때, 다음 `Run()`의 출력을 순서대로 적으세요.
+
+```enforce
+class TAG_RadioRack
+{
+	ref array<ref TAG_Radio> m_aOwned = {};
+	ref array<TAG_Radio> m_aWatched = {};
+}
+
+class TAG_RackDemo
+{
+	static void Run()
+	{
+		TAG_RadioRack rack = new TAG_RadioRack();
+		rack.m_aWatched.Insert(new TAG_Radio("W1"));
+		rack.m_aOwned.Insert(new TAG_Radio("O1"));
+		rack.m_aWatched.Insert(rack.m_aOwned[0]);
+		Print("before clear");
+		rack.m_aOwned.Clear();
+		Print("after clear");
+	}
+}
+```
+
+</Exercise>
+
+<Exercise id="7-4" level="응용" title="순환 참조 고치기">
+
+차량과 운전자가 서로를 가리키는 다음 코드는 두 객체가 해제되지 않습니다. 이유를 설명하고, 차량이 운전자를 소유한다고 보고 고치세요. 운전자가 차량보다 오래 남는 경우에도 안전하게 차량 이름을 얻는 `GetVehicleName()`도 운전자 클래스에 추가하세요.
+
+```enforce
+class TAG_Car
+{
+	string m_sName;
+	ref TAG_Driver m_Driver;
+}
+
+class TAG_Driver
+{
+	ref TAG_Car m_Car;
+}
+```
+
+</Exercise>
+
+<Exercise id="7-5" level="도전" title="소유하는 레지스트리">
+
+아이템을 이름으로 등록하고 소유하는 `TAG_ItemRegistry`를 만드세요.
+
+- `Register(string name)`은 아이템을 만들어 등록하고, 만든 아이템을 반환합니다. 맵이 아이템을 소유해야 합니다.
+- `Unregister(string name)`은 등록을 해제합니다. 다른 곳에 강한 참조가 없으면 아이템이 해제되어야 합니다.
+- 아이템을 가리키기만 하는 `TAG_ItemLabel` 클래스(멤버 `TAG_Item m_Item`)를 만들고, 등록 해제 뒤 `m_Item`이 `null`이 되는 것을 확인하는 `Run()`을 작성하세요.
+
+`Run()`을 작성할 때 지역 변수가 아이템을 붙잡아 해제를 막지 않도록 주의하세요. 맵의 사용법은 8장에 있으니 `Set`, `Remove`, `Get` 정도만 쓰면 됩니다.
+
+</Exercise>

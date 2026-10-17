@@ -1,0 +1,271 @@
+<Answer id="11-1">
+
+`(int, string)` 모양은 `SCR_ScriptInvokerHelper.c`에 미리 정의되어 있지 않으므로 직접 선언합니다. 세 줄 모두 전역에 놓이니 태그를 붙입니다.
+
+```enforce title="Scripts/Game/TAG_MessageBoard.c"
+void TAG_OnMessageMethod(int playerId, string message);
+typedef func TAG_OnMessageMethod;
+typedef ScriptInvokerBase<TAG_OnMessageMethod> TAG_OnMessageInvoker;
+
+class TAG_MessageBoard
+{
+	protected ref TAG_OnMessageInvoker m_OnMessage;
+
+	TAG_OnMessageInvoker GetOnMessage()
+	{
+		if (!m_OnMessage)
+			m_OnMessage = new TAG_OnMessageInvoker();
+
+		return m_OnMessage;
+	}
+
+	void Post(int playerId, string message)
+	{
+		if (m_OnMessage)
+			m_OnMessage.Invoke(playerId, message);
+	}
+}
+```
+
+구독하는 쪽은 예를 들어 다음과 같습니다. 콜백의 매개변수 목록이 `TAG_OnMessageMethod`와 같아야 `Insert`가 컴파일됩니다.
+
+```enforce
+class TAG_MessagePrinter
+{
+	protected TAG_MessageBoard m_Board;	// 약한 참조
+
+	void TAG_MessagePrinter(notnull TAG_MessageBoard board)
+	{
+		m_Board = board;
+		m_Board.GetOnMessage().Insert(OnMessage);
+	}
+
+	void ~TAG_MessagePrinter()
+	{
+		if (m_Board)
+			m_Board.GetOnMessage().Remove(OnMessage);
+	}
+
+	protected void OnMessage(int playerId, string message)
+	{
+		PrintFormat("%1: %2", playerId, message);
+	}
+}
+```
+
+일반 클래스이므로 구독은 생성자에서, 해제는 소멸자에서 합니다. 이벤트 객체는 아무도 구독하지 않으면 만들어지지 않고, `Post()`는 그 경우 아무것도 하지 않습니다.
+
+</Answer>
+
+<Answer id="11-2">
+
+`CallLater`로 1초마다 반복하는 `Tick()`을 예약하고, 남은 숫자가 0이 되면 "발사!"를 출력한 뒤 `Remove`로 반복을 멈춥니다. 반복 호출 안에서 자기 자신을 `Remove`하는 방식은 `ScriptCallQueue`의 공식 주석 예제에도 나옵니다.
+
+```enforce title="Scripts/Game/TAG_CountdownComponent.c"
+[ComponentEditorProps(category: "TAG/Tutorial", description: "카운트다운")]
+class TAG_CountdownComponentClass : ScriptComponentClass
+{
+}
+
+class TAG_CountdownComponent : ScriptComponent
+{
+	protected int m_iRemaining;
+
+	void StartCountdown()
+	{
+		ScriptCallQueue queue = GetGame().GetCallqueue();
+		queue.Remove(Tick);					// 진행 중이던 카운트다운은 취소
+		m_iRemaining = 5;
+		Tick();								// "5"는 바로 출력
+		queue.CallLater(Tick, 1000, true);	// 이후 1초마다
+	}
+
+	protected void Tick()
+	{
+		if (m_iRemaining > 0)
+		{
+			PrintFormat("%1", m_iRemaining);
+			m_iRemaining--;
+			return;
+		}
+
+		Print("발사!");
+		GetGame().GetCallqueue().Remove(Tick);
+	}
+
+	override void OnDelete(IEntity owner)
+	{
+		GetGame().GetCallqueue().Remove(Tick);
+	}
+}
+```
+
+- 다시 시작할 때 이전 예약을 먼저 `Remove`하지 않으면 `Tick`이 두 갈래로 돌아 숫자가 두 번씩 줄어듭니다.
+- 첫 숫자를 바로 출력하려고 `Tick()`을 직접 한 번 불렀습니다. 첫 숫자도 1초 뒤에 나오게 하려면 이 줄을 빼면 됩니다.
+- 카운트다운 도중 엔티티가 지워질 수 있으므로 `OnDelete`에서도 예약을 지웁니다.
+
+</Answer>
+
+<Answer id="11-3">
+
+체력 이벤트를 구독하고, 이번 변화로 체력이 0이 되었을 때 `CallLater`로 삭제를 예약합니다. 정리할 것은 두 가지입니다. 이벤트 구독과 콜 큐 예약입니다. 둘 다 `OnDelete`에서 지웁니다.
+
+```enforce title="Scripts/Game/TAG_CleanupOnDeathComponent.c"
+[ComponentEditorProps(category: "TAG/Tutorial", description: "쓰러지면 잠시 뒤 엔티티를 지웁니다")]
+class TAG_CleanupOnDeathComponentClass : ScriptComponentClass
+{
+}
+
+class TAG_CleanupOnDeathComponent : ScriptComponent
+{
+	[Attribute(defvalue: "3", desc: "쓰러진 뒤 지울 때까지의 시간(초)")]
+	protected float m_fDelay;
+
+	protected TAG_HealthComponent m_Health;
+
+	protected void OnHealthChanged(float newHealth, float oldHealth)
+	{
+		if (newHealth > 0 || oldHealth <= 0)
+			return;	// 이번 변화로 0이 된 경우만 처리
+
+		int delayMs = m_fDelay * 1000;
+		ScriptCallQueue queue = GetGame().GetCallqueue();
+		queue.Remove(DeleteOwner);	// 혹시 남은 예약이 있으면 정리
+		queue.CallLater(DeleteOwner, delayMs);
+	}
+
+	protected void DeleteOwner()
+	{
+		SCR_EntityHelper.DeleteEntityAndChildren(GetOwner());
+	}
+
+	override void OnPostInit(IEntity owner)
+	{
+		m_Health = TAG_HealthComponent.Cast(owner.FindComponent(TAG_HealthComponent));
+		if (m_Health)
+			m_Health.GetOnHealthChanged().Insert(OnHealthChanged);
+	}
+
+	override void OnDelete(IEntity owner)
+	{
+		GetGame().GetCallqueue().Remove(DeleteOwner);
+		if (m_Health)
+			m_Health.GetOnHealthChanged().Remove(OnHealthChanged);
+	}
+}
+```
+
+- 엔티티가 3초가 지나기 전에 다른 이유로 지워지면 `OnDelete`가 불리고, 여기서 예약을 지우므로 이미 사라진 엔티티를 다시 지우려는 호출이 남지 않습니다.
+- `TAG_HealthComponent`는 체력을 0 아래로 내리지 않고, 값이 실제로 바뀔 때만 이벤트를 알립니다. 그래서 이미 0인 상태에서 맞아도 삭제가 다시 예약되지 않습니다.
+- 멀티플레이어에서는 엔티티 삭제를 권한자(서버)에서 해야 합니다(14장).
+
+</Answer>
+
+<Answer id="11-4">
+
+게임 모드 컴포넌트에서 `OnPlayerKilled`와 `OnGameModeEnd`를 오버라이드합니다. 가해자의 플레이어 ID는 `GetKillerPlayerID()`로 얻는데, 이 값은 `Instigator.GetInstigatorPlayerID()`에서 오며 공식 주석에 따르면 가해자가 플레이어가 아니면 0입니다.
+
+```enforce title="Scripts/Game/TAG_KillCounterComponent.c"
+[ComponentEditorProps(category: "TAG/GameMode", description: "플레이어별 처치 수를 셉니다")]
+class TAG_KillCounterComponentClass : SCR_BaseGameModeComponentClass
+{
+}
+
+class TAG_KillCounterComponent : SCR_BaseGameModeComponent
+{
+	protected ref map<int, int> m_mKills = new map<int, int>();
+
+	override void OnPlayerKilled(notnull SCR_InstigatorContextData instigatorContextData)
+	{
+		int killerId = instigatorContextData.GetKillerPlayerID();
+		if (killerId == 0)	// 가해자가 플레이어가 아니다
+			return;
+
+		if (instigatorContextData.HasAnyVictimKillerRelation(SCR_ECharacterDeathStatusRelations.SUICIDE))
+			return;
+
+		m_mKills.Set(killerId, m_mKills.Get(killerId) + 1);
+	}
+
+	override void OnGameModeEnd(SCR_GameModeEndData data)
+	{
+		PlayerManager playerManager = GetGame().GetPlayerManager();
+		foreach (int playerId, int kills : m_mKills)
+		{
+			PrintFormat("%1: %2명 처치", playerManager.GetPlayerName(playerId), kills);
+		}
+	}
+}
+```
+
+- `map.Get()`은 키가 없으면 값 타입의 기본값(여기서는 0)을 돌려주고, `Set()`은 키가 없으면 새로 만듭니다. 그래서 처음 처치한 플레이어도 따로 처리할 필요가 없습니다.
+- 이 컴포넌트는 게임 모드 엔티티(또는 게임 모드 프리팹)에 붙여야 합니다.
+- 공식 주석에 따르면 `OnGameModeEnd`는 모든 기계에서 불립니다. `OnPlayerKilled`가 불리는 기계와 데이터를 어떻게 맞출지는 14장의 내용과 함께 생각해야 합니다. 이 해답은 한 기계 안에서 집계하는 데까지만 다룹니다.
+
+</Answer>
+
+<Answer id="11-5">
+
+"마지막 요청 뒤 2초"는 요청이 올 때마다 `Remove` 후 `CallLater`로 다시 예약해서 만들고, "첫 요청 뒤 최대 10초"는 첫 요청 때 따로 한 번 예약해 둡니다. 두 예약은 서로 다른 메서드로 걸어야 하나씩 지울 수 있습니다.
+
+```enforce
+[ComponentEditorProps(category: "TAG/Tutorial", description: "설정 저장을 모아서 합니다")]
+class TAG_SettingsSaverComponentClass : ScriptComponentClass
+{
+}
+
+class TAG_SettingsSaverComponent : ScriptComponent
+{
+	protected static const int QUIET_TIME_MS = 2000;
+	protected static const int MAX_WAIT_MS = 10000;
+
+	protected bool m_bSavePending;
+
+	void RequestSave()
+	{
+		ScriptCallQueue queue = GetGame().GetCallqueue();
+		if (!m_bSavePending)
+		{
+			m_bSavePending = true;
+			queue.CallLater(FlushSave, MAX_WAIT_MS);	// 첫 요청 기준 최대 대기
+		}
+
+		queue.Remove(OnQuiet);
+		queue.CallLater(OnQuiet, QUIET_TIME_MS);		// 마지막 요청 기준
+	}
+
+	protected void OnQuiet()
+	{
+		FlushSave();
+	}
+
+	//! 예약된 저장이 있으면 지금 저장하고 남은 예약을 모두 지운다
+	protected void FlushSave()
+	{
+		if (!m_bSavePending)
+			return;
+
+		ScriptCallQueue queue = GetGame().GetCallqueue();
+		queue.Remove(OnQuiet);
+		queue.Remove(FlushSave);
+		m_bSavePending = false;
+		DoSave();
+	}
+
+	protected void DoSave()
+	{
+		Print("설정을 저장했습니다");
+	}
+
+	override void OnDelete(IEntity owner)
+	{
+		FlushSave();
+	}
+}
+```
+
+- 요청이 2초 안에 계속 이어지면 `OnQuiet` 예약은 계속 뒤로 밀리지만, 첫 요청 때 건 `FlushSave` 예약은 그대로라 10초가 되면 저장됩니다.
+- 어느 쪽 예약이 먼저 실행되든 `FlushSave()`가 다른 예약을 지우므로 저장은 한 번만 일어납니다. `m_bSavePending`이 이미 false면 바로 돌아가는 것도 같은 목적입니다.
+- `OnDelete`에서 `FlushSave()`를 부르면, 저장이 예약되어 있었던 경우에만 바로 저장하고 남은 예약을 지웁니다.
+
+</Answer>

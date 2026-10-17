@@ -1,0 +1,436 @@
+---
+title: 실전 프로젝트
+description: 지금까지 배운 내용을 모아 멀티플레이어에서 동작하는 보급품 상자 모드를 처음부터 끝까지 만듭니다. 요구사항을 정리하고, 클래스를 설계하고, 코드를 쓰고, Workbench에서 설정하고, 혼자와 여럿이 테스트하는 전 과정을 따라갑니다.
+---
+
+<Objectives>
+
+- 요구사항에서 출발해 컴포넌트와 사용자 액션으로 역할을 나눈 설계를 세울 수 있다.
+- `[Attribute]`로 설정을 노출하고 `[RplProp]`으로 서버의 상태를 모든 플레이어에게 복제하는 컴포넌트를 작성할 수 있다.
+- `ScriptedUserAction`으로 상호작용을 만들고, 여러 기계에서 불려도 안전하게 서버에서만 상태를 바꿀 수 있다.
+- 브로드캐스트 RPC와 힌트로 행동한 플레이어에게만 피드백을 줄 수 있다.
+- Workbench에서 프리팹과 액션 컨텍스트를 설정하고, 싱글플레이와 멀티플레이어에서 테스트할 수 있다.
+
+</Objectives>
+
+이 장에서 만들 모드는 플레이어가 상자에 다가가 상호작용하면 보급품을 하나 받고, 남은 수량은 서버가 관리해 모든 플레이어에게 똑같이 보이는 "보급품 상자"입니다. 기능은 작지만 실제 모드에 필요한 요소가 거의 다 들어 있습니다. 어트리뷰트로 설정을 노출하는 컴포넌트(10장), 힌트(13장), 리플리케이션(14장), 디버깅과 테스트(15장)를 한 번에 써 보고, 연습문제에서는 콜 큐(11장)도 씁니다.
+
+앞 장을 모두 읽지 않았더라도 따라올 수 있도록, 필요한 개념은 그때그때 짧게 다시 설명합니다. 코드에 쓰는 API는 모두 공식 스크립트와 샘플 모드에서 확인한 것입니다.
+
+## 요구사항
+
+먼저 무엇을 만들지 문장으로 정리합니다. 구현하면서 "이건 해야 하나?"가 헷갈릴 때마다 이 목록으로 돌아옵니다.
+
+1. 월드에 놓인 상자에 다가가면 "보급품 받기 (3/3)"처럼 남은 수량이 표시된 상호작용이 보인다.
+2. 상호작용하면 남은 수량이 하나 줄고, 보급품을 받은 플레이어의 화면에만 힌트가 뜬다.
+3. 남은 수량은 서버가 관리하고, 모든 플레이어가 같은 값을 본다. 나중에 접속한 플레이어도 마찬가지다.
+4. 상자가 비면 상호작용은 보이지만 실행할 수 없고, 이유("비어 있음")가 표시된다.
+5. 상자에 든 수량과 힌트 문구는 Workbench에서 프리팹마다 바꿀 수 있다.
+6. 싱글플레이, 리슨 서버, 데디케이티드 서버에서 모두 같은 코드로 동작한다.
+
+## 설계
+
+### 클래스 구성
+
+역할에 따라 클래스 두 개로 나눕니다.
+
+| 파일 | 클래스 | 역할 |
+|---|---|---|
+| `Scripts/Game/Components/TAG_SupplyCrateComponent.c` | `TAG_SupplyCrateComponent` | 상자의 설정과 상태를 가집니다. 서버에서 수량을 바꾸고 복제하며, 받은 플레이어에게 알립니다. |
+| `Scripts/Game/UserActions/TAG_TakeSupplyAction.c` | `TAG_TakeSupplyAction` | 상호작용 메뉴의 항목입니다. 표시 여부와 이름을 정하고, 실행되면 컴포넌트에 요청합니다. |
+
+상태를 사용자 액션이 아니라 컴포넌트에 두는 이유가 있습니다. 컴포넌트는 `[RplProp]`과 RPC를 가질 수 있는 리플리케이션 아이템이고, 같은 상자에 다른 기능(예: 자동 보충)을 붙일 때도 상태가 한곳에 있어야 일관성을 지키기 쉽습니다. 사용자 액션은 "플레이어 입력을 받아 컴포넌트에 전달하는 창구"로만 씁니다. 사용자 액션 폴더 이름은 공식 샘플 모드(`SampleMod_NewProp`)의 `Scripts/Game/UserActions`를 따랐습니다.
+
+엔티티에는 다음 컴포넌트가 붙습니다.
+
+| 컴포넌트 | 왜 필요한가 |
+|---|---|
+| `MeshObject`, `RigidBody` | 위키 Action Context Setup에 따르면 상호작용하려면 엔티티에 유효한 메시와 물리 표현이 있어야 합니다. |
+| `RplComponent` | 엔티티를 리플리케이션에 등록합니다. 위키는 사용자 액션이 제대로 동기화되려면 이 컴포넌트가 필요하다고 적고 있습니다. |
+| `ActionsManagerComponent` | 액션 컨텍스트와 사용자 액션을 관리합니다. |
+| `TAG_SupplyCrateComponent` | 이 장에서 만드는 컴포넌트입니다. |
+
+### 상태는 "가져간 수"로
+
+남은 수량을 그대로 복제하면, 처음 값(가득 찬 수량)을 누가 언제 정하는지가 문제가 됩니다. 이 설계에서는 대신 **가져간 수** `m_iTaken`을 복제합니다. `int`의 기본값 0은 모든 기계에서 같으므로 초기화 순서를 신경 쓸 필요가 없고, 남은 수량은 언제든 `용량 - 가져간 수`로 계산할 수 있습니다. 용량은 프리팹의 어트리뷰트 값이라 모든 기계가 똑같이 알고 있습니다.
+
+### 어디서 무엇이 실행되나
+
+14장의 원칙을 이 프로젝트에 적용하면 다음과 같습니다.
+
+- **상태 변경(시뮬레이션)**: 상자의 권한자, 즉 서버에서만 합니다. 클라이언트는 사용자 액션으로 요청만 합니다.
+- **상태 전달**: `m_iTaken`을 `[RplProp]`으로 복제합니다. 중도 참가자도 스트리밍될 때 현재 값을 받습니다.
+- **피드백(사건)**: "보급품을 받았다"는 한 번 일어나는 사건이므로 브로드캐스트 RPC로 보내고, 각 기계는 자기 플레이어가 받은 사람일 때만 힌트를 띄웁니다. 서버의 브로드캐스트는 서버 자신에서 실행되지 않으므로, 리슨 서버 호스트와 싱글플레이를 위해 서버에서도 한 번 직접 호출합니다.
+
+### 사용자 액션은 어디서 실행되나
+
+`ScriptedUserAction`(`Game/generated/UserAction/ScriptedUserAction.c`)의 공식 주석을 보면 네트워크와 관련된 메서드가 세 개 있습니다.
+
+| 메서드 | 기본값 | 공식 주석의 의미 |
+|---|---|---|
+| `HasLocalEffectOnlyScript()` | false | 클라이언트 쪽에만 효과가 있는 액션인가 |
+| `CanBroadcastScript()` | true | 로컬 전용이 아닐 때, 서버가 이 액션을 클라이언트들에 퍼뜨릴 것인가 |
+| `CheckOnServerFirstScript()` | false | 실행 전에 서버에서 먼저 검증할 것인가 |
+
+즉 로컬 전용이 아닌 액션은 서버로 전달되고, 설정에 따라 다른 클라이언트에서도 실행됩니다. 따라서 `PerformAction()`은 **여러 기계에서 불릴 수 있다**고 보고 짜야 합니다. 공식 액션들도 그렇게 짭니다. 예를 들어 `SCR_DismantleInventoryItemBaseAction`은 `PerformAction()` 첫머리에서 소유 엔티티의 `RplComponent`가 프록시이면 바로 반환하고, `SCR_BaseUseSupportStationAction`은 "서버에서만 수행할 수 있다"는 주석과 함께 서버가 아니면 반환합니다.
+
+이 프로젝트도 같은 방식을 씁니다. 상태 변경은 컴포넌트의 `TryTake()`가 맡고, 이 메서드는 프록시에서 불리면 아무것도 하지 않습니다. 그리고 상태는 `[RplProp]`으로, 피드백은 RPC로 전달하므로 액션 자체를 다른 클라이언트에 퍼뜨릴 필요가 없어 `CanBroadcastScript()`는 false를 반환합니다.
+
+## 코드
+
+### 보급품 상자 컴포넌트
+
+컴포넌트 파일은 길어서 세 부분으로 나눠 봅니다. 세 부분을 차례로 이어 붙이면 파일 전체가 됩니다. 첫 부분은 설정, 상태, 조회 메서드입니다.
+
+```enforce title="Scripts/Game/Components/TAG_SupplyCrateComponent.c"
+[ComponentEditorProps(category: "TAG/Tutorial", description: "보급품 상자")]
+class TAG_SupplyCrateComponentClass : ScriptComponentClass
+{
+}
+
+class TAG_SupplyCrateComponent : ScriptComponent
+{
+	[Attribute(defvalue: "3", desc: "상자에 든 보급품 수", params: "1 100")]
+	protected int m_iCapacity;
+
+	[Attribute(defvalue: "보급품 상자", desc: "힌트 제목")]
+	protected string m_sHintTitle;
+
+	[Attribute(defvalue: "보급품을 받았습니다. 남은 수량: %1", desc: "힌트 내용. %1은 남은 수량")]
+	protected string m_sHintText;
+
+	//! 지금까지 가져간 수. 권한자만 바꾸고, 프록시로 복제된다.
+	[RplProp(onRplName: "OnTakenChanged")]
+	protected int m_iTaken;
+
+	protected RplComponent m_RplComponent;
+
+	override void OnPostInit(IEntity owner)
+	{
+		m_RplComponent = RplComponent.Cast(owner.FindComponent(RplComponent));
+		if (!m_RplComponent)
+			Print("TAG_SupplyCrateComponent: 엔티티에 RplComponent가 없습니다.", LogLevel.ERROR);
+	}
+
+	int GetCapacity()
+	{
+		return m_iCapacity;
+	}
+
+	int GetRemaining()
+	{
+		int remaining = m_iCapacity - m_iTaken;
+		if (remaining < 0)
+			return 0;
+
+		return remaining;
+	}
+```
+
+어트리뷰트 세 개는 World Editor의 속성 창에 나타나 프리팹마다 값을 바꿀 수 있습니다(10장). `params: "1 100"`은 최솟값과 최댓값입니다. 복제할 상태는 `m_iTaken` 하나이고, 값이 바뀌면 프록시에서 `OnTakenChanged()`가 불립니다.
+
+두 번째 부분은 서버에서 보급품을 꺼내는 로직입니다.
+
+```enforce
+	//! 권한자에서만 동작한다. 보급품을 하나 꺼냈으면 true.
+	bool TryTake(IEntity user)
+	{
+		if (!user || !m_RplComponent || m_RplComponent.IsProxy())
+			return false;
+
+		// 클라이언트가 본 값은 오래됐을 수 있으니 서버에서 다시 검사한다
+		if (GetRemaining() <= 0)
+			return false;
+
+		m_iTaken++;
+		Replication.BumpMe();
+		OnTakenChanged();	// 권한자에서는 콜백이 자동으로 불리지 않는다
+
+		int playerId = GetGame().GetPlayerManager().GetPlayerIdFromControlledEntity(user);
+		if (playerId > 0)
+		{
+			ShowTakenHint(playerId, GetRemaining());			// 리슨 서버 호스트, 싱글플레이
+			Rpc(RpcDo_NotifyTaken, playerId, GetRemaining());	// 원격 클라이언트
+		}
+
+		return true;
+	}
+
+	//! 프록시에서는 복제된 값이 들어온 뒤 자동으로 불린다.
+	protected void OnTakenChanged()
+	{
+		PrintFormat("[TAG_SupplyCrate] 남은 수량: %1/%2", GetRemaining(), m_iCapacity);
+	}
+```
+
+`TryTake()`는 14장의 `SetRunning()`과 같은 꼴입니다. 프록시이면 바로 반환하고, 권한자에서는 값을 바꾼 뒤 `Replication.BumpMe()`로 알리고 프레젠테이션 메서드를 직접 부릅니다. `OnTakenChanged()`는 지금은 로그만 남기지만, 테스트할 때 각 기계에서 복제가 일어났는지 확인하는 용도로 쓸모가 있습니다.
+
+`GetPlayerIdFromControlledEntity()`는 상호작용한 엔티티를 조종하는 플레이어의 ID를 돌려주고, 공식 주석대로 플레이어를 찾지 못하면 0을 돌려줍니다. 그래서 AI처럼 플레이어가 아닌 엔티티가 액션을 실행하면 알림을 보내지 않습니다.
+
+세 번째 부분은 피드백입니다.
+
+```enforce
+	[RplRpc(RplChannel.Reliable, RplRcver.Broadcast)]
+	protected void RpcDo_NotifyTaken(int playerId, int remaining)
+	{
+		ShowTakenHint(playerId, remaining);
+	}
+
+	//! 이 기계의 플레이어가 받은 사람일 때만 힌트를 띄운다.
+	protected void ShowTakenHint(int playerId, int remaining)
+	{
+		if (playerId != SCR_PlayerController.GetLocalPlayerId())
+			return;
+
+		string text = string.Format(m_sHintText, remaining);
+		SCR_HintManagerComponent.ShowCustomHint(text, m_sHintTitle, 5);
+	}
+}
+```
+
+`SCR_PlayerController.GetLocalPlayerId()`는 로컬 `PlayerController`가 없으면 0을 반환합니다. 데디케이티드 서버에는 로컬 플레이어가 없으므로 `TryTake()`에서 직접 부른 `ShowTakenHint()`는 아무것도 하지 않고, 원격 클라이언트들 가운데 ID가 일치하는 한 명만 힌트를 띄웁니다.
+
+`SCR_HintManagerComponent.ShowCustomHint(설명, 제목, 지속 시간(초))`는 문자열로 바로 힌트를 띄우는 정적 메서드입니다. 공식 소스의 주석은 이 메서드를 "빠른 디버깅용"이라고 하고, 정식으로는 힌트를 엔티티나 컴포넌트, 설정의 어트리뷰트로 구성해 쓰라고 권합니다. 주석은 `SCR_UIInfo` 어트리뷰트라고 적었지만, `ShowHint()`가 받는 타입은 그 자손 클래스인 `SCR_HintUIInfo`입니다. 학습용으로 간단한 방법을 먼저 쓰고, 정식 방법은 연습문제 16-5에서 바꿔 봅니다. 힌트 설정 파일의 자세한 내용은 13장에서 다뤘습니다.
+
+### 사용자 액션
+
+사용자 액션은 공식 샘플 모드의 액션(`SCR_DrawerUserAction`, `SCR_TrunkUserAction`)과 같은 메서드들을 오버라이드합니다. 이 파일도 두 부분으로 나눠 봅니다.
+
+```enforce title="Scripts/Game/UserActions/TAG_TakeSupplyAction.c"
+class TAG_TakeSupplyAction : ScriptedUserAction
+{
+	protected TAG_SupplyCrateComponent m_Crate;
+
+	override void Init(IEntity pOwnerEntity, GenericComponent pManagerComponent)
+	{
+		m_Crate = TAG_SupplyCrateComponent.Cast(pOwnerEntity.FindComponent(TAG_SupplyCrateComponent));
+	}
+
+	override bool CanBeShownScript(IEntity user)
+	{
+		return m_Crate != null;
+	}
+
+	override bool CanBePerformedScript(IEntity user)
+	{
+		if (!m_Crate || m_Crate.GetRemaining() <= 0)
+		{
+			SetCannotPerformReason("비어 있음");
+			return false;
+		}
+
+		SetCannotPerformReason(string.Empty);
+		return true;
+	}
+```
+
+`Init()`은 액션이 액션 관리자에 등록될 때 한 번 불립니다. 샘플 모드처럼 여기서 컴포넌트를 찾아 멤버 변수에 저장해 두면, 자주 불리는 `CanBeShownScript()`와 `CanBePerformedScript()`에서 매번 찾지 않아도 됩니다(15장의 성능 지침).
+
+`SetCannotPerformReason()`은 실행할 수 없는 이유를 기록합니다. 공식 상호작용 메뉴 코드(`SCR_ActionMenuInteractionDisplay`)는 실행할 수 없는 액션이 선택되어 있으면 잠시 뒤 이 문자열을 알림 막대로 보여 줍니다. 공식 `SCR_MortarShootAction`처럼 실행할 수 있을 때는 빈 문자열로 되돌려 둡니다.
+
+```enforce
+	override void PerformAction(IEntity pOwnerEntity, IEntity pUserEntity)
+	{
+		// 여러 기계에서 불릴 수 있다. 상태 변경은 TryTake()가 권한자에서만 한다.
+		if (m_Crate)
+			m_Crate.TryTake(pUserEntity);
+	}
+
+	override bool GetActionNameScript(out string outName)
+	{
+		if (!m_Crate)
+			return false;
+
+		outName = string.Format("보급품 받기 (%1/%2)", m_Crate.GetRemaining(), m_Crate.GetCapacity());
+		return true;
+	}
+
+	override bool CanBroadcastScript()
+	{
+		// 결과는 RplProp과 RPC로 전달하므로 액션을 다른 클라이언트에 퍼뜨릴 필요가 없다
+		return false;
+	}
+}
+```
+
+`GetActionNameScript()`가 true를 반환하면 `outName`이 액션 이름으로 쓰이고, false를 반환하면 Workbench에서 설정한 `UIInfo`의 이름이 쓰입니다(공식 주석). 남은 수량은 복제된 `m_iTaken`으로 계산하므로, 다른 플레이어가 보급품을 가져가면 모든 플레이어의 메뉴에 새 수량이 표시됩니다.
+
+### 한눈에 보는 흐름
+
+원격 클라이언트의 플레이어 A가 데디케이티드 서버에서 상자를 사용하는 경우를 따라가 봅니다.
+
+| 단계 | 기계 | 일어나는 일 |
+|---|---|---|
+| 1 | A의 클라이언트 | `CanBePerformedScript()`가 복제된 수량으로 실행 가능 여부를 판단하고, A가 상호작용합니다. |
+| 2 | 서버 | `PerformAction()` → `TryTake()`가 수량을 다시 검사하고 `m_iTaken`을 늘린 뒤 `BumpMe()`를 부릅니다. |
+| 3 | 서버 | `Rpc(RpcDo_NotifyTaken, ...)`로 A의 ID를 브로드캐스트합니다. 서버 자신의 `ShowTakenHint()`는 로컬 플레이어가 없어 아무것도 하지 않습니다. |
+| 4 | 상자를 스트리밍받은 클라이언트들 | 새 `m_iTaken`이 도착하면 `OnTakenChanged()`가 불리고, 메뉴의 수량이 바뀝니다. |
+| 5 | A의 클라이언트 | `RpcDo_NotifyTaken()`에서 ID가 일치하므로 힌트를 띄웁니다. 다른 클라이언트는 그냥 반환합니다. |
+
+`PerformAction()`이 A의 클라이언트에서도 불린다면 `TryTake()`가 프록시 검사에서 바로 반환하므로 결과는 같습니다. 리슨 서버의 호스트가 상자를 쓰면 2단계가 호스트의 기계에서 일어나고, 3단계의 직접 호출로 호스트에게 힌트가 뜹니다.
+
+## Workbench 설정
+
+여기서는 공식 문서(Create a Component, Prefabs Basics, Action Context Setup)가 설명하는 절차만 따릅니다. 모드 프로젝트를 만드는 방법은 1장과 12장에서 다뤘습니다.
+
+### 스크립트 넣고 컴파일하기
+
+두 파일을 모드 프로젝트의 `Scripts/Game` 아래에 만듭니다. 위키에 따르면 컴포넌트 스크립트는 반드시 Game 모듈(`scripts/Game`)에 있어야 컴포넌트 목록에 나타납니다. 그다음 **Script Editor**에서 **Build > Validate and Reload Scripts**로 컴파일하고 **Errors** 창이 비어 있는지 확인합니다.
+
+### 상자 엔티티와 프리팹 만들기
+
+<TryIt title="상자 엔티티 만들기">
+
+1. World Editor에서 테스트용 월드를 엽니다.
+2. **Resource Browser**에서 상자로 쓸 모델(`.xob`)을 뷰포트로 끌어다 놓습니다. Prefabs Basics 문서에 따르면 `MeshObject` 컴포넌트가 붙은 `GenericEntity`가 만들어집니다.
+3. 새 엔티티에 **Add Component** 버튼으로 `RigidBody`, `RplComponent`, `ActionsManagerComponent`, `TAG_SupplyCrateComponent`를 차례로 추가합니다. `TAG_SupplyCrateComponent`는 `ComponentEditorProps`에 적은 `TAG/Tutorial` 분류 아래에 있습니다.
+4. `RigidBody`의 **Model Geometry**를 켭니다. Action Context Setup 문서는 상호작용하려면 이 설정이 필요하다고 적고 있습니다.
+5. `TAG_SupplyCrateComponent`의 속성에서 수량과 힌트 문구를 원하는 값으로 바꿔 봅니다.
+
+</TryIt>
+
+이미 있는 상자 프리팹을 끌어다 놓아도 됩니다. 그 경우 이미 붙어 있는 컴포넌트는 건너뛰고, 없는 것만 추가합니다.
+
+### 액션 컨텍스트와 액션 등록하기
+
+사용자 액션은 <strong>액션 컨텍스트(action context)</strong>에 속합니다. 컨텍스트는 엔티티의 특정 위치에 붙는 상호작용 지점입니다. 위키 Action Context Setup의 절차를 이 프로젝트에 맞춰 옮기면 다음과 같습니다.
+
+<TryIt title="상호작용 등록하기">
+
+1. 상자 엔티티의 `ActionsManagerComponent`를 선택합니다.
+2. **Action Contexts** 배열에 항목을 하나 추가하고 **Context Name**에 `supply`를 입력합니다. **Position**에는 `PointInfo`를 넣고 Y 오프셋을 올려 상자 윗면 근처로 옮깁니다. 위키에 따르면 `UIInfo`도 채워야 합니다.
+3. **Additional Actions** 배열에 항목을 추가하고 클래스로 `TAG_TakeSupplyAction`을 고릅니다.
+4. 추가한 액션의 **Parent Context List**에 항목을 추가하고 2단계의 컨텍스트 이름 `supply`를 넣습니다.
+5. 액션에 `UIInfo`를 추가하고 **Name**에 "보급품 받기"를 입력합니다. `GetActionNameScript()`가 false를 반환할 때 이 이름이 쓰입니다.
+6. 액션의 **Visibility Range**를 2 정도로, **Duration**(초)을 1 정도로 정합니다.
+
+</TryIt>
+
+### 프리팹으로 저장하기
+
+설정이 끝나면 Prefabs Basics 문서의 방법대로 **Hierarchy**의 루트 엔티티를 **Resource Browser**의 원하는 폴더로 끌어다 놓고 이름(예: `TAG_SupplyCrate`)을 입력해 프리팹으로 저장합니다. 확장자 `.et`는 자동으로 붙습니다. 14장에서 본 것처럼 `RplComponent`는 프리팹의 **루트 엔티티**에 있어야 합니다.
+
+### 테스트 월드 준비하기
+
+상호작용하려면 플레이어 캐릭터가 스폰되어야 합니다. 가장 간단한 구성은 위키 General Game Mode Setup의 Basic Setup 표에 있는 미리 만든 프리팹(`GameMode_Plain`, `FactionManager_FFA`, `LoadoutManager_FFA`, `SpawnPoint_FFA`)을 월드에 놓는 것입니다. 같은 문서는 참고용 월드로 MpTest 월드도 소개합니다. 문서에 적힌 경로는 `worlds/MP/MpTest.ent`이지만, 1.8에서는 `worlds/MP/MpTest/MpTest.ent`에 있습니다.
+
+힌트는 게임 모드 엔티티에 붙은 `SCR_HintManagerComponent`가 표시합니다. `SCR_HintManagerComponent.GetInstance()`가 `GetGame().GetGameMode()`에서 이 컴포넌트를 찾기 때문입니다. 테스트할 게임 모드에 이 컴포넌트가 있는지 확인하세요. 없으면 `ShowCustomHint()`는 false를 반환하고 아무것도 표시하지 않습니다.
+
+## 테스트
+
+### 혼자 테스트하기
+
+World Editor에서 게임을 실행하고 다음을 확인합니다. 싱글플레이는 클라이언트 접속을 받지 않는 서버이므로, 이 단계에서 서버 쪽 로직과 표시가 모두 실행됩니다.
+
+1. 상자에 다가가면 "보급품 받기 (3/3)"이 보이는가.
+2. 상호작용하면 힌트가 뜨고, 이름이 "(2/3)"으로 바뀌는가.
+3. 로그(**Script Editor**의 **Output** 창)에 `[TAG_SupplyCrate] 남은 수량: 2/3`이 남는가.
+4. 다 가져가면 실행할 수 없고 "비어 있음"이 표시되는가.
+
+상호작용이 아예 보이지 않으면 Diag Menu의 `GameCode > User Actions > Context position`으로 컨텍스트 위치를 확인하고, `Log actions`로 액션 로그를 켜 봅니다(15장). 실행 흐름을 따라가려면 `TryTake()`에 브레이크포인트를 거는 것이 가장 빠릅니다.
+
+### 여럿이 테스트하기
+
+리플리케이션 버그는 혼자 테스트할 때는 드러나지 않습니다. 반드시 클라이언트를 붙여 확인합니다. 공식 스크립트에는 이를 위한 World Editor 플러그인이 두 개 있습니다.
+
+- **Peer Tool** (`WorkbenchGameCommon/PeerTool.c`): 플러그인 설정의 **Executable**에 게임의 Diag 실행 파일(`ArmaReforgerSteamDiag.exe`) 경로를 넣고 피어 구성을 정해 둔 뒤, World Editor에서 Play 버튼 옆 목록의 **Server localhost + PeerTool**로 게임을 시작하면 Workbench에서 실행한 게임이 서버가 되고 피어 클라이언트들이 여기에 접속합니다. **Launch Delay**(초)로 피어 실행을 늦추면 이미 진행 중인 게임에 들어오는 중도 참가도 시험할 수 있습니다.
+- **Dedicated Server Tool** (`WorkbenchGame/WorldEditor/SCR_DedicatedServerPlugin.c`): 데디케이티드 서버 실행 파일을 띄우고, 원하면 피어 클라이언트들도 함께 실행합니다.
+
+Workbench 밖에서 확인하려면 시작 매개변수를 씁니다. 위키 Startup Parameters의 예는 다음과 같습니다. `-addons`에는 `.gproj`에 적힌 모드 ID를 넣습니다.
+
+```text
+ArmaReforgerServer.exe -server "worlds/MP/MPTest.ent" -addonsDir "C:\MyModsDir" -addons MyCustomMod
+ArmaReforgerSteam.exe -client -addonsDir "C:\MyModsDir" -addons MyCustomMod
+```
+
+첫 줄의 `-server` 값은 위키의 예이며, 1.8에서는 월드 경로가 `worlds/MP/MpTest/MpTest.ent`입니다.
+
+같은 컴퓨터에서 `-forceUpdate`로 여러 인스턴스를 띄울 때는 엔진 문서의 조언대로 `-maxFPS`를 함께 지정해 부하를 나눕니다. 그러지 않으면 앞에 있는 창은 200 FPS, 뒤에 있는 창은 5 FPS로 도는 일이 생길 수 있습니다.
+
+멀티플레이어에서는 다음을 확인합니다.
+
+| 상황 | 기대 결과 |
+|---|---|
+| 클라이언트가 상자를 사용 | 그 클라이언트에만 힌트가 뜨고, 서버와 상자 근처의 모든 클라이언트에서 메뉴와 로그에 새 수량이 나온다. |
+| 리슨 서버 호스트가 사용 | 호스트에게만 힌트가 뜨고, 클라이언트들의 수량이 바뀐다. |
+| 두 플레이어가 마지막 하나를 동시에 사용 | 서버가 먼저 처리한 한 명만 받는다. 수량이 음수가 되지 않는다. |
+| 몇 개를 가져간 뒤 새 클라이언트가 접속 | 새 클라이언트에도 현재 수량이 표시된다. |
+| 데디케이티드 서버 | 서버 로그에 수량 변화가 남고, 서버에서 힌트 관련 오류가 나지 않는다. |
+
+### 문제가 생기면
+
+| 증상 | 의심할 곳 |
+|---|---|
+| 상호작용이 보이지 않는다 | 컨텍스트 이름과 **Parent Context List**가 일치하는지, **Visibility Range**, 문서가 요구하는 `RigidBody`와 **Model Geometry**, 컨텍스트의 `UIInfo`(1.8.0.13 싱글플레이 시험에서는 없거나 꺼져 있어도 메뉴가 떴습니다) |
+| 싱글플레이에서는 되는데 클라이언트에서 수량이 안 바뀐다 | `RplComponent`가 루트 엔티티에 있는지, `Replication.BumpMe()` 호출 |
+| 클라이언트가 사용해도 서버에서 아무 일도 없다 | `RplComponent` 유무(1.8.0.13 시험에서는 없어도 액션이 서버의 `PerformAction()`까지 갔고 `TryTake()`가 거절했습니다), 로그에 `RplComponent가 없습니다` 오류 |
+| 힌트가 안 뜬다 | 게임 모드의 `SCR_HintManagerComponent`, 게임 설정의 힌트 표시 여부, 로컬 플레이어 ID 비교 |
+| 호스트에게만 힌트가 안 뜬다 | `TryTake()`의 `ShowTakenHint()` 직접 호출을 빠뜨렸는지 |
+
+힌트 관리자의 `CanShow()`는 게임 설정에서 힌트를 끄면 false를 반환합니다. 1.8.0.13 설정 화면에서 이 항목은 **Interface > Prompts**의 **Show context hints**입니다. `SCR_HintManagerComponent`의 `m_bIgnoreHintSettings` 어트리뷰트를 켜면, 공식 설명대로 게임 설정에서 힌트를 꺼도 이 시나리오에서는 힌트가 보입니다.
+
+## 설계 돌아보기
+
+완성한 모드에서 각 장의 원칙이 어떻게 쓰였는지 정리해 봅니다.
+
+- **서버가 정답을 가진다(14장)**: 클라이언트는 수량을 직접 바꾸지 않고, 서버의 `TryTake()`가 다시 검사한 뒤에만 바꿉니다. 클라이언트의 `CanBePerformedScript()`는 편의를 위한 1차 검사일 뿐입니다.
+- **상태와 사건을 나눈다(14장)**: 수량은 `[RplProp]`, "받았다"는 브로드캐스트 RPC입니다. 그래서 중도 참가자는 수량을 받지만, 이미 지나간 힌트는 받지 않습니다.
+- **데이터는 Workbench에서(10장)**: 수량과 문구를 어트리뷰트로 노출해 코드를 고치지 않고도 다른 상자를 만들 수 있습니다.
+- **자주 불리는 곳은 가볍게(15장)**: 컴포넌트 검색은 `Init()`에서 한 번만 합니다.
+
+이 설계에도 한계가 있습니다. 브로드캐스트는 상자를 스트리밍받은 모든 클라이언트에 전달되므로, 받을 사람이 한 명뿐인 알림치고는 낭비가 있습니다. 공식 코드의 `SCR_KickHintComponent`처럼 각 플레이어의 `PlayerController`에 컴포넌트를 붙이고 `RplRcver.Owner` RPC로 그 플레이어에게만 보내는 방법도 있지만, 게임 모드가 쓰는 `PlayerController` 프리팹을 고쳐야 합니다. 상호작용 메뉴가 보였다는 것은 그 플레이어의 기계에 상자가 이미 스트리밍되어 있다는 뜻이므로 브로드캐스트가 닿습니다. 그래서 이 프로젝트에서는 단순한 방법을 골랐습니다. 또 서버가 요청을 거절했을 때(누군가 먼저 가져간 경우) 플레이어에게 알려 주지 않는데, 연습문제 16-4에서 다룹니다.
+
+## 정리
+
+<Summary>
+
+- 요구사항을 문장으로 먼저 정리하고, 상태를 가진 컴포넌트와 입력 창구인 사용자 액션으로 역할을 나눴습니다.
+- 복제할 상태는 기본값이 모든 기계에서 같은 "가져간 수"로 정해 초기화 순서 문제를 피했습니다.
+- `TryTake()`는 `RplComponent.IsProxy()`를 검사해 권한자에서만 상태를 바꾸고, `Replication.BumpMe()` 뒤에 프레젠테이션 메서드를 직접 호출합니다.
+- `PerformAction()`은 여러 기계에서 불릴 수 있다고 보고 짰으며, 결과를 복제와 RPC로 전달하므로 `CanBroadcastScript()`는 false를 반환합니다.
+- 피드백은 브로드캐스트 RPC와 서버의 직접 호출로 보내고, 각 기계는 `SCR_PlayerController.GetLocalPlayerId()`와 비교해 해당 플레이어에게만 힌트를 띄웁니다.
+- 엔티티에는 `MeshObject`, `RigidBody`, `RplComponent`, `ActionsManagerComponent`, 직접 만든 컴포넌트가 필요하고, 액션 컨텍스트와 **Parent Context List**로 액션을 연결합니다.
+- 싱글플레이 테스트 뒤에는 반드시 Peer Tool이나 데디케이티드 서버로 여럿이 테스트하고, 동시 사용과 중도 참가를 확인합니다.
+
+</Summary>
+
+**더 읽을거리**
+
+- [Action Context Setup](https://community.bistudio.com/wiki/Arma_Reforger:Action_Context_Setup)
+- [Create a Component](https://community.bistudio.com/wiki/Arma_Reforger:Create_a_Component)
+- [Prefabs Basics](https://community.bistudio.com/wiki/Arma_Reforger:Prefabs_Basics)
+- [Hint Usage](https://community.bistudio.com/wiki/Arma_Reforger:Hint_Usage)
+- [General Game Mode Setup](https://community.bistudio.com/wiki/Arma_Reforger:General_Game_Mode_Setup)
+- 공식 샘플 모드 `SampleMod_NewProp`의 `SCR_DrawerUserAction.c`
+
+## 연습문제
+
+<Exercise id="16-1" level="기초" title="빈 상자는 메뉴에서 숨기기">
+
+상자가 비면 상호작용을 아예 보이지 않게 바꾸세요. 어느 메서드를 고치면 되는지, 그리고 이렇게 바꿨을 때 플레이어 입장에서 무엇을 잃는지 설명하세요.
+
+</Exercise>
+
+<Exercise id="16-2" level="응용" title="자동 보충">
+
+상자가 일정 시간마다 보급품을 하나씩 다시 채우도록 `TAG_SupplyCrateComponent`를 확장하세요. 보충 간격(초)은 어트리뷰트로 노출하고 기본값은 60으로 합니다. 보충은 서버에서만 일어나야 하고, 가득 차 있으면 아무것도 하지 않으며, 컴포넌트가 삭제될 때 타이머를 해제해야 합니다.
+
+</Exercise>
+
+<Exercise id="16-3" level="응용" title="진짜 물건 주기">
+
+보급품을 받으면 상자 옆에 프리팹 하나가 생성되도록 하세요. 생성할 프리팹은 `ResourceName` 어트리뷰트로 고를 수 있어야 하고, 생성은 서버에서만 일어나야 합니다. 생성 위치는 상자 위치에서 위로 1미터 지점으로 합니다.
+
+</Exercise>
+
+<Exercise id="16-4" level="도전" title="한 사람에 하나씩">
+
+플레이어 한 명이 상자 하나에서 보급품을 한 번만 받을 수 있게 하세요. 이미 받은 플레이어가 다시 상호작용하면 서버가 거절하고, 그 플레이어에게 "이미 받았습니다" 힌트를 보여 줘야 합니다. 누가 받았는지는 서버만 알면 됩니다. 남은 수량이 없어 거절된 경우에도 같은 방식으로 "비어 있습니다" 힌트를 보여 주세요.
+
+</Exercise>
+
+<Exercise id="16-5" level="도전" title="정식 힌트 설정 쓰기">
+
+`ShowCustomHint()`는 공식 주석상 빠른 디버깅용입니다. 힌트를 `[Attribute()] protected ref SCR_HintUIInfo` 어트리뷰트로 Workbench에서 설정하고, 남은 수량을 넣은 설명으로 바꿔 `SCR_HintManagerComponent.ShowHint()`로 띄우도록 고치세요. 어트리뷰트가 비어 있으면 힌트 없이 넘어가야 합니다.
+
+</Exercise>

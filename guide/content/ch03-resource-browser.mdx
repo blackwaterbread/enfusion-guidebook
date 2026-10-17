@@ -1,0 +1,195 @@
+---
+title: Resource Browser
+description: 프로젝트와 기본 게임의 파일을 찾고 여는 Resource Browser의 화면 구성과 검색, 두 번 클릭, Create 메뉴, 오른쪽 클릭 메뉴, 덮어쓴 파일의 표시를 살펴봅니다.
+---
+
+<Objectives>
+
+- Resource Browser의 트리와 파일 목록, 검색 칸으로 원하는 파일을 찾을 수 있다.
+- 파일을 두 번 클릭했을 때 파일 종류마다 어디에서 열리는지 안다.
+- **Create** 메뉴의 항목을 알고, 새 폴더와 파일을 어디서 만드는지 안다.
+- 오른쪽 클릭 메뉴의 묶음을 알고, <strong>Copy Resource Name(s)</strong>와 **Override in** 같은 항목을 찾을 수 있다.
+- 자물쇠와 퍼즐 조각 표시로 기본 게임 파일과 덮어쓴 파일을 구별할 수 있다.
+
+</Objectives>
+
+Resource Browser는 Workbench에서 파일을 찾고 여는 창입니다. 메인 창 왼쪽에 있고(2장), World Editor 창 안에도 같은 창이 있습니다. 모드 프로젝트의 파일뿐 아니라 기본 게임(Arma Reforger)의 데이터와 스크립트도 이 창에서 찾습니다. 스크립트에 넣을 리소스 이름을 얻는 일과 기본 게임 파일을 모드에서 덮어쓰는 일도 이 창의 메뉴에서 시작합니다.
+
+이 장은 Resource Browser의 화면을 다룹니다. 리소스와 GUID, 덮어쓰기(Override)·복제(Duplicate)·상속(Inherit)이 무엇인지는 Script 책 12장에서 설명합니다. 프리팹을 덮어써서 고치는 절차는 8장, 설정 파일을 채우는 절차는 9장에서 봅니다.
+
+## 화면 구성
+
+메인 창의 Resource Browser(<FigRef id="ch03-panel" />)에는 위에서 아래로 다음 부분이 있습니다.
+
+1. **검색 칸**: 맨 위의 칸입니다. 오른쪽에 ⇄ 모양 버튼, 깔때기 버튼, 톱니 버튼이 있습니다.
+2. **트리**: 폴더를 나무 모양으로 보여 줍니다.
+3. **탐색 줄**: 화살표 버튼 셋(←, →, ↑)과 별 버튼이 있고, 폴더를 고르면 그 오른쪽에 지금 폴더의 경로가 나옵니다.
+4. **파일 목록**: 트리에서 고른 폴더의 하위 폴더와 파일을 그림과 이름으로 보여 줍니다.
+5. **아래 줄**: 왼쪽에 `5 items`, `2 items (1 selected)` 같은 항목 수가, 오른쪽에 **Import**와 **Create** 버튼이 있습니다.
+
+<Figure src="ch03/panel.png" alt="메인 창의 Resource Browser" id="ch03-panel" marks="1@48.9,4.8;2@48.9,27.2;3@65.1,40.4;4@74.9,79.1;5@32.6,97.8">메인 창의 Resource Browser</Figure>
+
+검색하지 않은 상태에서 트리 맨 위에는 `ArmaReforger`(기본 게임), `core`, `logs`, `profile`과 지금 연 프로젝트가 이름순으로 놓입니다. 그림의 `GuideDemo`처럼 프로젝트 줄에는 TITLE이 아니라 프로젝트 ID가 보이고, 그 자리는 이름에 따라 달라집니다. 의존 프로젝트를 더하면 Workbench를 다시 시작한 뒤 그 프로젝트도 이 목록에 생깁니다.
+
+메인 창의 **Utilities > File System Dump**(2장)로 보면 `core`는 게임 설치 폴더의 `addons\core`, `logs`는 이번 세션의 로그 폴더(5장), `profile`은 Workbench 사용자 폴더 안의 `profile` 폴더(1장)입니다. 위키(Resource Manager)는 `core`를 엔진의 기본 데이터라고 설명합니다.
+
+`ArmaReforger`와 `core` 폴더, 그리고 기본 게임의 파일에는 작은 자물쇠 표시가 붙습니다. 기본 게임 파일을 오른쪽 클릭하면 **Delete**와 **Rename**이 흐리게 표시됩니다. 기본 게임의 프리팹이나 설정 파일을 고칠 때는 원본을 건드리지 않고 모드 프로젝트에 덮어쓴 파일을 만듭니다(Script 책 12장, 이 장 뒤의 **Override in**).
+
+메인 창의 Resource Browser는 트리가 위, 파일 목록이 아래에 놓입니다. World Editor 안의 Resource Browser는 트리가 왼쪽, 파일 목록이 오른쪽에 놓입니다(이 장 끝).
+
+## 폴더를 옮겨 다니기
+
+트리에서 폴더를 고르면 파일 목록에 그 폴더의 내용이 보이고, 탐색 줄에 `ArmaReforger > ··· > Core`처럼 경로가 나옵니다. 경로가 길면 가운데가 `···`로 줄어듭니다. 경로 조각을 누르면 그 폴더로 가고, 파일 목록에서 폴더를 두 번 클릭하면 그 안으로 들어갑니다. 탐색 줄의 ←와 → 버튼은 앞서 옮겨 다닌 폴더 사이를 오가고, ↑ 버튼은 위 폴더로 갑니다. 별 버튼을 누르면 지금 폴더가 즐겨찾기에 들어가 검색 칸 아래에 `★ Configs`처럼 한 줄이 생기고, 다시 누르면 빠집니다.
+
+파일 목록의 그림은 파일 종류마다 다릅니다. 프리팹은 모델을 찍은 작은 그림이나 정육면체 그림으로, 설정 파일은 톱니가 붙은 문서 그림으로, 레이아웃은 초록 블록 그림으로 보입니다. 파일 이름에는 확장자까지 붙어 있습니다.
+
+## 검색
+
+검색 칸에 파일 이름의 일부를 넣으면 트리에는 그 이름의 파일이 들어 있는 폴더 쪽만 남고, 파일 목록에 맞는 파일이 보입니다. 기본 게임과 모드 프로젝트에 같은 이름의 파일이 있으면 둘 다 나옵니다. 검색어를 넣으면 검색 칸 오른쪽에 × 버튼이 생깁니다. 트리에서 폴더를 고르지 않으면 파일 목록에 맞는 파일이 모두 나오고, 폴더를 고르면 그 폴더 아래의 결과만 나옵니다. × 버튼을 누르면 검색어가 지워지고 트리가 모두 다시 보이지만, 처음 화면으로 접히지는 않습니다. 검색 중에 파일을 골라 두었다면 Resource Browser는 그 파일이 든 폴더를 연 채 그 파일을 골라 둡니다.
+
+검색 칸에는 다음처럼 넣을 수도 있습니다.
+
+- 빈칸으로 나눈 여러 낱말을 넣으면 그 낱말이 모두 든 이름을 찾습니다(예: `village 1i03 .xob`).
+- GUID로도 찾을 수 있습니다.
+- 낱말 앞에 `#`을 붙이면 태그로 찾습니다. 이름에 그 낱말이 없어도 그 태그가 붙은 파일이 나옵니다.
+- 낱말 앞에 `!`을 붙이면 그 낱말이 든 파일을 결과에서 뺍니다(예: `Notifications !Tutorial`).
+
+깔때기 버튼은 거르기 메뉴를 엽니다. **Common Filter** 묶음에 **Show Runtime files only**와 **Show unregistered sources only**가, **Category Filter** 묶음에 파일 종류 17가지가, **Tag Filter** 묶음에 태그가 있습니다. 톱니 버튼은 보기 설정 메뉴를 엽니다. 가로·세로 배치(**Orientation**), 격자·목록 보기(**View Mode**), 아이콘 크기(**Icons Scale**), 정렬 기준(**Sort by**)과 순서(**Sorting Order**) 같은 항목이 있습니다. ⇄ 버튼을 누르면 Resource Browser가 지금 탭의 파일이 든 폴더로 옮겨 가 그 파일을 골라 줍니다.
+
+검색으로 기본 게임 파일을 찾아 열어 봅니다(<FigRef id="ch03-search" />).
+
+<TryIt title="기본 게임 설정 파일 찾아 열기">
+
+1. 메인 창 Resource Browser의 검색 칸에 `Notifications`를 입력합니다.
+2. 트리에서 `ArmaReforger` 아래 `Configs` > `Notifications` 폴더를 고릅니다. 파일 목록에 자물쇠가 붙은 `Notifications.conf`와 `TutorialNotifications.conf`가 보입니다.
+3. `Notifications.conf`를 두 번 클릭합니다. 메인 창에 `Notifications.conf` 탭이 열립니다(2장).
+4. 파일 목록의 `Notifications.conf`를 오른쪽 클릭합니다. 메뉴의 **Addons** 묶음에 <strong>Override in 'GuideDemo'</strong>가 보입니다. 누르지 않고 <Kbd>Esc</Kbd>를 눌러 메뉴를 닫습니다.
+5. 탭을 닫습니다. 바꾼 것이 없으므로 저장할지 묻지 않습니다.
+
+</TryIt>
+
+<Figure src="ch03/search.png" alt="Notifications로 찾은 Resource Browser" id="ch03-search">Notifications로 찾은 Resource Browser</Figure>
+
+## 두 번 클릭
+
+메인 창의 Resource Browser에서 파일을 두 번 클릭하면 파일 종류에 따라 다음 곳에서 열립니다. Script Editor나 World Editor가 닫혀 있을 때 `.c`나 `.ent`를 두 번 클릭하면 그 편집기 창이 새로 열립니다.
+
+| 확장자 | 종류 | 열리는 곳 |
+|---|---|---|
+| `.et` | 엔티티 프리팹 | 메인 창의 프리팹 탭 |
+| `.ct` | 컴포넌트 프리팹 | 메인 창의 탭(속성 표) |
+| `.conf` | 설정 파일 | 메인 창의 탭(속성 표) |
+| `.layout` | 레이아웃 | 메인 창의 탭 |
+| `.c` | 스크립트 | Script Editor의 탭 |
+| `.ent` | 월드 | World Editor |
+
+메인 창 탭의 모습은 2장에서 보았습니다. 프리팹 탭 오른쪽의 **Edit Prefab** 버튼을 누르면 World Editor가 `World Editor - Prefab edit mode`라는 제목으로 열립니다. 프리팹은 이 모드에서 고치며, 절차는 8장에서 봅니다.
+
+World Editor 창의 Resource Browser에서 두 번 클릭해도 `.et`, `.ct`, `.conf`, `.layout`은 위 표처럼 메인 창의 탭으로 열리고, 메인 창이 앞으로 옵니다. `.ent`는 World Editor가 그 월드를 엽니다. 그래서 World Editor에서 `.et`를 두 번 클릭해도 월드에는 아무것도 생기지 않습니다. 프리팹을 월드에 놓을 때는 끌어다 놓습니다(6장).
+
+파일의 오른쪽 클릭 메뉴 맨 위에는 **Open File in New Tab** 항목도 있습니다. 이 항목을 고르면 두 번 클릭한 것처럼 탭으로 열리고, 이미 열린 파일이면 같은 파일의 탭이 하나 더 생깁니다.
+
+## Create 메뉴
+
+새 폴더와 파일은 파일 목록 아래 줄 오른쪽의 **Create** 버튼으로 만듭니다. 버튼 오른쪽에는 ▾ 표시가 있고, 버튼 본체와 ▾ 어느 쪽을 눌러도 같은 메뉴가 열립니다(<FigRef id="ch03-create-menu" />). 메뉴는 두 묶음입니다.
+
+- **Create Folder**: **New Folder**
+- **Create Resource**: **Config file**, **Game material**, **GUI image set**, **GUI layout**, **GUI string table**, **GUI style**, **Material**, **Particle effect**, **Physics material**, **Ragdoll definition**, **Script**, **Vehicle contact surface**
+
+<Figure src="shared/rb-create-menu.png" alt="Resource Browser의 Create 메뉴" id="ch03-create-menu">Resource Browser의 Create 메뉴</Figure>
+
+폴더는 **Create Folder** 묶음의 **New Folder**로 만듭니다. **New Folder**를 고르면 **Create folder** 창이 폴더 이름을 묻고, 새 폴더는 파일 목록에 열린 폴더 안에 생깁니다. **Create Resource** 묶음 가운데 이 책에서 쓰는 항목은 다음 셋입니다.
+
+| 항목 | 만드는 것 | 다루는 곳 |
+|---|---|---|
+| **Script** | 스크립트 파일 | 4장 |
+| **Config file** | 설정 파일(`.conf`) | 9장 |
+| **GUI layout** | 레이아웃 | 10장 |
+
+새 파일은 파일 목록에 열린 폴더에 생기므로, 트리에서 모드 프로젝트 안의 폴더를 먼저 고르세요. 기본 게임 폴더를 열어 둔 상태에서는 **Import**와 **Create**가 흐리게 표시됩니다.
+
+**Config file**을 고르면 이름을 묻는 **Choose Name** 창과 클래스를 고르는 **Choose a class** 창이 차례로 뜨고, 클래스를 고르면 설정 파일이 생깁니다. **Choose a class** 목록에는 설정 파일의 최상위 클래스로 쓸 수 있게 선언한 클래스만 나옵니다(Script 책 12장). 이 절차는 9장에서 따라 해 봅니다.
+
+파일 목록의 빈 곳을 오른쪽 클릭해도 만들기 메뉴를 열 수 있습니다. 이 메뉴에는 **Show in Explorer**, <strong>Import files..</strong>와 함께 **Create Folder** 묶음과 **Create Resource** 묶음이 있고, 두 묶음의 항목은 **Create** 메뉴와 같습니다.
+
+## 오른쪽 클릭 메뉴
+
+파일을 오른쪽 클릭하면 묶음별로 나뉜 메뉴가 열립니다. 기본 게임의 프리팹과 설정 파일의 오른쪽 클릭 메뉴에 나오는 항목을 모으면 다음과 같습니다. 설정 파일의 메뉴는 <FigRef id="ch03-context-menu" />에 있습니다.
+
+| 묶음 | 항목 |
+|---|---|
+| (맨 위) | **Open File in New Tab** |
+| **Explore** | **Show in Explorer**, **Navigate to Folder** |
+| **Common** | **Register**, **Register and Import**, **Reimport**, **Tags** ▸, **Duplicate**, **Inherit**, **Delete**, **Rename** |
+| **Addons** | **Navigate to Original**, **Navigate to Ancestor**, **Navigate to Override**, **Override in '…'**, **Duplicate to '…'**, **Inherit in '…'** |
+| **Utils** | **Copy Resource Name(s)**, **Copy Resource GUID(s)**, **Copy Link**, **Copy File Path(s)**, **Send to...** ▸, **Find References**, **Find Inherited Files**, **Refresh Thumbnail(s)**, **Edit Prefab(s)**, **Save Changes**, **Revert Changes** |
+| **Script** | **Plugins** ▸ |
+
+<Figure src="ch03/context-menu.png" alt="기본 게임 파일의 오른쪽 클릭 메뉴" id="ch03-context-menu">기본 게임 파일의 오른쪽 클릭 메뉴</Figure>
+
+기본 게임 파일에서는 **Show in Explorer**와 **Common** 묶음의 **Register**, **Register and Import**, **Reimport**, **Duplicate**, **Inherit**, **Delete**, **Rename**, **Utils** 묶음의 <strong>Edit Prefab(s)</strong>(프리팹)와 **Save Changes**가 흐리게 표시됩니다. **Common** 묶음의 **Duplicate**, **Inherit**은 **Addons** 묶음의 **Duplicate to**, **Inherit in**과 다른 항목입니다.
+
+메뉴의 항목은 파일에 따라 조금씩 다릅니다. <strong>Edit Prefab(s)</strong>는 프리팹을 오른쪽 클릭했을 때 나오고, 설정 파일의 메뉴에는 이 항목과 **Script** 묶음이 없습니다(<FigRef id="ch03-context-menu" />).
+
+World Editor 창의 Resource Browser에서 연 메뉴는 메인 창의 것과도 다릅니다. 맨 위의 **Open File in New Tab**과 **Utils** 묶음 끝의 **Save Changes**, **Revert Changes**가 없고, 설정 파일(`.conf`)과 프리팹(`.et`)의 메뉴 끝에는 **Custom** 묶음이 붙습니다. **Custom** 묶음의 **Open in Resource Manager**를 누르면 그 파일이 메인 창의 탭으로 열립니다. 프리팹의 **Custom** 묶음에는 **Select All Instances**와 **Select All Instances in Active Layer**도 있습니다.
+
+### 리소스 이름 복사하기
+
+스크립트에서 리소스를 가리키는 `ResourceName`은 `{GUID}경로` 꼴의 문자열입니다(Script 책 12장). 위키(Resource Manager)에 따르면 **Utils** 묶음의 <strong>Copy Resource Name(s)</strong>는 이 꼴의 문자열을 클립보드에 복사합니다. 같은 문서는 다른 복사 항목도 설명합니다. <strong>Copy Resource GUID(s)</strong>는 GUID만, <strong>Copy File Path(s)</strong>는 `C:\…` 꼴의 전체 경로를, **Copy Link**는 `enfusion://` 링크를 복사합니다(2장). {/* 확인 대기: 네 항목을 누른 뒤 붙여 넣은 글자, 여러 파일을 골랐을 때 */}
+
+### Addons 묶음
+
+**Addons** 묶음의 아래 세 항목에는 작업 중인 프로젝트의 ID가 작은따옴표 안에 붙습니다(예: <strong>Override in 'GuideDemo'</strong>).
+
+- **Override in**: 누르면 작업 중인 프로젝트 안, 원본과 같은 경로에 같은 GUID의 파일이 생깁니다. 기본 게임의 프리팹과 설정 파일 모두 그렇습니다. 갓 만든 파일에는 바꾼 것이 없어서 내용이 거의 비어 있습니다(설정 파일의 예는 9장). 누르고 나면 Resource Browser가 작업 중인 프로젝트 쪽으로 옮겨 가 새 파일을 골라 둡니다.
+- **Duplicate to**, **Inherit in**: 기본 게임 프리팹에서 누르면 각각 이름을 묻는 창(**Duplicate File**, **Create inherited file**)이 뜨고, 작업 중인 프로젝트 안 원본과 같은 폴더 경로에 새 GUID를 가진 사본과 원본을 상속하는 새 파일이 생깁니다(8장). 프리팹의 **Inherit in**은 메인 창과 World Editor 창의 Resource Browser 어느 쪽에서도 쓸 수 있습니다.
+
+이미 덮어쓴 파일이 있으면 원본의 메뉴에는 **Override in**이 없고 **Navigate to Override**가 켜집니다(<FigRef id="ch03-context-menu-overridden" />). 덮어쓴 파일의 메뉴에서는 반대로 **Navigate to Original**과 **Navigate to Ancestor**가 켜지고, 덮어쓰지 않은 파일에서는 세 항목이 모두 흐리게 표시됩니다. **Navigate to Original**은 Resource Browser를 원본으로, **Navigate to Override**는 덮어쓴 파일로 옮겨 줍니다. 기본 게임 파일을 바로 덮어쓴 파일에서는 **Navigate to Ancestor**도 원본으로 갑니다. 위키(Data Modding Basics)는 **Navigate to Ancestor**가 덮어쓴 파일의 조상으로 옮겨 준다고 설명합니다.
+
+<Figure src="ch03/context-menu-overridden.png" alt="이미 덮어쓴 원본의 오른쪽 클릭 메뉴" id="ch03-context-menu-overridden">이미 덮어쓴 원본의 오른쪽 클릭 메뉴</Figure>
+
+메뉴에 Replacement라는 항목은 없습니다. 위키(Data Modding Basics)에 따르면 Replacement, 곧 같은 GUID로 원본을 통째로 바꾸는 방식은 Particle Editor의 기능 하나를 빼면 GUID를 맞춘 파일을 직접 만들어서 합니다(Script 책 12장). 소리 파일(`.wav`)의 오른쪽 클릭 메뉴에는 **Addons** 묶음에 **Override in**과 **Duplicate to**만 있고 **Inherit in**은 없습니다. 소리 프로젝트(`.acp`)의 메뉴도 같고, 메인 창과 World Editor 창의 Resource Browser 어느 쪽에서도 같습니다. 소리 파일에서 **Override in**을 누르면 작업 중인 프로젝트의 같은 경로에 같은 GUID로 소리 파일 자체가 복사됩니다.
+
+## 덮어쓴 파일 알아보기
+
+덮어쓴 파일은 Resource Browser와 탭에 붙는 표시로 알아봅니다.
+
+- **퍼즐 조각**: 모드 프로젝트에 있는 덮어쓴 파일의 그림에는 퍼즐 조각 표시가 붙습니다. 원본은 자물쇠 표시 그대로입니다(<FigRef id="ch03-override-icons" />).
+- **Resource Variants** 칸: 덮어쓴 파일을 열면 탭 오른쪽 위 **Resource Variants** 칸의 괄호 안이 `(2)`가 되고, 값은 `2. GuideDemo`처럼 프로젝트 ID입니다(<FigRef id="ch03-resource-variants" />). 덮어쓰지 않은 기본 게임 파일은 `(1)`과 `1. ArmaReforger`, 프로젝트에서 새로 만든 파일은 `(1)`과 그 프로젝트의 ID입니다. 덮어쓴 파일에서 값 칸을 펼치면 `1. ArmaReforger`와 `2. GuideDemo` 두 줄이 있고, `1. ArmaReforger`를 고르면 같은 탭에 원본의 값이 보입니다. 이때는 원본이 값을 정한 칸의 이름이 굵어지고 `parent:` 칸이 비며, `2. GuideDemo`를 고르면 덮어쓴 파일로 돌아옵니다. 덮어쓴 뒤에 원본을 두 번 클릭하면 `1. ArmaReforger`가 골라진 채 열립니다.
+- `parent:` 칸: 덮어쓴 설정 파일의 탭에서는 위쪽 `parent:` 칸에 원본 파일 이름이 흐리게 보입니다. 덮어쓰지 않은 기본 게임 `.ct` 탭에서는 이 칸이 비어 있습니다.
+
+덮어쓴 파일의 이름으로 찾으면 원본과 덮어쓴 파일을 한눈에 견줄 수 있습니다. 트리에서 폴더를 고르지 않은 상태라면 둘이 나란히 나옵니다. 예를 들어 8장에서 `DefaultPlayerController.et`를 덮어쓴 뒤 `DefaultPlayerController`를 찾으면 자물쇠가 붙은 원본과 퍼즐 조각이 붙은 덮어쓴 파일이 함께 나옵니다. 트리에서 폴더를 고른 상태에서는 그 폴더 아래의 결과만 나오므로(이 장의 "검색"), 트리의 `ArmaReforger`를 누르면 원본이, `GuideDemo`를 누르면 덮어쓴 파일이 보입니다. 덮어쓴 파일을 고르면 상태 줄에 모드 프로젝트 폴더 안의 경로가 보입니다(2장).
+
+<Figure src="shared/rb-override-icons.png" alt="자물쇠가 붙은 원본과 퍼즐 조각이 붙은 덮어쓴 파일" id="ch03-override-icons">자물쇠가 붙은 원본과 퍼즐 조각이 붙은 덮어쓴 파일</Figure>
+
+<Figure src="shared/conf-override-tab-top.png" size="full" alt="덮어쓴 Notifications.conf 탭의 위쪽" id="ch03-resource-variants">덮어쓴 Notifications.conf 탭의 위쪽</Figure>
+
+## World Editor 안의 Resource Browser
+
+World Editor 창에도 Resource Browser가 있습니다. World Editor 아래쪽의 **Resource Browser** 탭으로, 트리가 왼쪽, 파일 목록이 오른쪽에 놓입니다(<FigRef id="ch03-world-editor-rb" />). 검색 칸과 **Import**, **Create** 버튼이 있고, 탐색 버튼은 검색 칸 옆에 놓입니다.
+
+World Editor의 Resource Browser에서는 파일을 다른 곳으로 끌어다 놓는 일을 많이 합니다. 프리팹(`.et`)이나 모델(`.xob`)을 뷰포트로 끌어 놓으면 엔티티가 생기고(6장), 설정 파일(`.conf`)을 속성 칸으로 끌어 놓으면 그 칸이 채워집니다(7장). 반대로 **Hierarchy**의 엔티티를 Resource Browser의 폴더로 끌어 놓으면 **New entity prefab** 창이 떠서 프리팹 파일을 만듭니다(8장).
+
+메인 창 **Window** 메뉴의 **Resource Browser 2**를 고르면 메인 창의 첫 Resource Browser 아래에 두 번째 Resource Browser가 열립니다. 첫 창과 따로 폴더를 옮겨 다닐 수 있고, 다시 고르면 닫힙니다.
+
+<Figure src="ch03/world-editor-rb.png" alt="World Editor 안의 Resource Browser" id="ch03-world-editor-rb">World Editor 안의 Resource Browser</Figure>
+
+## 정리
+
+<Summary>
+
+- Resource Browser는 메인 창 왼쪽(트리가 위, 파일 목록이 아래)과 World Editor 아래쪽(트리가 왼쪽)에 있습니다.
+- 트리 맨 위에는 `ArmaReforger`, `core`, `logs`, `profile`과 지금 프로젝트가 이름순으로 있고, 기본 게임 쪽 폴더와 파일에는 자물쇠가 붙습니다.
+- 검색 칸에 이름의 일부를 넣으면 트리와 파일 목록이 맞는 파일 쪽으로 줄어듭니다.
+- `.et`, `.ct`, `.conf`, `.layout`은 두 번 클릭하면 메인 창의 탭으로, `.c`는 Script Editor, `.ent`는 World Editor에서 열립니다.
+- 새 폴더와 파일은 **Create** 메뉴로 만듭니다. **Config file**은 **Choose Name**, **Choose a class** 창을 거쳐 만들어집니다(9장).
+- 오른쪽 클릭 메뉴는 **Explore**, **Common**, **Addons**, **Utils** 같은 묶음으로 나뉩니다. 리소스 이름 복사는 **Utils** 묶음에, 덮어쓰기(**Override in**)는 **Addons** 묶음에 있습니다.
+- 덮어쓴 파일은 퍼즐 조각 표시와 탭의 **Resource Variants** 칸 `(2)`로 알아봅니다.
+
+</Summary>
+
+**더 읽을거리**
+
+- [Resource Manager](https://community.bistudio.com/wiki/Arma_Reforger:Resource_Manager): Resource Browser 절
+- [Data Modding Basics](https://community.bistudio.com/wiki/Arma_Reforger:Data_Modding_Basics)
+- [Create a Config Class](https://community.bistudio.com/wiki/Arma_Reforger:Create_a_Config_Class)

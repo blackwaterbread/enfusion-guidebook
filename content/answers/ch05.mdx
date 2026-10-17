@@ -1,0 +1,248 @@
+<Answer id="5-1">
+
+```enforce title="Scripts/Game/TAG_Counter.c"
+class TAG_Counter
+{
+	protected int m_iValue;
+
+	//------------------------------------------------------------------------------------------------
+	void Increment()
+	{
+		m_iValue++;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	void Reset()
+	{
+		m_iValue = 0;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	int GetValue()
+	{
+		return m_iValue;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	static void Run()
+	{
+		TAG_Counter counter = new TAG_Counter();
+		counter.Increment();
+		counter.Increment();
+		counter.Increment();
+		PrintFormat("count: %1", counter.GetValue());
+	}
+}
+```
+
+실행 결과는 다음과 같습니다.
+
+```text
+count: 3
+```
+
+`m_iValue`를 `protected`로 선언했으므로 클래스 밖에서는 값을 직접 바꿀 수 없고, 세 메서드를 거쳐야 합니다. 멤버 변수는 객체가 만들어질 때 기본값(`int`는 0)으로 채워지므로 생성자를 따로 두지 않아도 됩니다. `Run`은 정적 메서드라서 `TAG_Counter.Run()`으로 호출합니다.
+
+</Answer>
+
+<Answer id="5-2">
+
+오류는 세 군데입니다.
+
+1. `ResetKits`의 `m_iKits = 3;`은 **컴파일 오류**입니다. 정적 메서드에는 객체가 없으므로 인스턴스 멤버에 접근할 수 없습니다.
+2. `medic.m_iKits = 5;`도 **컴파일 오류**입니다. `m_iKits`는 `protected`라서 `TAG_MedicDemo` 같은 다른 클래스에서 쓸 수 없습니다.
+3. 2번을 고쳐도 `medic`은 선언만 하고 `new`로 만들지 않았으므로 `null`입니다. 이 상태로 멤버에 접근하면 **실행 중 VM 예외**가 납니다.
+
+고친 코드는 다음과 같습니다.
+
+```enforce
+class TAG_Medic
+{
+	protected int m_iKits = 3;
+
+	void ResetKits()
+	{
+		m_iKits = 3;
+	}
+
+	void SetKits(int kits)
+	{
+		m_iKits = kits;
+	}
+}
+
+class TAG_MedicDemo
+{
+	static void Run()
+	{
+		TAG_Medic medic = new TAG_Medic();
+		medic.SetKits(5);
+	}
+}
+```
+
+`ResetKits`에서 `static`을 빼서 인스턴스 메서드로 만들고, 값을 바꾸는 세터를 추가했습니다. `Run`에서는 `new`로 객체를 만든 뒤 세터를 부릅니다.
+
+</Answer>
+
+<Answer id="5-3">
+
+```enforce title="Scripts/Game/TAG_AmmoBox.c"
+class TAG_AmmoBox
+{
+	protected string m_sCaliber;
+	protected int m_iRounds;
+
+	static const int MAX_ROUNDS = 120;
+
+	//------------------------------------------------------------------------------------------------
+	void TAG_AmmoBox(string caliber, int rounds = 0)
+	{
+		m_sCaliber = caliber;
+		m_iRounds = Math.ClampInt(rounds, 0, MAX_ROUNDS);
+	}
+
+	//------------------------------------------------------------------------------------------------
+	//! 실제로 늘어난 탄 수를 반환합니다.
+	int AddRounds(int count)
+	{
+		int before = m_iRounds;
+		m_iRounds = Math.ClampInt(m_iRounds + count, 0, MAX_ROUNDS);
+		return m_iRounds - before;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	int GetRounds()
+	{
+		return m_iRounds;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	static TAG_AmmoBox CreateFull(string caliber)
+	{
+		return new TAG_AmmoBox(caliber, MAX_ROUNDS);
+	}
+}
+
+class TAG_AmmoBoxDemo
+{
+	static void Run()
+	{
+		TAG_AmmoBox box = new TAG_AmmoBox("5.56", 100);
+		int added = box.AddRounds(50);
+		PrintFormat("added %1, now %2", added, box.GetRounds());
+
+		TAG_AmmoBox full = TAG_AmmoBox.CreateFull("7.62");
+		PrintFormat("full: %1", full.GetRounds());
+	}
+}
+```
+
+실행 결과는 다음과 같습니다.
+
+```text
+added 20, now 120
+full: 120
+```
+
+- 생성자는 하나만 둘 수 있으므로, 처음 탄 수는 기본값 매개변수(`int rounds = 0`)로 생략할 수 있게 했습니다.
+- `Math.ClampInt(value, min, max)`는 정수를 범위 안으로 자릅니다. `AddRounds`는 자르기 전후의 차이를 돌려주므로 100발 상자에 50발을 넣으면 20을 반환합니다.
+- 클래스 안의 `const` 상수도 클래스 이름으로 읽을 수 있지만, 정적 메서드 `CreateFull`에서 쓰는 값이라는 점을 드러내려고 `static const`로 선언했습니다.
+- `CreateFull`이 반환한 새 객체는 반환값과 지역 변수 `full`이 붙잡고 있으므로 사라지지 않습니다(7장).
+
+</Answer>
+
+<Answer id="5-4">
+
+출력은 다음 순서입니다.
+
+```text
+Radio on: A
+Radio on: B
+swap done
+Radio off: A
+end of Run
+Radio off: B
+```
+
+1. 무전기 A가 만들어지고, `a`와 `b`가 둘 다 A를 가리킵니다.
+2. `a`에 새 무전기 B를 대입합니다. A는 아직 `b`가 가리키고 있으므로 파괴되지 않습니다.
+3. `b = null`로 A를 가리키던 마지막 참조가 사라집니다. 이 순간 A가 파괴되어 `Radio off: A`가 출력됩니다.
+4. `Run`이 끝나면 지역 변수 `a`가 사라지면서 B가 파괴됩니다.
+
+객체는 강한 참조가 모두 사라지는 즉시 파괴됩니다. 변수 하나에 새 객체를 대입하는 것만으로는 이전 객체가 사라지지 않으며, 그 객체를 가리키는 다른 참조가 남아 있는지가 중요합니다. 자세한 규칙은 7장에서 다룹니다.
+
+</Answer>
+
+<Answer id="5-5">
+
+```enforce title="Scripts/Game/TAG_PlayerProfile.c"
+class TAG_PlayerProfile
+{
+	protected string m_sName;
+
+	protected static int s_iCreatedCount;
+
+	//------------------------------------------------------------------------------------------------
+	protected void TAG_PlayerProfile()
+	{
+	}
+
+	//------------------------------------------------------------------------------------------------
+	//! 이름이 비어 있거나 공백뿐이면 null을 반환합니다.
+	static TAG_PlayerProfile Create(string name)
+	{
+		string trimmed = name.Trim();
+		if (trimmed.IsEmpty())
+			return null;
+
+		TAG_PlayerProfile profile = new TAG_PlayerProfile();
+		profile.m_sName = trimmed;
+		s_iCreatedCount++;
+		return profile;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	static int GetCreatedCount()
+	{
+		return s_iCreatedCount;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	string GetName()
+	{
+		return m_sName;
+	}
+}
+
+class TAG_PlayerProfileDemo
+{
+	static void Run()
+	{
+		TAG_PlayerProfile alpha = TAG_PlayerProfile.Create("  Alpha ");
+		if (alpha)
+			PrintFormat("created: %1", alpha.GetName());
+
+		TAG_PlayerProfile blank = TAG_PlayerProfile.Create("   ");
+		if (!blank)
+			Print("invalid name");
+
+		PrintFormat("profiles: %1", TAG_PlayerProfile.GetCreatedCount());
+	}
+}
+```
+
+실행 결과는 다음과 같습니다.
+
+```text
+created: Alpha
+invalid name
+profiles: 1
+```
+
+- 생성자가 `protected`이므로 바깥 코드는 `Create`를 거쳐야만 프로필을 만들 수 있습니다. 검사를 한곳에 모을 수 있다는 점이 정적 팩토리의 장점입니다.
+- `Trim()`은 원본을 바꾸지 않고 앞뒤 공백을 뺀 새 문자열을 돌려줍니다(9장). 공백뿐인 이름은 빈 문자열이 되어 `null`을 반환합니다.
+- 만든 개수는 객체가 아니라 클래스에 속한 값이므로 정적 변수 `s_iCreatedCount`에 셉니다.
+- `Create`가 `null`을 돌려줄 수 있으므로 호출한 쪽은 결과를 쓰기 전에 반드시 null을 확인합니다.
+
+</Answer>

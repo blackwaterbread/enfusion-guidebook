@@ -1,0 +1,221 @@
+<Answer id="9-1">
+
+```enforce
+string callsign = "  alpha one ";
+
+int length = callsign.TrimInPlace();       // callsign: "alpha one", 반환값 9
+int upperLength = callsign.ToUpper();      // callsign: "ALPHA ONE", 반환값 9
+int replaced = callsign.Replace(" ", "_"); // callsign: "ALPHA_ONE", 반환값 1
+```
+
+세 메서드 모두 `callsign` 변수의 내용을 직접 바꿉니다. `TrimInPlace`와 `ToUpper`는 바뀐 뒤의 길이를, `Replace`는 바꾼 횟수를 반환합니다. 결과 문자열은 반환값이 아니라 `callsign`에 들어 있습니다. 원본을 남겨야 한다면 `string normalized = callsign;`으로 사본을 만든 뒤 사본에 같은 호출을 하거나, 공백 제거만 `Trim()`으로 새 문자열을 받으세요.
+
+</Answer>
+
+<Answer id="9-2">
+
+```enforce title="Scripts/Game/TAG_NumberList.c"
+class TAG_NumberList
+{
+	static void SumNumbers(string text)
+	{
+		array<string> items = {};
+		text.Split(",", items, true);
+
+		int sum;
+		int invalidCount;
+		foreach (string item : items)
+		{
+			string trimmed = item.Trim();
+			int parsedChars;
+			int value = trimmed.ToInt(parsed: parsedChars);
+
+			// 숫자를 하나도 못 읽었거나, 뒤에 숫자가 아닌 글자가 남았으면 무효
+			if (parsedChars == 0 || parsedChars != trimmed.Length())
+			{
+				invalidCount++;
+				continue;
+			}
+
+			sum += value;
+		}
+
+		PrintFormat("sum: %1, invalid: %2", sum, invalidCount);
+	}
+}
+```
+
+`TAG_NumberList.SumNumbers("12, 7, x, 40")`의 출력은 다음과 같습니다.
+
+```text
+sum: 59, invalid: 1
+```
+
+- `Split`으로 쉼표마다 나누면 `"12"`, `" 7"`, `" x"`, `" 40"`이 나옵니다. 결과를 받을 배열은 미리 `{}`로 만들어 넘깁니다.
+- `ToInt`는 앞쪽 공백을 건너뛰지만, 읽은 글자 수와 길이를 비교하려고 `Trim()`으로 공백을 먼저 없앴습니다.
+- `ToInt`는 `"12abc"`처럼 앞부분만 숫자인 문자열에서도 12를 돌려줍니다. 그래서 읽은 글자 수 `parsedChars`가 0이거나 문자열 길이와 다르면 무효로 셉니다.
+
+</Answer>
+
+<Answer id="9-3">
+
+```enforce title="Scripts/Game/TAG_DistanceFormat.c"
+class TAG_DistanceFormat
+{
+	static string FormatDistance(int meters)
+	{
+		if (meters < 1000)
+			return string.Format("%1 m", meters);
+
+		int km = meters / 1000;
+		int tenths = (meters % 1000) / 100;
+		return string.Format("%1.%2 km", km, tenths);
+	}
+}
+```
+
+| 입력 | 결과 |
+|---|---|
+| 999 | `"999 m"` |
+| 1250 | `"1.2 km"` |
+| 12000 | `"12.0 km"` |
+
+정수끼리 나눈 결과를 `int` 변수에 담으면 소수점 아래가 버려지므로(2장), `meters / 1000`은 킬로미터의 정수 부분, `(meters % 1000) / 100`은 소수 첫째 자리가 됩니다. 두 값을 `"%1.%2 km"` 형식에 넣어 조립하므로 실수를 문자열로 바꿀 때의 표기 방식에 기대지 않습니다.
+
+</Answer>
+
+<Answer id="9-4">
+
+```enforce title="Scripts/Game/TAG_Sight.c"
+class TAG_Sight
+{
+	static bool CanSee(vector eyePos, vector forward, vector targetPos,
+		float range, float halfAngleDeg)
+	{
+		float distSq = vector.DistanceSq(eyePos, targetPos);
+		if (distSq > range * range)
+			return false;
+
+		if (distSq < 0.0001)
+			return true; // 같은 위치: 방향을 정할 수 없으므로 보이는 것으로 처리
+
+		vector toTarget = vector.Direction(eyePos, targetPos).Normalized();
+		float cosAngle = vector.Dot(forward.Normalized(), toTarget);
+		return cosAngle >= Math.Cos(halfAngleDeg * Math.DEG2RAD);
+	}
+}
+```
+
+- 거리는 제곱끼리 비교해 제곱근 계산을 피했습니다.
+- 위치가 같으면 방향 벡터의 길이가 0이 되어 정규화할 수 없으므로 먼저 걸러 냅니다.
+- 두 단위 벡터의 내적은 사잇각의 코사인입니다. 사잇각이 작을수록 코사인이 크므로 "내적이 시야 반각의 코사인 이상"이면 시야 안입니다. `Math.Cos`는 라디안을 받으므로 `Math.DEG2RAD`를 곱했습니다.
+- 예를 들어 `eyePos`가 원점, `forward`가 `"0 0 1"`, 시야 반각이 60도일 때 `"0 0 10"`의 대상은 보이고, 바로 옆인 `"10 0 0"`의 대상(사잇각 90도)은 보이지 않습니다.
+
+</Answer>
+
+<Answer id="9-5">
+
+```enforce title="Scripts/Game/TAG_SpawnUtils.c"
+class TAG_SpawnUtils
+{
+	//------------------------------------------------------------------------------------------------
+	static vector RandomPointInRing(vector center, float minRadius, float maxRadius)
+	{
+		float angle = Math.RandomFloat(0, Math.PI2);
+		float radius = Math.RandomFloat(minRadius, maxRadius);
+		return center + Vector(Math.Sin(angle) * radius, 0, Math.Cos(angle) * radius);
+	}
+
+	//------------------------------------------------------------------------------------------------
+	static vector RandomPointInRingSeeded(vector center, float minRadius, float maxRadius, int seed)
+	{
+		RandomGenerator generator = new RandomGenerator();
+		generator.SetSeed(seed);
+
+		float angle = generator.RandFloatXY(0, Math.PI2);
+		float radius = generator.RandFloatXY(minRadius, maxRadius);
+		return center + Vector(Math.Sin(angle) * radius, 0, Math.Cos(angle) * radius);
+	}
+}
+```
+
+- 각도를 0부터 2π 사이에서, 반지름을 두 반지름 사이에서 고른 뒤 XZ 평면의 오프셋을 만들어 중심에 더했습니다. 오프셋의 Y가 0이므로 높이는 중심과 같습니다.
+- `Math.RandomFloat(min, max)`는 `max`를 포함하지 않습니다. 시드 버전에 쓴 `RandFloatXY(x, y)`는 공식 주석대로 양 끝을 포함하므로, 경계값이 정확히 `maxRadius`인 경우가 드물게 나올 수 있습니다.
+- 같은 시드로 새 `RandomGenerator`를 만들면 같은 순서의 난수가 나오므로 같은 위치를 얻습니다.
+- 반지름을 균등하게 고르면 바깥쪽보다 안쪽에 점이 더 촘촘하게 모입니다. 넓이 기준으로 고르게 퍼뜨리려면 `Math.Sqrt(Math.Lerp(minRadius * minRadius, maxRadius * maxRadius, t))`처럼 제곱 반지름을 보간하세요(`t`는 0~1 난수). `RandomGenerator` 객체의 `GenerateRandomPointInRadius(minRadius, maxRadius, center)`를 써도 되며, 이 메서드는 X와 Z만 채우고 Y를 0으로 두므로 `point[1] = center[1];`로 높이를 맞춥니다.
+
+</Answer>
+
+<Answer id="9-6">
+
+```enforce title="Scripts/Game/TAG_Cooldown.c"
+class TAG_Cooldown
+{
+	protected float m_fDurationMs;
+	protected float m_fReadyTime; // 준비되는 월드 시간(밀리초)
+	protected bool m_bStarted;
+
+	//------------------------------------------------------------------------------------------------
+	void TAG_Cooldown(float seconds)
+	{
+		m_fDurationMs = seconds * 1000;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	//! 현재 월드 시간(밀리초)입니다. 월드가 없으면 -1을 반환합니다.
+	protected static float GetNow()
+	{
+		ArmaReforgerScripted game = GetGame();
+		if (!game)
+			return -1;
+
+		World world = game.GetWorld();
+		if (!world)
+			return -1;
+
+		return world.GetWorldTime();
+	}
+
+	//------------------------------------------------------------------------------------------------
+	void Trigger()
+	{
+		float now = GetNow();
+		if (now < 0)
+			return;
+
+		m_fReadyTime = now + m_fDurationMs;
+		m_bStarted = true;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	bool IsReady()
+	{
+		if (!m_bStarted)
+			return true;
+
+		float now = GetNow();
+		if (now < 0)
+			return false;
+
+		return now >= m_fReadyTime;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	string GetStatusText()
+	{
+		if (IsReady())
+			return "Ready";
+
+		float remainingMs = m_fReadyTime - GetNow();
+		int seconds = Math.Ceil(remainingMs / 1000);
+		return string.Format("Wait %1 s", seconds);
+	}
+}
+```
+
+- 월드 시간은 밀리초 단위이므로 생성자에서 초를 밀리초로 바꿔 저장했습니다.
+- `GetGame()`과 `GetWorld()`의 결과를 모두 확인하는 일을 `GetNow()` 한곳에 모았습니다. 월드가 없으면 -1을 돌려줍니다. 이때 `Trigger()`는 대기를 시작하지 않고, 이미 시작한 대기는 `IsReady()`가 준비되지 않은 것으로 봅니다.
+- 남은 시간은 `Math.Ceil`로 올림했습니다. `Ceil`은 `float`를 반환하지만 `int` 변수에 대입해 정수로 씁니다. 0.2초가 남았어도 "Wait 1 s"로 표시됩니다.
+- 몇 시간씩 이어지는 긴 대기라면 본문에서 본 것처럼 `float` 밀리초의 정밀도 한계가 있으므로 `WorldTimestamp`를 쓰는 편이 정확합니다.
+
+</Answer>

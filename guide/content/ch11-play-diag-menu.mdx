@@ -1,0 +1,233 @@
+---
+title: Play와 Diag Menu
+description: World Editor에서 월드를 게임으로 실행하는 Play의 시작과 끝, Play 목록의 항목, 게임 화면 위에 여는 Diag Menu, Play 중에 다루는 게임 설정과 DbgUI 창을 화면과 함께 살펴봅니다.
+---
+
+<Objectives>
+
+- World Editor 도구 막대의 Play 버튼으로 플레이 모드를 시작하고 <Kbd>Esc</Kbd>나 **Game > Exit game**으로 끝낼 수 있다.
+- Play 목록의 항목과 체크 상태를 읽을 수 있다.
+- Play 중에 <Kbd>Win</Kbd>+<Kbd>Alt</Kbd>로 Diag Menu를 열고 `Statistics`, `GameCode`, `UI` 메뉴에서 필요한 항목을 찾을 수 있다.
+- Remote Console에서 `DiagMenu.SelectMenuByName`을 실행해 Diag Menu의 하위 메뉴를 바로 열 수 있다.
+- 게임 설정의 **Show context hints**를 바꾸고, DbgUI 창을 마우스로 누를 수 있다.
+
+</Objectives>
+
+Script 책의 예제는 대부분 "테스트 월드를 열고 Play를 눌러 로그를 확인합니다"로 끝납니다. 이 장은 그 Play를 다룹니다. 플레이 모드를 시작하고 끝내는 방법, 시작하기 전에 고르는 Play 목록, 게임 화면 위에 여는 디버그 메뉴인 Diag Menu, Play 중에 손댈 일이 생기는 게임 설정과 DbgUI 창을 차례로 봅니다.
+
+월드를 여는 방법은 6장, 로그와 Remote Console은 5장에서 다룹니다. 피어 클라이언트를 붙여 여럿이 시험하는 방법과 자동 테스트는 12장에서 이어 갑니다. Diag Menu의 항목은 Script 책과 같이 `GameCode > User Actions`처럼 코드 글꼴로 적습니다.
+
+## 플레이 모드 시작하기
+
+World Editor 도구 막대에는 초록색 삼각형 모양의 Play 버튼이 있고, 그 오른쪽에 Play 목록을 여는 ▾가 붙어 있습니다(<FigRef id="ch11-toolbar-play" />). 월드를 연 상태에서 Play 버튼을 누르면 그 월드가 게임으로 실행되는 **플레이 모드**가 됩니다. Play 목록에서 **Play inside Viewport**가 켜져 있으면 게임은 World Editor 뷰포트 안에서 돕니다.
+
+World Editor가 앞에 있을 때 <Kbd>F5</Kbd>를 눌러도 Play가 시작됩니다. 편집 모드의 **Game** 메뉴 맨 위 **Play Game** 옆에도 <Kbd>F5</Kbd>가 적혀 있습니다.
+
+<Figure src="ch11/toolbar-play.png" alt="도구 막대의 Play 버튼과 목록 버튼" id="ch11-toolbar-play">도구 막대의 Play 버튼과 목록 버튼</Figure>
+
+### 처음 Play할 때의 인증 대화상자
+
+Workbench를 띄운 뒤 처음 Play하면 **Script Authorization Required** 대화상자가 뜰 수 있습니다. 답할 때까지 Play는 시작되지 않으며, 이 대화상자는 5장에서 다룹니다.
+
+### Play 중의 World Editor
+
+Play 중에는 도구 막대의 Play 버튼이 비활성이 되고, 멈춤 버튼은 따로 없습니다. 메뉴 막대에서는 **Game**과 **Window**를 뺀 메뉴가 흐리게 표시됩니다. 게임 화면 오른쪽 위에는 게임의 FPS와 버전(`1.8.0.13 (Steam)`)이 작게 표시됩니다. 뷰포트 맨 오른쪽 위의 초록색 FPS 상자는 게임 화면의 FPS 표시와 따로 그려지는 표시로, 편집 모드에서도 보이고 Peer Tool(12장)로 띄운 피어 게임 창에도 나타나며, 게임의 버전 글자를 가릴 수 있습니다(<FigRef id="ch11-play-running" />).
+
+Play 중에도 Script Editor는 그대로 쓸 수 있습니다. **Remote Console**에서 코드를 실행하고, Script Editor의 **Output**이나 World Editor 아래쪽 **Log Console** 탭에서 로그를 봅니다(5장).
+
+<Figure src="ch11/play-running.jpg" size="full" alt="Play 중의 World Editor" id="ch11-play-running">Play 중의 World Editor</Figure>
+
+<Note title="게임 화면의 한글">
+
+Workbench 환경은 영어 환경이므로, 영어가 아닌 언어의 글꼴은 깨져 보일 수 있습니다. 예를 들어 스크립트에 한글로 적은 사용자 액션 이름이나 디버그 글자는 Play 중 게임 화면에서 □처럼 보입니다.
+
+</Note>
+
+## 플레이 모드 끝내기
+
+플레이 모드는 <Kbd>Esc</Kbd>를 누르거나 World Editor의 **Game > Exit game**을 골라 끝냅니다(<FigRef id="ch11-game-menu" />). 끝내면 편집하던 월드를 다시 불러와 편집 모드로 돌아옵니다. 로그에는 Play를 시작할 때와 끝낼 때 모두 `Workbench Reload Game` 줄이 남습니다.
+
+Play 중의 **Game** 메뉴에는 **Exit game** 말고도 **Play Game Options** ▸, **Script Debug Mode**, **Reload Game Scripts**, **Save RDB Cache**, **Copy View Link**가 있고, 이 가운데 **Play Game Options**, **Reload Game Scripts**, **Copy View Link**는 흐리게 표시됩니다. 편집 모드의 **Game** 메뉴는 맨 위가 **Play Game**(<Kbd>F5</Kbd>)이고, **Play Game Options** ▸, **Script Debug Mode**, **Reload Game Scripts**, **Save RDB Cache**, **Copy View Link**가 모두 켜져 있습니다. **Play Game Options** ▸에는 Play 목록과 같은 항목이 같은 체크 상태로 나옵니다. {/* 확인 대기: 각 항목이 하는 일 */}
+
+<Figure src="ch11/game-menu.png" alt="Play 중의 Game 메뉴" id="ch11-game-menu">Play 중의 Game 메뉴</Figure>
+
+### Esc 키
+
+**Exit game** 옆에도 <Kbd>Esc</Kbd>가 적혀 있습니다. 게임의 일시정지 메뉴는 <Kbd>F10</Kbd>으로 엽니다. 게임 안의 메뉴를 시험하다 <Kbd>Esc</Kbd>를 누르면 그 메뉴가 닫히는 것이 아니라 플레이 모드가 끝납니다.
+
+## Play 목록
+
+Play 버튼 오른쪽의 ▾를 눌러 여는 Play 목록에서는 Play의 방식을 정합니다(<FigRef id="ch11-play-menu" />). 항목 앞의 체크 표시가 켜진 설정입니다. 예를 들어 **Server localhost + PeerTool**은 누르면 체크가 붙고, 다시 누르면 풀립니다. 목록의 항목은 다음과 같습니다.
+
+| 항목 | 설명 |
+|---|---|
+| **Play inside Viewport** | 게임을 World Editor 뷰포트 안에서 실행합니다. **Play in Fullscreen**과 둘 가운데 하나만 체크됩니다 |
+| **Play in Fullscreen** | **Play inside Viewport**와 둘 가운데 하나만 체크됩니다. 위키: 전체 화면으로 실행합니다 |
+| **Play from Camera Position** | 뷰포트 카메라가 있는 자리의 지면에 플레이어를 놓습니다 |
+| **Use Game Camera Position at Return** | — |
+| **Skip Disabled Layers** | — |
+| **Save Changes Before Playing** | — |
+| **World Systems Config** ▸ | 월드 시스템 설정 파일을 고릅니다(아래) |
+| **Use Local Storage** | **Use Online Storage**와 둘 가운데 하나만 체크됩니다 |
+| **Use Online Storage** | **Use Local Storage**와 둘 가운데 하나만 체크됩니다 |
+| **Server localhost** | Workbench의 게임을 리슨 서버로 시작합니다 |
+| **Server localhost + PeerTool** | 서버와 함께 Peer Tool의 피어 클라이언트를 띄웁니다(12장) |
+
+{/* 확인 대기: Play in Fullscreen, Use Game Camera Position at Return, Skip Disabled Layers, Save Changes Before Playing, Use Local Storage·Use Online Storage의 실제 효과 */}
+
+**Server localhost**만 켜고 Play하면 Workbench의 게임이 리슨 서버로 돌아, 로그에 `Starting RPL server, listening on address 0.0.0.0:2001` 줄이 남고 `RplSession.Mode()`가 `RplMode.Listen`입니다. 위키(World Editor)는 이렇게 띄운 서버에는 `127.0.0.1` 같은 루프백 주소가 아니라 실제 IP 주소로만 접속할 수 있다고 설명합니다. {/* 확인 대기: 루프백 주소로는 접속할 수 없는지 */}
+
+<Figure src="ch11/play-menu.png" alt="Play 목록" id="ch11-play-menu">Play 목록</Figure>
+
+### World Systems Config
+
+**World Systems Config** 하위 메뉴에는 월드 시스템 설정 파일(`.conf`)이 나열되고, 고른 파일 앞에 체크가 붙습니다(<FigRef id="ch11-world-systems" />). 그림에서는 `Configs/Systems/` 아래의 `BaseGameModeSystems.conf`, `MissionSystems.conf`, `GameMasterSystems.conf`, `ConflictSystems.conf`, `CaptureAndHoldSystems.conf`, `Tutorial.conf` 여섯 개가 보이고, `BaseGameModeSystems.conf`에 체크가 붙어 있습니다.
+
+`BaseGameModeSystems.conf`에 체크가 붙은 채 Play를 시작하면 로그의 `Initializing world systems` 줄에 이 파일이 적히고, 다른 파일을 고르면 그 파일이 적힙니다. {/* 확인 대기: 목록이 프로젝트와 의존성에 따라 달라지는지 */}
+
+<Figure src="ch11/world-systems.png" alt="World Systems Config 하위 메뉴" id="ch11-world-systems">World Systems Config 하위 메뉴</Figure>
+
+## Diag Menu
+
+Diag Menu는 게임 스크립트와 애셋을 디버깅하는 옵션을 모아 둔 메뉴입니다. 위키(Diag Menu)는 Workbench의 모든 3D 뷰포트(월드나 모델 미리보기)에서 쓸 수 있다고 설명합니다. {/* 확인 대기: 모델 미리보기 뷰포트에서도 열리는지 */} 편집 모드의 World Editor 뷰포트에서도 뷰포트를 한 번 누른 뒤 <Kbd>Win</Kbd>+<Kbd>Alt</Kbd>를 누르면 열리지만, 이 절은 World Editor의 플레이 모드에서 쓰는 방법을 다룹니다. 어떤 항목을 스크립트 작업에 쓰는지와 스크립트로 항목을 더하는 방법은 Script 책 15장에서 다룹니다.
+
+### 열기와 읽기
+
+Play 중에 <Kbd>Win</Kbd>+<Kbd>Alt</Kbd>를 누르면 뷰포트 위에 검은 바탕의 목록이 나타납니다(<FigRef id="ch11-diag-top" />). 두 키를 누른 채로 메뉴를 보고, 누른 채로 화살표 키를 눌러 다룹니다. 두 키를 떼면 메뉴가 닫히고, 다시 누르면 마지막에 보던 메뉴와 줄이 그대로 열립니다.
+
+맨 위 목록은 `Statistics`, `Render`, `Scene`, `World`, `Animation`, `Physics`, `Game`, `Sounds`, `Particles`, `Vehicles`, `GameCode`, `Cheats`, `Character`, `Serialization`, `AI`, `Platform`, `Systems`, `Notifications`, `Extras`, `UI`, `Input`, `Replication`, `GameMode`, `Editor`, `ScenarioFramework` 25개입니다. 메뉴 안에서 고른 줄은 노란 글자이고, 하위 메뉴는 파란 글자입니다. 값을 가진 항목은 이름 오른쪽에 `false`, `off`, `none` 같은 지금 값이 보이고, 값 옆 괄호에 단축키가 적힌 항목도 있습니다(예: `Statistics`의 `FPS` 옆 `lctrl+num1`). 스크립트가 더한 항목도 같은 목록에 섞여 나옵니다.
+
+<Figure src="ch11/diag-top.png" alt="Diag Menu의 맨 위 목록" id="ch11-diag-top">Diag Menu의 맨 위 목록</Figure>
+
+메뉴를 다루는 키는 다음과 같습니다. 모두 <Kbd>Win</Kbd>+<Kbd>Alt</Kbd>를 누른 채로 누릅니다.
+
+| 키 | 하는 일 |
+|---|---|
+| <Kbd>↓</Kbd> | 다음 줄로 이동 |
+| <Kbd>→</Kbd> | 값 바꾸기: `false`인 항목은 `true`로, 값이 여럿인 항목은 다음 값으로. 하위 메뉴에서는 그 안으로 들어가기 |
+| <Kbd>←</Kbd> | 값 바꾸기: `true`인 항목은 `false`로 |
+| <Kbd>Backspace</Kbd> | 하위 메뉴에서 나오기 |
+| <Kbd>Home</Kbd> | 맨 위 목록으로 |
+| <Kbd>Insert</Kbd> | 지금 메뉴의 값만 기본값으로 |
+| <Kbd>Delete</Kbd> | 모든 값을 기본값으로 |
+| <Kbd>Shift</Kbd>+<Kbd>↑</Kbd>·<Kbd>↓</Kbd> | 세 줄씩 이동 |
+| <Kbd>F1</Kbd> | 지금 값을 프로필 폴더(`$profile:`)의 `diagmenu.save`에 저장 |
+| <Kbd>F2</Kbd> | `diagmenu.save`에 저장한 값을 불러오기 |
+
+`Script profiler`는 <Kbd>→</Kbd>를 누를 때마다 `off`, `frame`, `average`, `memory` 순서로 바뀌고, `memory` 다음에는 `off`로 돌아갑니다. `true`인 항목에서 <Kbd>→</Kbd>를 다시 누르면 `true` 그대로입니다. Diag Menu 값은 같은 세션에서 Play를 다시 시작해도 남고, Workbench를 다시 띄우면 처음 값으로 돌아갑니다. <Kbd>F1</Kbd>로 저장한 값은 Workbench를 띄울 때 다시 읽힙니다.
+
+<Warning title="Win+Alt+화살표와 Windows 창 정렬">
+
+Diag Menu는 <Kbd>Win</Kbd>+<Kbd>Alt</Kbd>를 누른 채 화살표 키를 누르므로 Windows의 창 정렬 단축키와 겹칩니다. Windows 11에서는 <Kbd>Win</Kbd>+<Kbd>Alt</Kbd>+<Kbd>↓</Kbd>가 Diag Menu에 전달되면서 World Editor 창도 화면 아래쪽 절반에 붙고, <Kbd>→</Kbd>와 <Kbd>←</Kbd>는 창을 화면 오른쪽과 왼쪽에 붙입니다. 창이 움직이면 다 쓴 뒤 원래 크기와 위치로 되돌려 둡니다. 하위 메뉴로 들어가는 화살표는 다음 절의 방법으로 줄일 수 있습니다.
+
+</Warning>
+
+### 하위 메뉴를 바로 열기
+
+스크립트 API의 `DiagMenu.SelectMenuByName(string name)`은 이름으로 Diag Menu의 메뉴를 고르는 메서드입니다. Play 중에 Remote Console에서 이 메서드를 실행한 뒤 <Kbd>Win</Kbd>+<Kbd>Alt</Kbd>를 누르면, 맨 위 목록 대신 그 하위 메뉴가 바로 보입니다. 화살표 키로 메뉴를 내려가지 않아도 되므로 위의 창 정렬 문제를 줄일 수 있습니다.
+
+<TryIt title="Remote Console로 User Actions 메뉴 열기">
+
+1. World Editor에서 6장에서 만든 `GuideTest` 월드를 열고 Play 버튼을 누릅니다.
+2. Script Editor의 **Remote Console** 탭에서 실행 환경이 `Game`인지 확인합니다(5장).
+3. 입력 줄에 `DiagMenu.SelectMenuByName("User Actions");`를 적고 **Run**을 누릅니다. 로그에 `ScriptDebugger: remote script executed successfully.` 줄이 남습니다.
+4. World Editor 창을 앞으로 가져온 뒤 <Kbd>Win</Kbd>+<Kbd>Alt</Kbd>를 누릅니다. `GameCode > User Actions`의 항목이 바로 보입니다.
+5. 같은 방법으로 `"Network"`, `"GameCode"`, `"UI"`를 넣어 그 메뉴를 열어 봅니다.
+
+</TryIt>
+
+이름에는 Diag Menu에 보이는 글자를 그대로 넣습니다. 메뉴를 연 뒤 값을 바꿀 때는 여전히 <Kbd>Win</Kbd>+<Kbd>Alt</Kbd>를 누른 채 화살표 키를 누릅니다.
+
+### Statistics
+
+`Statistics`는 FPS 같은 통계와 스크립트 성능 도구를 모은 메뉴입니다(<FigRef id="ch11-diag-statistics" />). Script 책 15장이 쓰는 항목과 처음 값은 다음과 같습니다. 처음 값은 Play를 시작하고 Diag Menu를 처음 열었을 때의 값입니다.
+
+| 항목 | 처음 값 | 내용 |
+|---|---|---|
+| `FPS` | `none` | 위키: FPS 통계를 표시합니다. 옆에 `lctrl+num1`이 적혀 있습니다 |
+| `Slow script` | `off` | 위키: 느린 스크립트를 로그에 남길 기준 시간(`off`, `1ms`, `2ms`, `5ms`, `10ms`) |
+| `Verbose script Print` | `false` | 위키: 상세 스크립트 출력을 켜고 끕니다 |
+| `Script profiler` | `off` | 스크립트 프로파일러. 값은 `off`, `frame`, `average`, `memory` 순서로 바뀝니다 |
+| `Script prof. external` | `false` | 위키: 외부 스크립트 프로파일러를 켜고 끕니다 |
+
+위키(Diag Menu)는 `Script profiler`의 값을 `off`, `frame`, `average` 셋으로, 위키(Script Profiling)는 `frame`과 `continuous`로 적지만, 화면에는 `continuous`가 없고 `memory`가 더 있습니다.
+
+`Script profiler`를 `frame`으로 두면 뷰포트에 클래스별·함수별 실행 시간(`Time per class (us)`, `Time per function (us)`)과 호출 수, 클래스 개수 표가 나오고, `memory`로 두면 클래스별 개수와 크기(`Class count`, `Class count * size(bytes)` 등) 표가 나옵니다. `off`로 돌리면 표가 사라집니다. `Slow script`를 `1ms`처럼 정해 두면 그보다 오래 걸린 스크립트 실행이 `Script '#main' (execCode) took 65.592300 milliseconds` 같은 오류 줄로 로그에 남습니다.
+
+<Figure src="ch11/diag-statistics.png" alt="Diag Menu의 Statistics 메뉴" id="ch11-diag-statistics">Diag Menu의 Statistics 메뉴</Figure>
+
+### GameCode
+
+`GameCode`에는 게임 코드 쪽 디버그 항목이 모여 있습니다(<FigRef id="ch11-diag-gamecode" />). `Damage`, `Weapons`, `User Actions`, `Inventory`, `Network`, `Game Groups` 같은 하위 메뉴가 파란 글자로 이어지고, 사이사이에 값을 가진 항목이 있습니다. Script 책 15장의 예제처럼 스크립트가 `GameCode` 아래에 더한 항목도 여기에 보입니다. 그 예제를 넣은 프로젝트에서는 예제의 `Generator state`가 목록 맨 아래에 나옵니다.
+
+<Figure src="ch11/diag-gamecode.png" alt="Diag Menu의 GameCode 메뉴" id="ch11-diag-gamecode">Diag Menu의 GameCode 메뉴</Figure>
+
+Script 책 16장이 상호작용 문제를 찾을 때 쓰는 항목은 `User Actions`와 `Network` 하위 메뉴에 있습니다(<FigRef id="ch11-diag-user-actions" />). 경로와 처음 값은 다음과 같습니다.
+
+| 경로 | 처음 값 | 내용(위키) |
+|---|---|---|
+| `GameCode > User Actions > Log actions` | `false` | 사용자 액션 로그를 켜고 끕니다 |
+| `GameCode > User Actions > Context position` | `false` | 액션 컨텍스트 위치 디버그를 켜고 끕니다 |
+| `GameCode > Network > Log ownership changes` | `false` | 네트워크 소유권 변경 로그를 켜고 끕니다 |
+
+`User Actions`에는 이 밖에도 `Context visibility angle`, `Context gizmo scale`, `Context name scale`, `Enable handler diag`, `Skip action duration` 같은 항목이 있습니다. `Network`에는 `Server FPS`, `Network Movement`(하위 메뉴), `Connection diag`, `Validate loaded prefabs` 등이 있습니다. {/* 확인 대기: Context position을 켰을 때 뷰포트에 보이는 것, Log actions·Log ownership changes를 켰을 때 로그에 남는 줄 */}
+
+<Figure src="ch11/diag-user-actions.png" alt="GameCode의 User Actions 메뉴" id="ch11-diag-user-actions">GameCode의 User Actions 메뉴</Figure>
+
+### UI > Disable Loc
+
+`UI` 메뉴에는 열두 항목이 있고, 셋째 줄이 `Disable Loc`입니다(<FigRef id="ch11-diag-ui" />). 위키(Mod Localisation)는 이 항목의 위치를 `UI > Disable > Disable Loc`로 적지만, 화면에서는 `Disable` 하위 메뉴 없이 `UI` 바로 아래에 있습니다. 위키(Diag Menu)도 같은 자리에 둡니다.
+
+`Disable Loc`을 `true`로 바꾸면 게임 화면의 글자가 번역되지 않고 문자열 테이블 키(`#`로 시작하는 이름)로 보입니다(<FigRef id="ch11-disable-loc-on" />). 예를 들어 왼쪽 아래의 `TAB Quick slots`가 `TAB #AR-ControlsHint_OpenQuickSlot`으로, 오른쪽 위의 버전 표시가 `1.8.0.13 (#AR-UI_Steam)`으로 바뀌고, 떠 있는 힌트의 버튼 글자도 `#AR-Hint_ButtonHide_Text`로 나옵니다. 그림의 위쪽은 게임 화면 오른쪽 위, 아래쪽은 왼쪽 아래입니다. 오른쪽 위에서는 FPS 단위도 `#AR-ValueUnit_FramesPerSecond_LC`로 바뀌고, 버전 표시의 뒷부분은 World Editor 뷰포트의 초록색 FPS 표시에 가려져 있습니다. `false`로 되돌리면 다시 번역된 글자로 돌아옵니다.
+
+위키(Mod Localisation)는 모드의 문자열이 번역되는지 이 항목으로 확인하라고 안내합니다. 문자열 테이블을 만들고 등록하는 방법은 10장, 스크립트에서 키를 쓰는 방법은 Script 책 13장에서 다룹니다. 같은 메뉴에는 `Log Unlocalized`도 있습니다. 켜면 번역되지 않은 글자가 `Not localized string '…' in widget: '…' prefab: '…'` 오류 줄로 로그에 남습니다.
+
+<Figure src="ch11/diag-ui.png" alt="Diag Menu의 UI 메뉴" id="ch11-diag-ui">Diag Menu의 UI 메뉴</Figure>
+
+<Figure src="ch11/disable-loc-on.png" alt="Disable Loc을 켠 게임 화면(오른쪽 위와 왼쪽 아래 두 곳을 잘라 붙임)" id="ch11-disable-loc-on">Disable Loc을 켠 게임 화면(오른쪽 위와 왼쪽 아래 두 곳을 잘라 붙임)</Figure>
+
+## 게임 설정의 Show context hints
+
+Script 책 13장과 16장의 힌트 예제는 게임 설정에서 힌트 표시를 끄면 `SCR_HintManagerComponent`의 `CanShow()`가 false가 되어 힌트가 뜨지 않습니다. 이 설정은 게임의 **Settings** 화면에서 **Interface** 탭의 **Prompts** 묶음에 있는 **Show context hints**입니다(<FigRef id="ch11-game-settings" />). Play 중에 <Kbd>F10</Kbd>으로 일시정지 메뉴를 열고 **Settings**를 누르면 이 화면이 열립니다.
+
+**Settings** 화면 위쪽에는 **Video**, **Audio**, **Interface**, **Gameplay**, **Game Master**, **Controls**, **Controllers** 탭이 있습니다. **Prompts** 묶음에는 **Notifications**, **Show controls hints**, **Show context hints**, **Nearby interaction hints** 네 항목이 있고, 값 양옆의 ◀ ▶를 누르면 값이 바뀝니다. 그림에서는 네 항목 모두 켠 값인 `Show`이고, **Show context hints**의 끈 값은 `Hide`입니다.
+
+**Show context hints**를 끄면 `ShowCustomHint()`도 false를 돌려주며 힌트가 뜨지 않고, 다시 켜면 힌트가 다시 뜹니다.
+
+<Pitfall title="이름이 비슷한 힌트 설정">
+
+**Prompts** 묶음에는 이름에 hints가 든 설정이 셋 있지만, `CanShow()`가 보는 설정은 **Show context hints**입니다. 힌트 예제를 시험할 때는 이 설정을 바꾸고, 끝나면 원래 값으로 되돌려 둡니다.
+
+</Pitfall>
+
+<Figure src="ch11/game-settings.jpg" size="full" alt="게임 Settings 화면의 Prompts 묶음" id="ch11-game-settings">게임 Settings 화면의 Prompts 묶음</Figure>
+
+## DbgUI 창 다루기
+
+`DbgUI`로 만든 디버그 창(Script 책 15장)은 Play 중 게임 화면 위에 제목 막대가 달린 작은 창으로 뜹니다(<FigRef id="ch11-dbgui" />). 그림의 창에는 스크립트가 넣은 글줄, 체크 상자, 버튼이 차례로 보입니다.
+
+이 창의 체크 상자와 버튼은 마우스로 누릅니다. Workbench의 Play에서는 마우스 커서가 보이는 게임 메뉴(예: 분대 메뉴)를 먼저 열어 두어야 이 창의 체크 상자와 버튼을 누를 수 있습니다.
+
+<Figure src="ch11/dbgui.png" alt="게임 화면 위의 DbgUI 창" id="ch11-dbgui">게임 화면 위의 DbgUI 창</Figure>
+
+## 정리
+
+<Summary>
+
+- 플레이 모드는 World Editor 도구 막대의 Play 버튼으로 시작하고, <Kbd>Esc</Kbd>나 **Game > Exit game**으로 끝냅니다. 게임의 일시정지 메뉴는 <Kbd>F10</Kbd>으로 엽니다.
+- Workbench를 띄운 뒤 처음 Play하면 **Script Authorization Required** 대화상자가 뜰 수 있고, 답할 때까지 Play는 시작되지 않습니다.
+- Play 버튼 오른쪽 ▾의 Play 목록에서 뷰포트 실행, 월드 시스템 설정, 서버 항목 등을 체크로 고릅니다.
+- Diag Menu는 Play 중 <Kbd>Win</Kbd>+<Kbd>Alt</Kbd>로 열고, 두 키를 누른 채 화살표로 다룹니다. 화살표는 Windows 창 정렬과 겹칩니다.
+- Remote Console에서 `DiagMenu.SelectMenuByName("User Actions");`처럼 실행하면 그 하위 메뉴가 바로 열립니다.
+- `Statistics > Script profiler`의 값은 `off`, `frame`, `average`, `memory`이고, `UI > Disable Loc`을 켜면 게임 화면의 글자가 문자열 테이블 키로 보입니다.
+- 힌트 표시는 게임 **Settings**의 **Interface** 탭, **Prompts** 묶음의 **Show context hints**가 정합니다.
+- DbgUI 창을 마우스로 누르려면 커서를 띄우는 게임 메뉴를 먼저 엽니다.
+
+</Summary>
+
+**더 읽을거리**
+
+- [World Editor](https://community.bistudio.com/wiki/Arma_Reforger:World_Editor)
+- [Diag Menu](https://community.bistudio.com/wiki/Arma_Reforger:Diag_Menu)
+- [Script Profiling](https://community.bistudio.com/wiki/Arma_Reforger:Script_Profiling)
+- [Mod Localisation](https://community.bistudio.com/wiki/Arma_Reforger:Mod_Localisation)

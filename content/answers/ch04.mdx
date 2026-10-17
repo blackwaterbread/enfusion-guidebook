@@ -1,0 +1,217 @@
+<Answer id="4-1">
+
+```enforce title="Scripts/Game/TAG_ScoreRules.c"
+class TAG_ScoreRules
+{
+	//------------------------------------------------------------------------------------------------
+	static int ClampScore(int score, int minScore = 0, int maxScore = 100)
+	{
+		if (score < minScore)
+			return minScore;
+
+		if (score > maxScore)
+			return maxScore;
+
+		return score;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	static void Test()
+	{
+		Print("1: " + ClampScore(150));                  // 기본 범위 0..100
+		Print("2: " + ClampScore(-20, minScore: 10));    // 최솟값만 바꿈
+		Print("3: " + ClampScore(150, maxScore: 120));   // 최댓값만 바꿈
+	}
+}
+```
+
+`TAG_ScoreRules.Test();`의 실행 결과는 다음과 같습니다.
+
+```text
+1: 100
+2: 10
+3: 120
+```
+
+- 세 번째 호출은 `minScore`를 건너뛰고 `maxScore`만 지정합니다. 이름 있는 인수가 없다면 `ClampScore(150, 0, 120)`처럼 기본값을 다시 적어야 합니다.
+- 공식 `Math` 클래스에는 같은 일을 하는 `static proto int ClampInt(int value, int min, int max);`가 있으므로 본문을 `return Math.ClampInt(score, minScore, maxScore);` 한 줄로 바꿔도 됩니다.
+
+</Answer>
+
+<Answer id="4-2">
+
+```enforce title="Scripts/Game/TAG_TimeUtils.c"
+class TAG_TimeUtils
+{
+	//------------------------------------------------------------------------------------------------
+	//! 전체 초를 분과 초로 나눕니다. 음수면 false를 돌려줍니다.
+	static bool SplitTime(int totalSeconds, out int minutes, out int seconds)
+	{
+		if (totalSeconds < 0)
+			return false;
+
+		minutes = totalSeconds / 60;    // 정수 나눗셈: 몫
+		seconds = totalSeconds % 60;    // 나머지
+		return true;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	static void Test()
+	{
+		int minutes, seconds;
+		if (SplitTime(125, minutes, seconds))
+			PrintFormat("%1 min %2 s", minutes, seconds);
+		else
+			Print("Invalid time");
+	}
+}
+```
+
+실행 결과는 다음과 같습니다.
+
+```text
+2 min 5 s
+```
+
+- 2장에서 조심하라고 한 정수 나눗셈이 여기서는 오히려 원하는 동작입니다. `125 / 60`은 2, `125 % 60`은 5입니다.
+- 호출하는 쪽은 변수만 넘기고 `out`은 쓰지 않습니다.
+- 실패하면 `false`를 돌려주고 `out` 매개변수에는 값을 넣지 않습니다. 그러니 호출하는 쪽은 반환값이 `true`일 때만 결과를 씁니다. 공식 API의 `map.Find(key, out val)`도 같은 약속을 따릅니다.
+
+</Answer>
+
+<Answer id="4-3">
+
+```enforce title="Scripts/Game/TAG_Area.c"
+class TAG_Area
+{
+	//------------------------------------------------------------------------------------------------
+	//! 직사각형의 넓이
+	static float Of(float width, float depth)
+	{
+		return width * depth;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	//! 정사각형의 넓이
+	static float Of(float side)
+	{
+		return Of(side, side);
+	}
+
+	//------------------------------------------------------------------------------------------------
+	//! 직육면체의 겉넓이: 서로 다른 세 면의 넓이를 두 번씩 더함
+	static float Of(float width, float depth, float height)
+	{
+		return 2 * (Of(width, depth) + Of(width, height) + Of(depth, height));
+	}
+
+	//------------------------------------------------------------------------------------------------
+	static void Test()
+	{
+		Print("Of(3) = " + Of(3));
+		Print("Of(2, 5) = " + Of(2, 5));
+		Print("Of(1, 2, 3) = " + Of(1, 2, 3));
+	}
+}
+```
+
+결과는 `Of(3)`이 9, `Of(2, 5)`가 10, `Of(1, 2, 3)`이 22입니다. 겉넓이는 2 × (1×2 + 1×3 + 2×3) = 2 × 11 = 22입니다.
+
+- 세 오버로드는 매개변수 개수가 모두 달라서 어느 것이 불릴지 분명합니다. 공식 코드의 `IsMoving()`과 `IsMoving(eReason)`도 개수로 구별되는 오버로드입니다.
+- 계산은 두 매개변수 버전 한 곳에만 있고, 나머지는 그 버전을 부릅니다. 계산 방법을 바꿀 때 한 곳만 고치면 됩니다.
+- `Of(3)`처럼 정수를 넘겨도 `float` 매개변수로 바뀌어 들어갑니다(2장).
+
+</Answer>
+
+<Answer id="4-4">
+
+```enforce title="Scripts/Game/TAG_NumberUtils.c"
+class TAG_NumberUtils
+{
+	//------------------------------------------------------------------------------------------------
+	//! 재귀 버전: Gcd(a, b) = Gcd(b, a % b), b가 0이면 a
+	static int Gcd(int a, int b)
+	{
+		a = Math.AbsInt(a);     // 값 매개변수이므로 호출한 쪽에는 영향 없음
+		b = Math.AbsInt(b);
+		if (b == 0)
+			return a;           // 기저 조건
+
+		return Gcd(b, a % b);
+	}
+
+	//------------------------------------------------------------------------------------------------
+	//! 반복문 버전
+	static int GcdLoop(int a, int b)
+	{
+		a = Math.AbsInt(a);
+		b = Math.AbsInt(b);
+		while (b != 0)
+		{
+			int rest = a % b;
+			a = b;
+			b = rest;
+		}
+
+		return a;
+	}
+}
+```
+
+`Gcd(48, 18)`은 `Gcd(18, 12)`, `Gcd(12, 6)`, `Gcd(6, 0)`을 거쳐 6을 돌려줍니다. `Gcd(-48, 18)`도 절댓값으로 바꾼 뒤 계산하므로 6입니다.
+
+- 기저 조건(`b == 0`)이 없으면 재귀가 끝나지 않습니다. 재귀를 쓸 때는 매번 인수가 기저 조건에 가까워지는지 확인합니다. 여기서는 `a % b`가 언제나 `b`보다 작으므로 `b`가 계속 줄어듭니다.
+- 반복문 버전은 같은 계산을 변수 두 개를 바꿔 가며 합니다. 깊이가 깊어질 수 있는 계산은 반복문 쪽이 호출을 쌓지 않아 부담이 적습니다.
+- 음수의 나머지 연산 결과에 기대지 않도록 처음에 `Math.AbsInt`로 양수로 바꿨습니다.
+
+</Answer>
+
+<Answer id="4-5">
+
+```enforce title="Scripts/Game/TAG_NamedEntityCounter.c"
+class TAG_NamedEntityCounter
+{
+	protected int m_iFound;
+	protected int m_iLimit;
+
+	//------------------------------------------------------------------------------------------------
+	//! center에서 radius 미터 안의 이름 있는 엔티티를 최대 limit개까지 셉니다.
+	int CountNamed(vector center, float radius, int limit)
+	{
+		m_iFound = 0;
+		m_iLimit = limit;
+		if (limit <= 0)
+			return 0;
+
+		World world = GetGame().GetWorld();
+		if (!world)
+			return 0;
+
+		world.QueryEntitiesBySphere(center, radius, OnEntityFound);
+		return m_iFound;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	//! QueryEntitiesCallback 모양: true면 검색 계속, false면 멈춤
+	protected bool OnEntityFound(IEntity entity)
+	{
+		if (entity.GetName().IsEmpty())
+			return true;                  // 이름 없는 엔티티는 건너뛰고 계속
+
+		m_iFound++;
+		return m_iFound < m_iLimit;       // 한도에 닿으면 false로 검색을 멈춤
+	}
+}
+```
+
+월드가 열려 있는 상태(예: World Editor에서 게임 실행 중)에서 다음처럼 씁니다.
+
+```enforce
+TAG_NamedEntityCounter counter = new TAG_NamedEntityCounter();
+int found = counter.CountNamed(Vector(1000, 0, 1000), 50, 10);
+Print("Named entities: " + found);
+```
+
+결과를 멤버 변수에 모으는 이유는 콜백의 모양이 `bool QueryEntitiesCallback(IEntity e)`로 정해져 있기 때문입니다. 콜백에 한도나 개수 같은 값을 매개변수로 더 넘길 방법이 없고, Enforce Script에는 바깥 지역 변수를 붙잡는 람다나 클로저도 없습니다. 그래서 `CountNamed`가 `m_iLimit`에 한도를 적어 두고, 콜백은 `m_iFound`를 늘린 뒤 `false`를 돌려 검색을 일찍 끝냅니다. 공식 `SCR_AIFindArsenalWithPrefab`도 찾을 리소스 이름을 멤버 변수에 적어 두고, 콜백에서 그 값을 읽어 결과를 멤버 배열에 모읍니다.
+
+</Answer>

@@ -1,0 +1,576 @@
+---
+title: modded 클래스와 모딩 작업 흐름
+description: 게임의 기존 클래스를 고치는 modded 클래스의 원리와 규칙을 배우고, 모드 프로젝트를 만드는 흐름, 리소스와 GUID, 설정 파일과 JSON으로 데이터를 다루는 방법, 공식 샘플 모드를 함께 살펴봅니다.
+---
+
+<Objectives>
+
+- `modded class`가 원본을 대신하는 원리와 여러 모드가 겹칠 때의 순서를 설명할 수 있다.
+- `super`와 `vanilla`를 구분해 기존 메서드를 확장하거나 대체할 수 있다.
+- `private` 멤버, 생성자, 정적 멤버에 관한 모딩 제약을 알고 모딩하기 좋은 코드를 쓸 수 있다.
+- 모드 프로젝트를 만들고 의존성, 스크립트 모듈, 리소스와 GUID를 이해할 수 있다.
+- `[BaseContainerProps]` 설정 클래스와 `.conf` 파일, JSON으로 데이터를 저장하고 불러올 수 있다.
+
+</Objectives>
+
+지금까지는 새 컴포넌트를 만들어 붙이는 방법을 배웠습니다. 하지만 모드를 만들다 보면 게임에 이미 있는 동작을 바꾸고 싶을 때가 많습니다. 점수 계산식을 바꾸거나, 플레이어가 접속할 때 할 일을 더하는 식입니다. 원본 파일을 고칠 수는 없으니 Enforce Script는 `modded` 키워드로 기존 클래스를 바깥에서 고치는 방법을 제공합니다.
+
+이 장은 modded 클래스의 문법과 규칙에서 출발해, 모드 프로젝트의 구조, 데이터를 코드에서 떼어 내는 설정 파일, JSON 저장으로 이어집니다. 마지막으로 공식 샘플 `SampleMod_ModdedScript`를 한 줄씩 읽고, 이 책에서 지켜 온 이름 규칙을 정리합니다.
+
+## modded 클래스의 원리
+
+### 원본을 대신하는 클래스
+
+`modded class`는 이미 있는 클래스와 같은 이름으로 선언합니다. 엔진 문서는 modded 클래스를 "다른 스크립트를 고치지 않고 클래스 계층에 상속 클래스를 끼워 넣는 것"이라고 설명합니다. modded 클래스는 원본의 자식 클래스처럼 동작하지만 원본의 이름을 이어받고, 원본이 쓰이던 모든 곳에서 원본 대신 만들어집니다.
+
+```enforce
+// 원본(게임 쪽)
+class TAG_Greeter
+{
+	void Say()
+	{
+		Print("Hello original");
+	}
+}
+
+// 모드 쪽
+modded class TAG_Greeter
+{
+	override void Say()
+	{
+		Print("Hello modded");
+		super.Say();	// 원본의 Say()
+	}
+}
+```
+
+이제 어디서든 `new TAG_Greeter()`를 하면 modded 버전이 만들어지고, `Say()`는 "Hello modded"와 "Hello original"을 차례로 출력합니다. 원본을 만드는 코드는 한 줄도 바뀌지 않았습니다. 엔티티와 컴포넌트도 마찬가지라서, `SCR_ScoringSystemComponent`를 modded 클래스로 고치면 그 컴포넌트가 붙은 모든 게임 모드가 고친 버전을 씁니다.
+
+modded 클래스를 쓸 때 지켜야 할 기본 규칙은 다음과 같습니다.
+
+- 엔진 문서와 위키에 따르면 **같은 모듈 안에서만** 고칠 수 있습니다. `Game` 모듈의 클래스를 고치려면 modded 클래스도 `Scripts/Game` 아래에 둡니다.
+- 메서드를 다시 정의할 때는 일반 상속과 똑같이 `override`를 붙이고 시그니처를 맞춥니다(6장).
+- 새 멤버 변수, 메서드, `[Attribute]`를 더할 수 있습니다. 위키의 Scripting Modding 튜토리얼도 modded 컴포넌트에 어트리뷰트를 더하는 예를 보여 줍니다.
+- 부모 클래스를 다시 적는 형식(`modded class SCR_ScoringSystemComponent : SCR_BaseScoringSystemComponent`)과 생략하는 형식(`modded class SCR_ScoringSystemComponent`)이 모두 공식 샘플과 위키에 나옵니다.
+
+<Compare title="Python의 몽키 패칭과 비교">
+
+Python에서는 실행 중에 클래스의 메서드를 바꿔치기해 비슷한 일을 합니다.
+
+```python
+original_say = Greeter.say
+
+def modded_say(self):
+    print("Hello modded")
+    original_say(self)      # 원래 메서드 호출
+
+Greeter.say = modded_say    # 이후 모든 Greeter 인스턴스에 적용
+```
+
+Enforce Script의 modded 클래스는 이 작업을 컴파일할 때 언어 차원에서 해 줍니다. 원본 메서드는 `super`로 부르고, 여러 모드가 같은 클래스를 고치면 다음 절처럼 체인이 됩니다.
+
+</Compare>
+
+### 열거형도 modded로 늘린다
+
+열거형에도 `modded`를 쓸 수 있습니다. 위키의 Faction Creation 튜토리얼은 새 진영을 게임 안 편집기에서 쓸 수 있게 편집기 라벨 열거형 `EEditableEntityLabel`에 값을 더하고, 13장에서 볼 메뉴 등록도 `modded enum ChimeraMenuPreset`으로 메뉴 항목을 늘립니다.
+
+```enforce
+modded enum EEditableEntityLabel
+{
+	FACTION_REDFOR = 1653989487,
+	FACTION_BLUFOR = 1653989182,
+	FACTION_GREENFOR = 1691580533,
+}
+```
+
+공식 스크립트에서도 `Game/Enums/ETagCategory.c`가 엔진 쪽 열거형 `ETagCategory`를 같은 방식으로 늘립니다. 더하는 값은 원본이나 다른 모드의 값과 겹치면 안 됩니다. 1.8 원본에는 `FACTION_NONE = 14`가 있어서, 예를 들어 `FACTION_REDFOR = 14`로 더하면 경고 없이 컴파일되지만 `FACTION_REDFOR == FACTION_NONE`이 참이 되고 `typename.EnumToString`도 `FACTION_NONE`이라는 이름을 돌려주어 두 라벨을 구별할 수 없습니다. 그래서 위키 Faction Creation 문서는 큰 임의의 수나 값을 정할 때의 유닉스 시간(9장)을 쓰라고 권하며, 위 값도 그 문서의 것입니다.
+
+## 여러 모드가 겹칠 때: 체인
+
+### 적용 순서
+
+여러 모드가 같은 클래스를 modded로 고치면 어떻게 될까요? 위키의 Object Oriented Programming Advanced Usage 문서에 따르면 원본 클래스가 모드 1, 모드 2, 모드 3 순서로 차례차례 고쳐집니다. 뒤에 적용된 modded 클래스는 앞의 것을 부모로 삼으므로, 마지막 것이 실제로 만들어집니다.
+
+순서는 의존성이 정합니다. 모드 B가 모드 A에 의존하면 바닐라(원본) → A → B 순서이고, 의존 관계가 없으면 **순서가 보장되지 않습니다**.
+
+### super와 vanilla
+
+modded 클래스 안의 `super`는 **바로 앞 단계**, 즉 원본이거나 먼저 적용된 다른 모드의 버전을 가리킵니다. 그래서 모든 모드가 `super`를 부르면 원본까지 이어지는 체인이 만들어집니다.
+
+위키의 Scripting: Keywords 문서는 여기에 더해 `vanilla` 키워드를 설명합니다(Arma Reforger 1.1.0부터). `vanilla`는 어떤 모드도 적용되지 않은 **원본** 버전을 가리킵니다. 위키의 예제를 인스턴스 메서드로 옮기면 다음과 같습니다.
+
+```enforce
+class TAG_Bell			// 원본
+{
+	void Ring() { Print("vanilla"); }
+}
+
+modded class TAG_Bell	// 모드 1
+{
+	override void Ring() { Print("modded 1"); }
+}
+
+modded class TAG_Bell	// 모드 2 (모드 1에 의존)
+{
+	override void Ring()
+	{
+		super.Ring();		// 모드 1의 Ring -> "modded 1"
+		vanilla.Ring();		// 원본의 Ring -> "vanilla"
+		Print("modded 2");
+	}
+}
+```
+
+`TAG_Bell` 객체를 만들어 `Ring()`을 부르면 출력은 "modded 1", "vanilla", "modded 2" 순서입니다. 모드 1이 `super`를 부르지 않으므로 체인은 모드 1에서 끊기고, 원본은 모드 2가 `vanilla`로 직접 불렀을 때만 실행됩니다. `vanilla`는 공식 스크립트에서는 쓰이지 않습니다. 다른 모드의 수정을 건너뛰게 되므로, 꼭 원본 동작만 필요할 때 신중하게 씁니다.
+
+## 확장할까, 대체할까
+
+### super를 부르는 확장
+
+modded 메서드를 쓰는 방법은 크게 둘입니다. **확장**은 `super`를 불러 원래 동작을 그대로 실행하고, 그 앞이나 뒤에 일을 더합니다. **대체**는 `super`를 부르지 않고 원래 동작을 통째로 새로 씁니다.
+
+가능하면 확장을 고르세요. 확장하면 원본이 게임 업데이트로 바뀌어도 자동으로 따라가고, 같은 메서드를 고친 다른 모드의 수정도 체인을 타고 살아남습니다. 대체하면 원본의 내용을 복사해 와야 하므로 업데이트 때마다 직접 맞춰야 하고, 나보다 먼저 적용된 모드의 수정은 무시됩니다.
+
+### 새 멤버에는 태그를 붙인다
+
+위키의 Conventions 문서는 modded 클래스에 더하는 메서드와 변수에도 모드 태그를 붙이라고 정합니다. 다른 모드도 같은 클래스에 `PlaySound()`나 `m_bEnabled`를 더할 수 있고, 같은 이름이 둘이면 충돌하기 때문입니다. 태그를 이름의 어디에 넣을지는 문서에 정해져 있지 않습니다. 이 책은 메서드는 `TAG_PlaySuicideSound()`처럼 앞에, 멤버 변수는 `m_sTAG_SuicideSound`처럼 `m_`과 타입 접두사 뒤에 넣습니다.
+
+```enforce
+modded class SCR_BaseScoringSystemComponent
+{
+	[Attribute(defvalue: "", desc: "자살할 때 재생할 소리", params: "wav")]
+	protected ResourceName m_sTAG_SuicideSound;
+
+	override void AddSuicide(int playerId, int count = 1)
+	{
+		super.AddSuicide(playerId, count);	// 원래 동작은 그대로
+		TAG_PlaySuicideSound();
+	}
+
+	protected void TAG_PlaySuicideSound()
+	{
+		if (!m_sTAG_SuicideSound.IsEmpty())
+			AudioSystem.PlaySound(m_sTAG_SuicideSound);
+	}
+}
+```
+
+이 코드는 위키 튜토리얼이 "더 모드 친화적인 방법"으로 소개한 형태를 바탕으로, 새 멤버에 태그를 붙이고 재생 부분을 메서드로 나눈 것입니다. 소리를 코드에 박아 두지 않고 어트리뷰트로 받으므로 게임 모드 프리팹에서 바꿀 수 있습니다.
+
+## 모딩 제약
+
+modded 클래스는 상속과 비슷하게 동작하므로 상속의 제약도 대부분 그대로 받습니다. 위키 Conventions 문서의 Moddability 절과 Data Modding Basics 문서를 정리하고 1.8에서 확인한 동작을 덧붙이면 다음과 같습니다.
+
+| 대상 | 제약 | 모딩하기 좋게 쓰려면 |
+|---|---|---|
+| `private` 멤버 | 엔진 문서(Keywords)에 따르면 modded 클래스는 원본의 `private` 멤버를 사용할 수 있습니다. Conventions와 Data Modding Basics 문서는 `private` 메서드를 오버라이드할 수 없다고 설명하지만, 1.8.0.13에서 실행해 보면 modded 클래스에서 `override`해도 컴파일되고 원본 코드가 그 메서드를 부를 때 modded 쪽이 실행됩니다 | 확장될 만한 메서드는 `protected`로 둡니다. 문서와 다른 `private` 오버라이드에는 기대지 않습니다 |
+| 생성자, 소멸자 | modded 클래스는 자기 생성자·소멸자를 가질 수 있지만 원본의 것을 바꿀 수는 없습니다 | 생성자에는 꼭 필요한 초기화만 두고, 로직은 오버라이드할 수 있는 메서드로 뺍니다 |
+| 정적 멤버 | Conventions는 정적 변수와 메서드를 꼭 필요할 때만 쓰라고 권합니다 | 인스턴스 메서드를 우선합니다 |
+| 전역 함수 | 고칠 클래스가 없으므로 modded로 바꿀 수 없습니다 | 클래스의 메서드로 만듭니다 |
+
+공식 `SCR_BaseScoringSystemComponent`에서 실제 예를 볼 수 있습니다. `AddKill()`, `AddSuicide()` 같은 공개 메서드와 `protected int CalculateScore()`는 modded 클래스에서 오버라이드할 수 있고, `CalculateScore()`의 공식 주석은 이 메서드를 오버라이드해 점수 계산을 바꾸라고 안내합니다. 1.8.0.13에서 실행해 보면 `AddKill()`이 부르는 `private` 메서드도 오버라이드됩니다. 도우미 메서드 `private int GetPlayerFactionIndex(int playerId)`와 RPC 메서드 `private void RpcDo_AddKill(...)`(원본처럼 `[RplRpc]`를 다시 붙임)를 각각 modded 클래스에서 `override`하면 경고 없이 컴파일되고, 싱글플레이에서 원본 `AddKill()`을 부르면 modded 쪽이 실행됩니다. 원본 `AddKill()`은 `RpcDo_AddKill()`을 직접 부르는 것과 함께 `Rpc()`로 다른 기계에도 보내는데, 이렇게 받는 쪽의 동작은 멀티플레이어 환경에서 따로 확인해야 합니다. Conventions와 Data Modding Basics 문서는 이것을 할 수 없는 일로 설명하므로, 모드에서 고칠 곳은 공개 메서드와 `protected` 메서드로 정하는 것이 안전합니다.
+
+<Warning title="원본과 같은 경로의 스크립트 파일은 원본을 통째로 대체한다">
+
+Data Modding Basics 문서에 따르면 다른 애드온에 **같은 경로, 같은 이름**의 스크립트 파일이 있으면 원본 파일이 통째로 대체됩니다. 예를 들어 모드에 `Scripts/Game/AI/AIAutotest.c`를 만들면 원본 `AIAutotest.c`의 내용 대신 모드의 파일이 쓰입니다. 원본 파일에 있던 클래스가 모드 파일에 없으면 그 클래스는 사라지고, 그 클래스를 쓰는 코드는 컴파일되지 않습니다. modded 클래스 파일은 원본과 다른 폴더에 두거나 자기 태그를 붙인 이름으로 만드세요. 위키 튜토리얼도 파일 이름의 `SCR_`를 자기 태그로 바꾸라고 권합니다.
+
+</Warning>
+
+## 모드 프로젝트 만들기
+
+### 프로젝트와 의존성
+
+모드는 Workbench의 프로젝트(애드온) 하나이고, 1장에서처럼 Workbench 런처에서 만듭니다.
+
+의존성은 이 프로젝트가 동작하려면 먼저 불러와야 하는 다른 프로젝트입니다. 의존성은 한 방향이라 의존 대상은 이 프로젝트를 몰라도 됩니다. 앞에서 본 것처럼 modded 클래스의 적용 순서도 의존성이 정하므로, 다른 모드의 수정 위에 내 수정을 얹으려면 그 모드를 의존성에 넣습니다. 의존성 가운데 하나라도 없으면 프로젝트를 불러올 수 없고, 문서는 이때 로그에 다음과 같은 줄이 남는다고 설명합니다.
+
+```text
+ENGINE    (E): Addon 'SampleMod' dependency '5614E48126E3ADF2' can't be added
+```
+
+프로젝트 설정은 `.gproj` 파일에 저장됩니다. 새로 만들면 `addon.gproj`이고, 이름은 바꿀 수 있습니다. 공식 샘플 여러 개를 묶은 `SampleMod_Main`의 `SampleMod.gproj`는 다음과 같습니다. 원본은 의존성 GUID가 한 줄에 모두 있지만, 여기서는 보기 좋게 줄을 나눴습니다.
+
+```text
+GameProject {
+ ID "SampleMod"
+ GUID "5614E48162D7B84F"
+ TITLE "Sample Mod - Main Addon"
+ Dependencies {
+  "5614E4829EAE4BB1" "5614E482B628B28D" "5614E482B37103E5" "5614E48153A5B50D"
+  "5614E482BF83E310" "5614E481506D2979" "58D0FB3206B6F859" "5614E4816F653D1A"
+  "5614E48126E3ADF2" "5614E48144F30A55"
+ }
+ Configurations {
+  GameProjectConfig PC {
+  }
+  // HEADLESS, XBOX_ONE 등 플랫폼별 설정이 이어짐
+ }
+}
+```
+
+`Dependencies`의 값은 의존하는 프로젝트의 GUID이고, 여러 개면 공백으로 띄워 나열합니다. 이 프로젝트는 샘플 모드 9개와 Arma Reforger 본체(`58D0FB3206B6F859`)에 의존합니다. 앞의 로그 예시에 나온 `5614E48126E3ADF2`도 이 가운데 하나입니다.
+
+### 스크립트 모듈과 폴더
+
+스크립트는 정해진 모듈 폴더 안에 있어야 컴파일됩니다. 위키의 Scripting Modding 문서가 정리한 대응표는 다음과 같고, **이 폴더 밖에 둔 스크립트는 그냥 무시됩니다.**
+
+| 모듈 | 폴더 |
+|---|---|
+| core | `Scripts/Core` |
+| gameLib | `Scripts/GameLib` |
+| game | `Scripts/Game`, `Scripts/GameCode` |
+| workbench | `Scripts/Workbench` |
+| workbenchGame | `Scripts/WorkbenchGame` |
+
+게임 로직을 고치는 모드는 대부분 `Scripts/Game`에 스크립트를 둡니다. 10장에서 컴포넌트와 엔티티 파일이 `Scripts/Game`에 있어야 World Editor 목록에 나타난다고 한 것도 이 때문입니다. 리소스 폴더는 게임 데이터의 구조를 따르는 것이 관례입니다. Directory Structure 문서에 나오는 최상위 폴더 가운데 모드에서 자주 쓰는 것은 `Configs`, `Language`, `Missions`, `Prefabs`, `Scripts`, `UI`, `Worlds`입니다.
+
+### 리소스와 GUID
+
+Workbench에 등록된 파일, 즉 리소스(resource)에는 저마다 `.meta` 파일이 붙고, 그 안에 리소스를 구별하는 GUID가 있습니다(엔진 문서 File Types). 스크립트에서 리소스를 가리키는 `ResourceName`은 `"{E89D9A1F4BA63CDC}Sounds/Props/Furniture/Piano/Samples/Props_Piano_Jingle_1.wav"`처럼 중괄호 안의 GUID와 경로를 붙인 문자열입니다. Resource Browser에서 파일의 마우스 오른쪽 버튼 메뉴에 있는 <strong>Copy Resource Name(s)</strong>로 이 문자열을 복사할 수 있습니다.
+
+Data Modding Basics 문서에 따르면 리소스를 대체할 때 엔진은 **GUID만** 봅니다. 그래서 같은 GUID를 가진 파일을 만들면 원본을 바꾸거나 고칠 수 있습니다. 문서는 리소스를 다루는 방식을 다음 넷으로 나누고, 이 가운데 Override, Duplicate, Inherit은 Resource Browser의 마우스 오른쪽 버튼 메뉴에서 만든다고 설명합니다.
+
+| 방식 | 결과 | 쓸 수 있는 리소스 |
+|---|---|---|
+| Override | 같은 GUID의 새 파일. 바꾼 부분만 원본에 덧씌움 | 프리팹, 설정 파일, 머티리얼, 레이아웃 |
+| Replacement | 같은 GUID로 원본을 통째로 교체 | 소리, 모델, 텍스처, 애니메이션 등 |
+| Duplicate | 새 GUID의 사본. 원본에 영향 없음 | 프리팹, 설정 파일, 머티리얼, 레이아웃 |
+| Inherit | 원본을 상속하는 새 파일(새 GUID) | 프리팹, 설정 파일, 레이아웃 |
+
+Override는 Resource Browser에서 원본 파일의 마우스 오른쪽 버튼 메뉴에 있는 **Override in**으로 만듭니다.
+
+13장에서 메뉴를 등록할 때 `chimeraMenus.conf`를 **Override in** 메뉴로 덧씌우는 것이 이 방식입니다.
+
+## 데이터 주도 설계: 설정 클래스와 .conf
+
+### 설정 클래스 만들기
+
+스폰 목록, 보상 표처럼 값이 많은 데이터는 코드에 박아 두지 말고 설정 파일(`.conf`)로 빼는 것이 좋습니다. 디자이너가 Workbench에서 값을 고칠 수 있고, 다른 모드가 설정 파일만 Override해서 내용을 바꿀 수도 있습니다.
+
+설정 파일의 뼈대는 `[BaseContainerProps]`를 붙인 클래스입니다. `Core/generated/Attributes/BaseContainerProps.c`의 매개변수는 `category`, `description`, `color`, `visible`, `insertable`, `configRoot`, `icon`, `namingConvention`이고, 이 가운데 `configRoot: true`를 준 클래스만 새 설정 파일의 최상위 클래스로 고를 수 있습니다(Create a Config Class 문서). 값은 10장에서 배운 `[Attribute]`로 노출합니다.
+
+```enforce title="Scripts/Game/TAG_LootTableConfig.c"
+[BaseContainerProps(), BaseContainerCustomTitleField("m_sName")]
+class TAG_LootEntry
+{
+	[Attribute(desc: "표시 이름")]
+	string m_sName;
+
+	[Attribute("", UIWidgets.ResourceNamePicker, desc: "생성할 프리팹", params: "et")]
+	ResourceName m_sPrefab;
+
+	[Attribute(defvalue: "1", desc: "뽑힐 가중치", params: "0 100")]
+	float m_fWeight;
+}
+
+[BaseContainerProps(configRoot: true)]
+class TAG_LootTableConfig
+{
+	[Attribute("", UIWidgets.Object, desc: "항목 목록")]
+	ref array<ref TAG_LootEntry> m_aEntries;
+}
+```
+
+- 위키는 설정 클래스를 데이터 묶음으로 보고 멤버를 공개로 두는 예를 보여 줍니다. 게터를 일일이 만들지 않아도 됩니다.
+- 배열 안의 객체 클래스(`TAG_LootEntry`)에도 `[BaseContainerProps()]`가 있어야 편집기에서 만들 수 있습니다. Config Object 문서는 설정 클래스를 상속한 클래스에도 이 어트리뷰트를 다시 붙여야 쓸 수 있다고 설명합니다.
+- `BaseContainerCustomTitleField("m_sName")`은 목록에서 각 항목의 제목으로 `m_sName` 값을 보여 줍니다(`Core/attributes.c`).
+
+설정 파일은 Create a Config Class 문서대로 만듭니다. Resource Browser에서 폴더를 고르고 **Create** 버튼에서 **Config file**을 선택한 뒤, 파일 이름을 입력하고 클래스 목록에서 `TAG_LootTableConfig`를 고르면 파일이 생깁니다. 이 파일을 두 번 클릭해 열면 값을 채울 수 있습니다.
+
+### 설정 파일 불러오기
+
+설정 파일을 코드에서 쓰는 방법은 두 가지입니다(Scripting Conf File Usage 문서). 첫째는 **리소스 이름**으로 받는 방법입니다. 어트리뷰트의 `params`에 `"conf class=클래스명"`을 주면 그 클래스의 설정 파일만 고를 수 있고, 공식 헬퍼 `SCR_ConfigHelperT<T>.GetConfigObject()`로 객체를 만듭니다.
+
+```enforce
+[ComponentEditorProps(category: "TAG/Tutorial", description: "전리품 표를 불러옵니다")]
+class TAG_LootSpawnerComponentClass : ScriptComponentClass
+{
+}
+
+class TAG_LootSpawnerComponent : ScriptComponent
+{
+	[Attribute("", UIWidgets.ResourceNamePicker, desc: "전리품 표",
+		params: "conf class=TAG_LootTableConfig")]
+	protected ResourceName m_sLootTable;
+
+	protected ref TAG_LootTableConfig m_LootTable;	// 만든 객체는 ref로 들고 있는다
+
+	override void OnPostInit(IEntity owner)
+	{
+		m_LootTable = SCR_ConfigHelperT<TAG_LootTableConfig>.GetConfigObject(m_sLootTable);
+		if (!m_LootTable)
+			Print("전리품 표를 불러오지 못했습니다", LogLevel.WARNING);
+	}
+}
+```
+
+`GetConfigObject()`는 내부에서 `BaseContainerTools.LoadContainer()`로 파일을 읽고 `BaseContainerTools.CreateInstanceFromContainer()`로 객체를 만들어 형변환합니다. 파일이 없거나 클래스가 다르면 null을 돌려줍니다. 공식 `SCR_RespawnSystemComponent`도 같은 방식으로 설정을 읽어 `ref` 멤버에 저장합니다.
+
+둘째는 **객체를 직접** 어트리뷰트로 받는 방법입니다. `[Attribute()] protected ref TAG_LootTableConfig m_LootTable;`처럼 선언하면 속성 창에서 클래스를 골라 그 자리에서 값을 채우거나 `.conf` 파일을 끌어다 놓을 수 있습니다. 설정이 짧거나 이 컴포넌트에서만 쓴다면 이쪽이 간단합니다. 대신 문서는 이 방식으로는 기본값을 줄 수 없다고 설명합니다.
+
+## JSON으로 저장하고 불러오기
+
+### JsonSaveContext와 JsonLoadContext
+
+설정 파일은 Workbench에서 만드는 데이터이고, 실행 중에 생긴 데이터를 문자열이나 파일로 남길 때는 JSON을 많이 씁니다. 1.8 공식 스크립트는 JSON 직렬화에 `JsonSaveContext`와 `JsonLoadContext`(`Game/generated/Plugins/Serialization/Presets`)를 씁니다. 키와 값을 `WriteValue(string name, void value)`로 쓰고 `SaveToString()`으로 문자열을 얻으며, 읽을 때는 `LoadFromString(string data)` 뒤에 `ReadValue(string name, out void value)`를 씁니다.
+
+```enforce
+class TAG_ScoreJson
+{
+	static string Save(string playerName, int kills)
+	{
+		JsonSaveContext context = new JsonSaveContext();
+		context.WriteValue("name", playerName);
+		context.WriteValue("kills", kills);
+		return context.SaveToString();
+	}
+
+	static bool Load(string json, out string playerName, out int kills)
+	{
+		JsonLoadContext context = new JsonLoadContext();
+		if (!context.LoadFromString(json))
+			return false;
+
+		return context.ReadValue("name", playerName) && context.ReadValue("kills", kills);
+	}
+}
+```
+
+공식 `SCR_ArsenalManagerComponent`가 장비 구성을 `JsonSaveContext`로 문자열에 담고, `SCR_PlayerArsenalLoadout`이 `JsonLoadContext`로 되읽습니다. 파일로 저장하고 읽는 `SaveToFile(string fileName)`, `LoadFromFile(string fileName)`도 있습니다.
+
+<Note title="위키 예제의 SCR_JsonSaveContext">
+
+위키의 Serialisation 문서는 `SCR_JsonSaveContext`, `SCR_JsonLoadContext`와 `ExportToString()`, `ImportFromString()`을 씁니다. 1.8 공식 스크립트에서 이 클래스들은 `[Obsolete]`로 표시되어 있고, 주석은 각각 `JsonSaveContext`, `JsonLoadContext`와 `SaveToString()`, `LoadFromString()`을 쓰라고 안내합니다(`Game/Plugins/Serialization/BackwardsCompatiblity.c`). 엔진 문서에 따르면 `[Obsolete]`가 붙은 것을 쓰면 컴파일러가 경고를 냅니다. 새 코드에서는 새 이름을 쓰세요.
+
+</Note>
+
+### JsonApiStruct
+
+`JsonApiStruct`(`GameLib/generated/online/JsonApiStruct.c`)를 상속하는 방법도 있습니다. 생성자에서 `RegV("변수 이름")`으로 JSON에 넣을 멤버를 등록해 두면, `Pack()`으로 JSON을 만들고 `AsString()`으로 읽으며, `ExpandFromRAW(string data)`로 문자열에서 값을 채웁니다. 위키 문서의 설명대로 등록한 이름은 대소문자를 구별합니다. 위키 문서는 등록하지 않은 변수가 무시된다고도 설명하는데, 1.8.0.13에서 `string` 멤버로 시험해 보면 `Pack()`의 결과에는 등록한 멤버만 들어가지만 `ExpandFromRAW()`는 다릅니다. `RegV`로 멤버를 하나라도 등록한 클래스라면 등록하지 않은 멤버도 JSON 키와 이름이 같으면 값이 채워졌고, `RegV`를 하나도 부르지 않은 클래스는 같은 이름의 키가 있어도 채워지지 않았습니다.
+
+```enforce
+class TAG_PlayerRecord : JsonApiStruct
+{
+	string m_sName;
+	int m_iKills;
+
+	void TAG_PlayerRecord()
+	{
+		RegV("m_sName");
+		RegV("m_iKills");
+	}
+}
+
+// 사용
+TAG_PlayerRecord record = new TAG_PlayerRecord();
+record.m_sName = "Alpha";
+record.m_iKills = 3;
+record.Pack();
+Print(record.AsString());						// JSON 문자열
+record.PackToFile("$profile:TAG_PlayerRecord.json");
+```
+
+`PackToFile()`은 JSON을 만들어 파일로 저장하고, `LoadFromFile()`은 파일을 읽어 값을 채웁니다. 파일 이름 앞의 `$profile:`은 파일 시스템 접두사입니다. 공식 `FileIO.OpenFile()`의 주석은 사용자 프로필 폴더에 접근할 때 `$profile:`을 쓰라고 안내하며, 공식 코드도 사용자 설정 파일을 `$profile:` 아래에 둡니다.
+
+## 공식 샘플 SampleMod_ModdedScript 해설
+
+### 구성
+
+Bohemia Interactive가 공개한 샘플 모드 가운데 `SampleMod_ModdedScript`는 이 장의 내용을 그대로 담은 작은 모드입니다. 위키의 Scripting Modding 튜토리얼이 이 샘플을 만드는 과정을 단계별로 설명합니다. 파일 구성은 다음과 같습니다.
+
+```text
+SampleMod_ModdedScript/
+    SampleMod_ModdedScript.gproj
+    Scripts/Game/GameMode/Scoring/Modded/
+        SCR_BaseScoringSystemComponent.c
+        SCR_ScoringSystemComponent.c
+```
+
+원본 파일은 `Scripts/Game/GameMode/Scoring`에 있고, 샘플은 그 아래 `Modded` 폴더에 같은 이름의 파일을 둡니다. 경로가 다르므로 원본 파일을 대체하지 않습니다. 튜토리얼은 고칠 클래스를 Script Editor의 **Find Symbol** 검색으로 찾고, 원본과 같은 폴더 구조를 유지하는 것이 좋은 습관이라고 설명합니다.
+
+### 확장: AddSuicide
+
+첫 번째 파일은 자살할 때 소리를 더 내도록 고칩니다. 원래 동작은 `super`로 그대로 실행합니다. 이 절의 샘플 코드는 원문 그대로이고, 주석만 줄이거나 우리말로 바꿨습니다.
+
+```enforce
+// "modded" keyword lets you modify already existing script classes
+modded class SCR_BaseScoringSystemComponent : SCR_BaseGameModeComponent
+{
+	// Method which is called when someone commits suicide in game
+	override void AddSuicide(int playerId, int count = 1)
+	{
+		// ... "super" keyword to invoke original method
+		super.AddSuicide(playerId,count);
+
+		// Play additional non spatial sound when someone commits suicide
+		AudioSystem.PlaySound("{9BB653FF9E065943}Sounds/Animals/Bos_Taurus/Samples/bawl/bawl_0.wav");
+	}
+}
+```
+
+`AudioSystem.PlaySound(string resourceName)`는 위치가 없는 소리를 재생하는 정적 메서드입니다. 기본값 매개변수(`int count = 1`)까지 원본과 똑같이 적었다는 점도 보세요. 오버라이드는 시그니처가 같아야 합니다. 다만 1.8.0.13에서 시험해 보면 기본값을 빼고 `override void AddSuicide(int playerId, int count)`로 적어도 경고 없이 컴파일되었습니다.
+
+샘플이 가리키는 소 울음소리 파일은 1.8 게임 데이터에 없습니다. 그래서 샘플을 그대로 시험하면 `PlaySound`가 이 파일을 열지 못하고 로그에 `RESOURCES (E): Failed to open` 오류가 남습니다. 위키 Scripting Modding 튜토리얼의 현재 판은 같은 예에 1.8 데이터에 있는 피아노 소리 `{E89D9A1F4BA63CDC}Sounds/Props/Furniture/Piano/Samples/Props_Piano_Jingle_1.wav`를 씁니다.
+
+1.8의 원본 `AddSuicide()`에는 "서버 전용"이라는 주석이 있고, 게임 모드의 `IsMaster()`가 false이면 아무것도 하지 않고 돌아갑니다. 반면 샘플의 소리 재생은 `super` 호출 뒤에 있으므로 이 메서드가 불린 기계라면 어디서든 실행됩니다. modded 코드가 어느 기계에서 실행되는지는 원본 메서드가 어디서 불리느냐에 달려 있다는 뜻입니다. 이런 판단은 14장에서 다룹니다.
+
+### 대체: CalculateScore
+
+두 번째 파일은 점수 계산식을 대체합니다. `super`를 부르지 않고 원본 식을 복사해 사망과 자살의 배율만 10으로 바꿨습니다.
+
+```enforce
+modded class SCR_ScoringSystemComponent : SCR_BaseScoringSystemComponent
+{
+	override int CalculateScore(SCR_ScoreInfo info)
+	{
+		// m_iDeathScoreMultiplier, m_iSuicideScoreMultiplier를 10으로 바꿈
+		int score = info.m_iKills 		* m_iKillScoreMultiplier +
+					info.m_iTeamKills 	* m_iTeamKillScoreMultiplier +
+					info.m_iDeaths		* 10 +
+					info.m_iSuicides 	* 10 +
+					info.m_iObjectives 	* m_iObjectiveScoreMultiplier;
+
+		// Original code from CalculateScore - we are leaving it untouched
+		if (score < 0)
+			return 0;
+
+		return score;
+	}
+}
+```
+
+1.8의 원본은 `protected override int CalculateScore(SCR_ScoreInfo info)`로 선언되어 있지만, 샘플처럼 접근 제한자 없이 `override`해도 같은 메서드를 다시 정의합니다. 이 코드는 대체의 단점을 그대로 보여 줍니다. 원본 식이 업데이트로 바뀌면(예를 들어 새 배율이 추가되면) 이 복사본은 따라가지 않습니다.
+
+Scripting Modding 튜토리얼은 샘플의 수정을 시험할 새 월드에 적어도 다음 프리팹을 Resource Browser에서 끌어다 놓으라고 안내합니다.
+
+1. `Prefabs/MP/Modes/Deathmatch/GameMode_Deathmatch_Automatic.et`: 데스매치 게임 모드
+2. `Prefabs/MP/Managers/Factions/FactionManager_FFA.et`: 진영 관리자(FFA)
+3. `Prefabs/MP/Spawning/SpawnPoint_FFA.et`: 스폰 지점
+4. `Prefabs/MP/Managers/Loadouts/LoadoutManager_FFA.et`: 장비 구성 관리자
+
+같은 튜토리얼은 테스트 중에 Script Editor의 브레이크포인트와 콘솔 같은 디버깅 기능을 쓰라고 권합니다. 디버깅은 15장에서 다룹니다.
+
+## 컨벤션 총정리
+
+위키의 Scripting: Conventions 문서와 이 책에서 지켜 온 규칙을 한곳에 모았습니다. 부록 A에도 같은 내용이 표로 있습니다.
+
+| 대상 | 규칙 | 예 |
+|---|---|---|
+| 태그 | 모든 클래스와 전역 함수, modded 클래스에 더한 멤버에 자기 태그 | `TAG_`, Bohemia Interactive는 `SCR_` |
+| 파일과 클래스 | 파일 하나에 클래스 하나, 파일 이름 = 클래스 이름 | `TAG_HealthComponent.c` |
+| 컴포넌트, 엔티티 | 이름 끝에 `Component`, `Entity` | `TAG_SpinComponent`, `TAG_TickerEntity` |
+| 복수형 | 이름 끝에 복수형을 쓰지 않음 | `TAG_NotificationComponent` (`TAG_NotificationsComponent`가 아님) |
+| 열거형 | 이름은 태그 뒤에 `E`, 값은 대문자와 밑줄 | `TAG_EFireMode.SINGLE` |
+| 메서드 | PascalCase | `ApplyDamage()` |
+| 매개변수, 지역 변수 | camelCase | `newHealth`, `playerId` |
+| 멤버 변수 | `m_` + 타입 접두사 + PascalCase | `m_bEnabled`, `m_iCount`, `m_fSpeed`, `m_sName`, `m_eMode`, `m_vOffset`, `m_aItems`, `m_mScores` |
+| 객체 멤버 | 타입 접두사 없이 `m_` | `m_Health`, `m_Color` |
+| 정적 변수 | `s_` | `s_iUnitsCount` |
+| 상수 | 대문자와 밑줄, `m_`·`s_` 없음 | `MAX_VALUE` |
+| 형식 | 탭 들여쓰기, 중괄호는 새 줄(Allman) | |
+| 접근 제한 | 되도록 `protected`, 바깥에는 게터와 세터로 공개 | |
+| 메서드 구분 | 메서드 사이에 `//` 뒤 대시 96개로 된 구분선, 문서 주석은 `//!` | |
+| 파일 위치 | `Scripts/Game` 아래, 관련 클래스는 하위 폴더로 묶음 | `Scripts/Game/Tutorial/` |
+
+`ResourceName`과 `LocalizedString`은 부모 타입인 `string`의 접두사 `m_s`를 쓰고, `set`과 `Color`, 클래스 인스턴스, `typename`은 타입 접두사 없이 `m_`만 붙입니다. 위젯 멤버에는 공식 코드가 `m_wRoot`처럼 `m_w`를 쓰는 경우가 많습니다(13장). Conventions 문서는 클래스 안 선언 순서도 정합니다. 어트리뷰트가 붙은 변수, 일반 멤버 변수, 정적 변수, 상수 순서이고 각각 public, protected, private 순서입니다.
+
+## 정리
+
+<Summary>
+
+- `modded class`는 같은 모듈 안의 기존 클래스를 같은 이름으로 고칩니다. modded 버전이 원본 대신 모든 곳에서 만들어지고, 원본의 자식 클래스처럼 동작합니다. 열거형도 `modded enum`으로 값을 늘릴 수 있습니다.
+- 여러 모드가 같은 클래스를 고치면 의존성 순서대로 체인이 되고, 의존 관계가 없으면 순서는 보장되지 않습니다. `super`는 바로 앞 단계를, `vanilla`는 원본을 가리킵니다.
+- 가능하면 `super`를 부르는 확장을 고르고, modded 클래스에 더하는 멤버에는 태그를 붙입니다.
+- Conventions와 Data Modding Basics 문서는 `private` 메서드를 오버라이드할 수 없다고 설명하지만 1.8에서는 modded 클래스가 오버라이드할 수 있습니다. 생성자·소멸자는 원본 것을 바꿀 수 없고, 전역 함수는 고칠 수 없습니다. 모딩하기 좋은 코드는 `protected` 메서드를 씁니다. 원본과 같은 경로·이름의 스크립트 파일은 원본을 통째로 대체하니 피합니다.
+- 모드는 `.gproj`로 정의된 프로젝트이고, 의존성은 GUID로 적습니다. 스크립트는 `Scripts/Game` 같은 모듈 폴더 안에 있어야 컴파일됩니다.
+- 리소스는 `.meta`의 GUID로 구별하며 `ResourceName`은 `{GUID}경로` 형식입니다. Override, Replacement, Duplicate, Inherit으로 기존 리소스를 고치거나 이어받습니다.
+- 데이터는 `[BaseContainerProps(configRoot: true)]` 클래스와 `.conf` 파일로 빼고, `SCR_ConfigHelperT<T>.GetConfigObject()`로 불러와 `ref`로 들고 있습니다.
+- JSON은 `JsonSaveContext`/`JsonLoadContext`나 `JsonApiStruct`로 다룹니다. `SCR_Json...Context`는 1.8에서 더 이상 쓰지 않는 이름입니다.
+
+</Summary>
+
+**더 읽을거리**
+
+- [Scripting Modding](https://community.bistudio.com/wiki/Arma_Reforger:Scripting_Modding)
+- [Object Oriented Programming Advanced Usage](https://community.bistudio.com/wiki/Arma_Reforger:Object_Oriented_Programming_Advanced_Usage)
+- [Scripting: Conventions](https://community.bistudio.com/wiki/Arma_Reforger:Scripting:_Conventions)
+- [Mod Project Setup](https://community.bistudio.com/wiki/Arma_Reforger:Mod_Project_Setup)
+- [Data Modding Basics](https://community.bistudio.com/wiki/Arma_Reforger:Data_Modding_Basics)
+- [Create a Config Class](https://community.bistudio.com/wiki/Arma_Reforger:Create_a_Config_Class)
+- [Scripting Conf File Usage](https://community.bistudio.com/wiki/Arma_Reforger:Scripting_Conf_File_Usage)
+- [JsonApiStruct Usage](https://community.bistudio.com/wiki/Arma_Reforger:JsonApiStruct_Usage)
+
+## 연습문제
+
+<Exercise id="12-1" level="기초" title="이름 규칙 고치기">
+
+다음 선언에서 이 장의 컨벤션에 맞지 않는 부분을 모두 찾아 고치세요. 모드 태그는 `ABC`입니다.
+
+```enforce
+enum FireModes
+{
+	single,
+	burst
+}
+
+class WeaponHelpers
+{
+	static const int maxAmmo = 30;
+	protected int ammo;
+	protected bool m_Loaded;
+
+	void reload(int Amount) {}
+}
+```
+
+</Exercise>
+
+<Exercise id="12-2" level="기초" title="점수 변화 기록하기">
+
+공식 `SCR_BaseScoringSystemComponent`에는 플레이어 점수가 바뀔 때 모든 기계에서 불리는 `protected void OnPlayerScoreChanged(int playerId, SCR_ScoreInfo scoreInfo)`가 있습니다. modded 클래스로 이 메서드를 확장해, 원래 동작은 그대로 두고 플레이어 ID와 처치 수(`scoreInfo.m_iKills`)를 로그에 남기세요.
+
+</Exercise>
+
+<Exercise id="12-3" level="응용" title="체인 출력 예측">
+
+모드 A와 모드 B가 원본 `TAG_Door`를 다음처럼 고쳤습니다. 모드 B는 모드 A에 의존합니다. `TAG_Door` 객체를 만들어 `Open()`을 부를 때의 출력을 순서대로 쓰고, 모드 B의 `super.Open()`을 `vanilla.Open()`으로 바꾸면 어떻게 달라지는지 설명하세요.
+
+```enforce
+class TAG_Door			// 원본
+{
+	void Open() { Print("원본: 문이 열린다"); }
+}
+
+modded class TAG_Door	// 모드 A
+{
+	override void Open()
+	{
+		Print("A: 삐걱 소리");
+		super.Open();
+	}
+}
+
+modded class TAG_Door	// 모드 B
+{
+	override void Open()
+	{
+		super.Open();
+		Print("B: 문 열림 기록");
+	}
+}
+```
+
+</Exercise>
+
+<Exercise id="12-4" level="응용" title="보상 표 설정 파일">
+
+처치 보상을 설정 파일로 정하려고 합니다. 보상 항목 `TAG_RewardEntry`(이름, 필요한 처치 수, 지급할 프리팹)와 그 목록을 담는 최상위 설정 클래스 `TAG_RewardTableConfig`를 만드세요. 그리고 이 설정 파일을 어트리뷰트로 받아 불러오는 컴포넌트에서, 처치 수가 주어지면 받을 수 있는 보상 가운데 필요한 처치 수가 가장 큰 항목을 돌려주는 메서드 `TAG_RewardEntry FindReward(int kills)`를 작성하세요.
+
+</Exercise>
+
+<Exercise id="12-5" level="도전" title="세션 기록을 JSON으로 남기기">
+
+플레이어 이름별 처치 수(`map<string, int>`)를 JSON 문자열로 바꾸는 `static string Save(notnull map<string, int> kills)`와, 그 문자열을 읽어 맵을 채우는 `static bool Load(string json, notnull map<string, int> outKills)`를 가진 클래스 `TAG_SessionJson`을 만드세요. `JsonSaveContext`와 `JsonLoadContext`를 쓰고, 플레이어 목록은 JSON 배열 하나에 객체 여러 개로 담습니다. 배열과 객체는 직렬화 컨텍스트의 `StartArray(string name, out int count)`, `StartObject()`, `EndObject()`, `EndArray()`로 만들 수 있습니다. 공식 `SCR_PlayerArsenalLoadout`이 이 메서드들로 장비 목록을 쓰고 읽는 방식을 참고하세요.
+
+</Exercise>

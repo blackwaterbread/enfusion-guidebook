@@ -1,0 +1,172 @@
+<Answer id="15-1">
+
+`PrintFormat`의 선언은 `PrintFormat(string fmt, void param1 = NULL, ..., void param9 = NULL, LogLevel level = LogLevel.NORMAL)`입니다. `LogLevel.WARNING`을 세 번째 인수로 쓰면 두 번째 형식 인수 `param2` 자리에 들어갑니다. 형식 문자열에 `%2`가 없으니 출력에는 나타나지도 않고, 메시지는 기본 수준인 `NORMAL`로 기록됩니다. 그래서 `-logLevel warning`으로 걸러 보면 빠집니다.
+
+`level`을 이름 있는 인수로 넘기면 됩니다.
+
+```enforce
+if (remaining == 0)
+	PrintFormat("상자 %1이 비었습니다.", crateName, level: LogLevel.WARNING);
+```
+
+`Print`는 매개변수가 `Print(void var, LogLevel level)` 두 개뿐이므로 `Print("...", LogLevel.WARNING)`처럼 위치 인수로 넘겨도 됩니다.
+
+</Answer>
+
+<Answer id="15-2">
+
+**Callstack** 창은 아래에서 위로 읽습니다. 맨 아래가 호출이 시작된 곳이고 맨 위가 실행이 멈춘 곳입니다. 따라서 실제 순서는 `TAG_TakeSupplyAction.PerformAction`이 `TAG_SupplyCrateComponent.TryTake`를 호출했고, 오류는 `TryTake` 안에서 났습니다.
+
+가장 먼저 볼 곳은 맨 위의 `TryTake`입니다. 그 메서드 안에서 쓰는 멤버 변수(예: `OnPostInit`에서 찾아 둔 컴포넌트)와 매개변수 가운데 null일 수 있는 것을 확인합니다. 매개변수가 null이었다면 한 단계 아래의 `PerformAction`이 무엇을 넘겼는지 거슬러 올라갑니다.
+
+</Answer>
+
+<Answer id="15-3">
+
+본문의 `TAG_GeneratorDebugComponent`와 같은 구조입니다. 구를 선으로만 그리려면 `WIREFRAME`, 가려도 보이게 하려면 `NOZBUFFER`를 `ONCE`와 함께 줍니다.
+
+```enforce title="Scripts/Game/TAG_RangeDebugComponent.c"
+#ifdef ENABLE_DIAG
+modded enum SCR_DebugMenuID
+{
+	TAG_DEBUGUI_INTERACTION_RANGE
+}
+#endif
+
+[ComponentEditorProps(category: "TAG/Tutorial", description: "상호작용 범위 표시")]
+class TAG_RangeDebugComponentClass : ScriptComponentClass
+{
+}
+
+class TAG_RangeDebugComponent : ScriptComponent
+{
+	[Attribute(defvalue: "3", desc: "표시할 반지름(미터)", params: "0.1 50")]
+	protected float m_fRadius;
+
+#ifdef ENABLE_DIAG
+	protected static bool s_bDiagRegistered;
+
+	override void OnPostInit(IEntity owner)
+	{
+		if (!s_bDiagRegistered)
+		{
+			DiagMenu.RegisterBool(SCR_DebugMenuID.TAG_DEBUGUI_INTERACTION_RANGE, "", "Interaction range",
+				"GameCode");
+			s_bDiagRegistered = true;
+		}
+
+		SetEventMask(owner, EntityEvent.FRAME);
+	}
+
+	override void EOnFrame(IEntity owner, float timeSlice)
+	{
+		if (!DiagMenu.GetBool(SCR_DebugMenuID.TAG_DEBUGUI_INTERACTION_RANGE))
+			return;
+
+		ShapeFlags flags = ShapeFlags.ONCE | ShapeFlags.WIREFRAME | ShapeFlags.NOZBUFFER;
+		Shape.CreateSphere(Color.YELLOW, flags, owner.GetOrigin(), m_fRadius);
+	}
+#endif
+}
+```
+
+어트리뷰트 `m_fRadius`는 `#ifdef` 바깥에 두었습니다. 진단 코드가 컴파일되지 않는 환경에서도 컴포넌트의 속성 목록이 달라지지 않게 하려는 것입니다. `ONCE`로 그린 구는 한 프레임 뒤 사라지므로 `EOnFrame`에서 매번 다시 그리고, 반환값은 보관하지 않습니다.
+
+</Answer>
+
+<Answer id="15-4">
+
+`EOnFrame`과 이벤트 마스크를 없애고, `OnPostInit`에서 콜 큐에 1초 간격의 반복 호출을 등록합니다. 반복 호출은 컴포넌트가 삭제될 때 `OnDelete`에서 해제합니다.
+
+```enforce title="Scripts/Game/TAG_FuelWarningComponent.c"
+[ComponentEditorProps(category: "TAG/Tutorial", description: "연료 경고")]
+class TAG_FuelWarningComponentClass : ScriptComponentClass
+{
+}
+
+class TAG_FuelWarningComponent : ScriptComponent
+{
+	protected static const int CHECK_INTERVAL_MS = 1000;
+
+	override void OnPostInit(IEntity owner)
+	{
+		if (!GetGame().InPlayMode())
+			return;	// World Editor 편집 중에는 타이머를 돌리지 않는다
+
+		GetGame().GetCallqueue().CallLater(UpdateWarning, CHECK_INTERVAL_MS, true);
+	}
+
+	override void OnDelete(IEntity owner)
+	{
+		GetGame().GetCallqueue().Remove(UpdateWarning);
+	}
+
+	protected void UpdateWarning()
+	{
+		// 연료량을 확인하고 경고를 갱신한다
+	}
+}
+```
+
+`CallLater(함수, 지연 밀리초, 반복 여부)`에서 세 번째 인수 `true`가 반복입니다. 공식 컴포넌트들(`SCR_NetworkedStatsComponent` 등)도 `OnDelete`에서 반복 호출을 해제합니다. `OnPostInit()`은 World Editor 편집 중에도 불리므로(10장) `GetGame().InPlayMode()`로 게임 중일 때만 타이머를 등록했습니다.
+
+이 컴포넌트가 수백 개 있어도 매 프레임 호출이 사라지니, 위키 성능 문서의 "이렇게 자주 해야 하나?"에 대한 답이 됩니다.
+
+</Answer>
+
+<Answer id="15-5">
+
+계산만 하는 클래스는 테스트 코드에서 엔티티를 만들거나 월드를 준비할 필요가 없습니다. 그래도 테스트를 실행하는 데는 플레이 모드와 월드가 쓰입니다. Autotest 플러그인과 Autotest Tool은 Workbench 안에서 실행할 때 플레이 모드로 바꿉니다. 1.8.0.13 Workbench에서 실행해 보면 케이스는 플레이 모드가 시작된 뒤에야 돌았고, 이 해답의 스위트처럼 `GetWorldFile()`을 오버라이드하지 않은 스위트는 그 전에 기본 Autotest 월드를 열었습니다. `TAG_SupplyMath`는 게임 코드가 쓰는 클래스이므로 `#ifdef WORKBENCH` 바깥에 둡니다.
+
+```enforce title="Scripts/Game/TAG_SupplyMath.c"
+//! 보급품 수량 계산
+class TAG_SupplyMath
+{
+	//! 남은 수량. 0보다 작아지지 않는다.
+	static int GetRemaining(int capacity, int taken)
+	{
+		int remaining = capacity - taken;
+		if (remaining < 0)
+			return 0;
+
+		return remaining;
+	}
+
+	//! 하나 더 가져갈 수 있으면 true
+	static bool CanTake(int capacity, int taken)
+	{
+		return GetRemaining(capacity, taken) > 0;
+	}
+}
+```
+
+테스트 케이스는 본문의 스위트 파일에 추가합니다.
+
+```enforce title="Scripts/Game/Tests/TAG_TEST_SupplyMathSuite.c"
+#ifdef WORKBENCH
+
+class TAG_TEST_SupplyMathSuite : SCR_AutotestSuiteBase
+{
+}
+
+// 본문의 TAG_TEST_SupplyMath_TakeAll_RemainingIsZero는 그대로 둔다
+// ...
+
+[Test(suite: TAG_TEST_SupplyMathSuite)]
+class TAG_TEST_SupplyMath_CanTake_FalseWhenEmpty : SCR_AutotestCaseBase
+{
+	[TestStep(TestStage.Main)]
+	void Execute()
+	{
+		AssertTrue(TAG_SupplyMath.CanTake(3, 2), "하나 남았으면 가져갈 수 있어야 한다");
+		AssertTrue(!TAG_SupplyMath.CanTake(3, 3), "비었으면 가져갈 수 없어야 한다");
+		AssertTrue(!TAG_SupplyMath.CanTake(0, 0), "용량이 0이면 가져갈 수 없어야 한다");
+	}
+}
+
+#endif
+```
+
+`AssertTrue`는 조건이 거짓이면 메시지와 함께 실패를 기록하고, 이미 실패한 테스트라면 첫 실패를 그대로 둡니다. 케이스 이름은 위키가 권하는 "기능_상황_기대결과" 형식을 따랐기 때문에, 실패했을 때 이름만 보고도 무엇이 틀렸는지 알 수 있습니다.
+
+</Answer>

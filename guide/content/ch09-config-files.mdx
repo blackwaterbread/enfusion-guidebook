@@ -1,0 +1,231 @@
+---
+title: 설정 파일
+description: 설정 파일을 Resource Browser에서 만들고, Workbench 메인 창의 탭에서 값과 배열 항목을 채우는 과정을 따라갑니다. 메뉴를 등록하는 chimeraMenus.conf와 알림을 정하는 Notifications.conf의 항목도 화면에서 찾아봅니다.
+---
+
+<Objectives>
+
+- Resource Browser의 **Create** 메뉴에서 **Config file**을 골라 설정 파일을 만들 수 있다.
+- 설정 파일 탭의 머리 줄, 속성 표, **Resource Variants**가 무엇을 보여 주는지 설명할 수 있다.
+- 배열 칸의 **+** 버튼으로 항목을 더하고, 빈 객체 칸의 **set class** 버튼으로 클래스를 골라 채울 수 있다.
+- 이름이 굵게 보이는 칸으로 그 파일이 정한 값을 알아볼 수 있다.
+- `chimeraMenus.conf`의 메뉴 항목과 `Notifications.conf`의 알림 항목에서 필요한 칸을 찾을 수 있다.
+
+</Objectives>
+
+설정 파일(config, `.conf`)은 스크립트의 설정 클래스가 정한 모양대로 데이터를 담는 리소스입니다. 스폰 목록이나 보상 표처럼 값이 많은 데이터를 코드 밖으로 빼 두면 Workbench에서 값을 고칠 수 있고, 다른 모드가 그 파일만 덮어써서 내용을 바꿀 수도 있습니다. 설정 클래스를 선언하고 코드에서 설정 파일을 불러오는 방법은 Script 책 12장에서 다룹니다. 이 장은 그 파일을 만들고 값을 채우는 화면을 다룹니다.
+
+게임의 메뉴 목록과 알림 목록도 설정 파일입니다. 장의 뒷부분에서는 Script 책 13장의 메뉴·알림 예제가 고치는 `chimeraMenus.conf`와 `Notifications.conf`의 항목을 화면에서 찾아봅니다.
+
+## 설정 파일 만들기
+
+### Create 메뉴
+
+새 설정 파일은 메인 창 Resource Browser 아래쪽의 **Create** 버튼으로 만듭니다. 버튼을 누르면 열리는 메뉴(<FigRef id="ch09-create-menu" />)에서 **Create Resource** 묶음 첫 줄의 **Config file**을 고릅니다. 메뉴의 다른 항목은 3장에서 다룹니다.
+
+<Figure src="shared/rb-create-menu.png" alt="Resource Browser의 Create 메뉴" id="ch09-create-menu">Resource Browser의 Create 메뉴</Figure>
+
+### 최상위 클래스 고르기
+
+설정 파일을 만들 때는 파일 전체를 이루는 최상위 클래스를 하나 고릅니다. 이 목록에는 스크립트에서 최상위 설정 클래스로 표시한 클래스만 나옵니다(Script 책 12장). 예를 들어 Script 책 12장의 예제를 컴파일한 뒤 클래스 목록을 `tag`로 검색하면, `TAG_LootTableConfig`는 있지만 배열 항목으로만 쓰는 `TAG_LootEntry`는 없습니다. 직접 만든 클래스가 목록에 보이지 않으면 Script 책 12장의 설명대로 최상위로 표시했는지 확인합니다.
+
+다음 실습은 Script 책 12장의 `TAG_LootEntry`·`TAG_LootTableConfig` 코드를 `GuideDemo` 프로젝트의 `Scripts/Game` 폴더에 넣고 컴파일한 상태에서 시작합니다. 스크립트 파일을 만들고 컴파일하는 화면은 4장에서 다룹니다.
+
+<TryIt title="전리품 표 설정 파일 만들기">
+
+1. Resource Browser에서 설정 파일을 둘 `GuideDemo`의 폴더(예: `Configs`)를 고릅니다. 폴더를 만드는 방법은 3장에서 다룹니다.
+2. **Create** 버튼을 누르고 메뉴에서 **Config file**을 고릅니다.
+3. **Choose Name** 창이 뜨면 **File Name:** 칸에 확장자 없이 `TAG_LootTable`을 입력하고 **OK**를 누릅니다(<FigRef id="ch09-choose-name" />). `.conf`까지 입력해도 파일 이름은 `TAG_LootTable.conf`가 됩니다.
+4. **Choose a class** 창의 검색 칸에 `loot`를 입력하고, 목록에 남은 `TAG_LootTableConfig`를 한 번 누릅니다(<FigRef id="ch09-choose-class" />). 따로 누를 확인 버튼은 없고, 누르면 창이 닫히며 파일이 만들어집니다.
+5. 고른 폴더에 `TAG_LootTable.conf`가 생깁니다. 이 파일을 두 번 클릭해 엽니다.
+
+</TryIt>
+
+이름을 확장자 없이 입력하면 파일 이름에 `.conf`가 붙고, Log Console에는 `Resource file successfully registered` 줄과 함께 새 파일의 경로가 찍힙니다.
+
+<Figure src="ch09/choose-name.png" alt="Choose Name 창" id="ch09-choose-name">Choose Name 창</Figure>
+
+<Figure src="ch09/choose-class.png" alt="Choose a class 창" id="ch09-choose-class">Choose a class 창</Figure>
+
+## 설정 파일 탭
+
+### 탭의 짜임
+
+설정 파일을 두 번 클릭하면 별도 창이 아니라 Workbench 메인 창에 탭으로 열립니다(<FigRef id="ch09-conf-tab" />). 탭 이름은 파일 이름이고, 창 제목은 다른 탭을 볼 때처럼 `Enfusion Workbench - ` 뒤에 프로젝트 TITLE이 붙은 그대로입니다. 위키는 이 화면을 Config Editor라고 부르고(부록 C), 이 책은 "설정 파일 탭"이라고 부릅니다.
+
+설정 파일 탭은 다음 부분으로 이루어집니다. 1–3은 탭 맨 위의 머리 줄에 있습니다.
+
+1. **검색 칸**: 머리 줄 왼쪽의 칸입니다.
+2. **클래스 이름**: 머리 줄 가운데의 `class:` 뒤에 최상위 클래스 이름이 보입니다.
+3. **`parent:` 칸**: 머리 줄 오른쪽에 있습니다.
+4. **속성 표**: 왼쪽 열에 칸 이름, 오른쪽 열에 값을 고치는 칸이 있습니다. 어떤 칸이 어떤 모양으로 나오는지는 설정 클래스의 어트리뷰트가 정합니다(Script 책 10장·12장).
+5. **Resource Variants**: 오른쪽 창 맨 위에 있습니다. 오른쪽 창 아래쪽에는 **Details**, **Import Settings** 탭이 있습니다.
+6. **상태 줄**: 메인 창 맨 아래 줄에 파일 경로와 크기, 파일 종류 `Config file`이 보입니다.
+
+<Figure src="ch09/conf-tab.png" size="full" alt="메인 창에 열린 설정 파일 탭" id="ch09-conf-tab" marks="1@29.9,11.9;2@47.2,11.9;3@65.3,11.9;4@48.6,44.4;5@95,12;6@66.7,98.4">메인 창에 열린 설정 파일 탭</Figure>
+
+### 검색 칸과 parent 칸
+
+머리 줄의 검색 칸에 칸 이름의 일부를 넣으면 그 칸과 그 칸이 든 항목만 남습니다. 예를 들어 `TAG_LootTable.conf` 탭에서 `weight`를 넣으면 **Entries** 아래 항목의 **Weight** 칸만 남습니다. 위키(Resource Manager: Config Editor)는 이 칸이 값이 아니라 칸 이름을 찾는다고 설명합니다. 같은 모양의 검색 칸이 있는 **Project Settings** 창에서는 `string`을 넣으면 이름에 그 글자가 든 칸과 그 칸이 속한 묶음만 남습니다(2장).
+
+`parent:` 칸은 새로 만든 파일에서는 비어 있고, 기본 게임 파일을 덮어쓴 파일에서는 원본 파일 이름이 흐린 글자로 들어 있습니다. 이 흐린 글자는 눌러도 아무 일이 없습니다. 다른 설정 파일을 상속한 파일에서는 이 칸이 부모 파일 이름이 적힌 버튼이고, 누르면 부모 파일이 새 탭으로 열립니다. 예를 들어 기본 게임 `Configs/Notifications/TutorialNotifications.conf`의 `parent:` 칸에는 `Notifications.conf` 버튼이 있습니다. **Inherit in**으로 만든 설정 파일(3장)에서도 같습니다.
+
+### Resource Variants
+
+오른쪽 창의 **Resource Variants** 옆에는 괄호 속 숫자와 목록 칸이 있습니다. 프로젝트에서 새로 만든 파일은 `(1)`과 `1. GuideDemo`처럼 그 프로젝트 ID가, 기본 게임 파일을 덮어쓴 파일은 `(2)`와 `2. GuideDemo`처럼 작업 중인 프로젝트 ID가 보입니다. 덮어쓴 파일에서 목록 칸을 펼쳐 `1. ArmaReforger`를 고르면 같은 탭에 원본의 값이 보이고, `2. GuideDemo`를 고르면 덮어쓴 파일로 돌아옵니다(3장).
+
+## 값 채우기
+
+### 칸에 값 넣기
+
+값 칸의 모양은 값의 종류에 따라 다릅니다. `chimeraMenus.conf`와 `Notifications.conf`의 탭에는 글자 칸, 숫자 칸, 체크 상자, 펼침 목록, 리소스를 고르는 칸이 있습니다. World Editor의 Object Properties에 나오는 칸도 같은 어트리뷰트로 만들어지며, 칸마다 쓰는 법은 7장에서 다룹니다.
+
+### 굵은 이름과 되돌리기 화살표
+
+설정 파일 탭에서는 그 파일이 값을 정한 칸의 이름이 굵게 보이고, 그 칸 오른쪽 끝에 되돌리기 화살표(7장)가 붙습니다(<FigRef id="ch09-entry-bold" />). 새 파일에서 **Entries**에 항목을 더하고 **Name**에 글자를 넣으면 **Entries**와 **Name**이 굵게 바뀌고, 손대지 않은 **Prefab**과 **Weight**는 보통 굵기로 남습니다. 기본 게임 `Notifications.conf`를 그대로 열면 그 파일이 정한 칸들이 굵게 보이지만, 그 파일을 덮어쓰고 아무것도 바꾸지 않은 파일에서는 같은 칸이 보통 굵기입니다. World Editor의 Object Properties도 같은 방식으로 표시합니다(6장).
+
+이 화살표를 누르면 그 칸의 값이 기본값으로 돌아가고 이름도 보통 굵기로 돌아갑니다. 예를 들어 **Name**의 화살표를 누르면 **Name**이 빈 값이 되고, **Name**과 항목 제목이 보통 굵기가 됩니다.
+
+<Figure src="ch09/entry-bold.png" alt="값을 정한 칸의 굵은 이름" id="ch09-entry-bold">값을 정한 칸의 굵은 이름</Figure>
+
+### 저장하고 닫기
+
+값을 바꾸면 탭 이름 앞에 `*`가 붙고, 바꾼 탭을 저장하지 않고 닫으면 **Save File Before Close** 창이 뜹니다(<FigRef id="ch09-save-before-close" />, 2장).
+
+메인 창의 **File** 메뉴에는 **Save**와 **Save All**이 있고, 메뉴에는 그 옆에 각각 <Kbd>Ctrl</Kbd>+<Kbd>S</Kbd>와 <Kbd>Ctrl</Kbd>+<Kbd>Shift</Kbd>+<Kbd>S</Kbd>가 적혀 있습니다. **File > Save**를 고르면 지금 탭의 설정 파일이 저장되고 탭 이름 앞의 `*`가 사라집니다. 위키(Resource Manager)는 **Save All**이 열린 탭의 파일을 모두 저장한다고 설명합니다. **Save File Before Close** 창의 버튼은 2장에서 봅니다.
+
+<Figure src="shared/save-file-before-close.png" alt="Save File Before Close 창" id="ch09-save-before-close">Save File Before Close 창</Figure>
+
+파일 내용을 글자로 보고 싶을 때는 메인 창의 **View** 메뉴를 봅니다. 이 메뉴에는 **Normal view**, **Text view**, **Hex View**가 있습니다. **Text view**를 고르면 지금 탭의 파일이 글자로 보이고, 이 보기는 읽기 전용입니다. **Normal view**를 고르면 원래 화면으로 돌아옵니다(2장).
+
+## 배열과 객체 칸
+
+### 배열 칸과 + 버튼
+
+배열 칸은 값 자리에 항목 수를 괄호로 보여 주고, 항목이 있으면 칸 이름 앞의 화살표로 펼칩니다. 값 자리 오른쪽 끝에는 **+** 버튼과 **-** 버튼이 있습니다. **+** 버튼을 누르면 배열에 항목이 하나 더해집니다. 예를 들어 Script 책 12장의 `TAG_LootTableConfig` 파일에서는 **Entries**의 **+** 버튼을 누르면 클래스 목록 없이 바로 `TAG_LootEntry` 항목이 생기고, 그 항목을 펼치면 **Name**, **Prefab**, **Weight** 칸이 있습니다.
+
+항목 줄은 동그라미 아이콘, 항목 제목, 오른쪽 열의 클래스 이름으로 이루어집니다. 항목 제목으로 무엇을 보일지는 클래스가 정합니다. Script 책 12장의 `TAG_LootEntry`는 **Name** 값을 제목으로 보이게 만든 클래스여서, **Name**에 글자를 넣으면 항목 제목도 그 글자로 바뀝니다. `Notifications.conf`의 알림 항목은 제목이 그 항목의 **Notification Key** 값과 같습니다.
+
+`Notifications.conf`의 **Notification Display Data**처럼 여러 클래스의 항목이 섞인 배열에서는 **+** 버튼을 누르면 클래스 목록이 먼저 열립니다(<FigRef id="ch09-plus-class-list" />). 목록 위에는 검색 칸이 있고, 목록에서 클래스를 고르면 그 클래스의 새 항목이 배열 맨 아래에 생깁니다.
+
+<Figure src="ch09/plus-class-list.png" alt="+ 버튼을 누르면 열리는 클래스 목록" id="ch09-plus-class-list">+ 버튼을 누르면 열리는 클래스 목록</Figure>
+
+**-** 버튼은 고른 항목을 지웁니다. 항목을 고르지 않았을 때는 **-** 버튼이 흐리게 표시되어 누를 수 없습니다. 항목 이름을 오른쪽 클릭하면 **Insert before**, **Insert after**, **Delete**, **Duplicate**, **Copy**, **Paste**, **Change class** 같은 항목이 있는 메뉴가 열립니다.
+
+### 객체 칸과 set class
+
+객체 하나를 담는 칸이 비어 있으면 값 자리에 **set class** 버튼이 보입니다. 넣을 수 있는 클래스가 여럿인 칸에서는 이 버튼을 누르면 그 클래스 목록이 열리고, 하나를 고르면 칸 이름 앞에 펼침 화살표가 생기며 그 클래스의 칸들이 아래에 나타납니다. 실제 화면은 뒤의 `Notifications.conf` 절에서 봅니다. World Editor의 Object Properties에서도 빈 객체 칸에는 같은 **set class** 버튼이 있고, 넣을 수 있는 클래스가 하나뿐인 칸은 목록 없이 곧바로 채워집니다(7장).
+
+## 기본 게임 설정 파일 덮어쓰기
+
+기본 게임의 설정 파일은 직접 고치지 않고, 작업 중인 프로젝트에 같은 리소스를 덮어쓴 파일을 만들어 고칩니다. 덮어쓰기(Override), 상속(Inherit), 복제(Duplicate)가 각각 무엇인지는 8장과 Script 책 12장에서, 이를 만드는 Resource Browser의 오른쪽 클릭 메뉴는 3장에서 다룹니다. 여기서는 설정 파일을 덮어쓴 뒤의 화면을 봅니다.
+
+기본 게임 `Configs/Notifications/Notifications.conf`를 오른쪽 클릭해 <strong>Override in 'GuideDemo'</strong>를 고르면, 프로젝트 안의 같은 경로에 `Configs/Notifications/Notifications.conf`가 생깁니다. 막 생긴 파일에는 최상위 클래스 이름과 빈 중괄호만 들어 있습니다.
+
+```text
+SCR_NotificationConfig {
+}
+```
+
+이 파일을 열면 탭은 다음과 같습니다(<FigRef id="ch09-override-tab" />).
+
+- `parent:` 칸에 원본 파일 이름 `Notifications.conf`가 흐린 글자로 보입니다.
+- **Resource Variants** 옆 숫자가 2입니다.
+- 값이 모두 원본에서 오므로 칸 이름이 굵지 않습니다.
+
+Resource Browser에서는 덮어쓴 파일의 아이콘에 퍼즐 조각이 붙고, 이미 덮어쓴 원본의 오른쪽 클릭 메뉴에서는 **Override in**이 빠지고 **Navigate to Override**가 켜집니다(3장).
+
+덮어쓴 파일에 항목을 더해 저장하면 파일에는 원본의 항목 없이 더한 항목만 들어갑니다. 위키(Data Modding Basics)에 따르면 값을 바꾼 경우에도 그 부분만 들어가고, 게임은 그것을 원본에 덧씌웁니다.
+
+<Figure src="shared/conf-override-tab-top.png" size="full" alt="덮어쓴 Notifications.conf 탭의 위쪽" id="ch09-override-tab">덮어쓴 Notifications.conf 탭의 위쪽</Figure>
+
+## chimeraMenus.conf: 메뉴 항목
+
+게임이 여는 메뉴와 대화상자의 목록은 기본 게임의 `Configs/System/chimeraMenus.conf`에 있습니다. 이 파일의 최상위 클래스는 `MenuManager`이고, **Menu Presets** 배열에 메뉴마다 항목이 하나씩 있습니다(<FigRef id="ch09-menu-preset" />). 항목 제목은 `MainMenu`, `PauseMenu` 같은 메뉴 프리셋 이름이고, 오른쪽 열의 클래스는 모두 `MenuPreset`입니다. 이 이름은 스크립트의 열거형 `ChimeraMenuPreset` 값과 이름으로 이어집니다(Script 책 13장).
+
+항목을 펼치면 다음 여섯 칸이 있습니다. 뜻 열은 엔진 문서(Menu System)의 설명입니다.
+
+| 칸 | `MainMenu` 항목의 값 | 뜻 |
+|---|---|---|
+| **Layout** | `MainMenu.layout` | 메뉴의 생김새를 정한 레이아웃(10장) |
+| **Action Context** | 빈칸 | 메뉴가 열려 있는 동안 켜지는 입력 컨텍스트의 이름 |
+| **Class** | `MainMenuUI` | 메뉴의 동작을 맡는 스크립트 클래스 |
+| **Menu Items** | 항목 0개 | 위젯과 입력 액션을 잇는 메뉴 항목의 배열 |
+| **Preload Count** | `0` | 미리 만들어 둘 메뉴 인스턴스의 수 |
+| **Persistent** | 체크 해제 | 켜면 메뉴를 닫아도 없애지 않고 다시 씀 |
+
+**Layout** 칸에는 파일 이름만 보이지만, 파일에 저장되는 값은 GUID와 경로를 붙인 리소스 이름입니다. Script 책 13장의 메뉴 예제는 이 가운데 **Layout**과 **Class**를 채웁니다.
+
+<Figure src="ch09/menu-preset.png" alt="chimeraMenus.conf의 MainMenu 항목" id="ch09-menu-preset">chimeraMenus.conf의 MainMenu 항목</Figure>
+
+### 새 메뉴 항목 더하기
+
+새 메뉴를 등록할 때는 이 파일을 자기 프로젝트에 덮어쓰고 항목을 더합니다. 화면 쪽 순서는 다음과 같고, 스크립트 쪽 준비(열거형 값 더하기와 메뉴 클래스)는 Script 책 13장에서 합니다.
+
+1. Resource Browser에서 기본 게임의 `Configs/System/chimeraMenus.conf`를 오른쪽 클릭하고, <strong>Override in 'GuideDemo'</strong>를 고릅니다.
+2. `GuideDemo`에 생긴 `chimeraMenus.conf`를 두 번 클릭해 열고, **Menu Presets** 줄의 **+** 버튼을 누릅니다.
+3. 뜨는 **Create new MenuPreset object** 창에 새 항목의 이름을 넣습니다. 이 이름이 항목 이름이 되므로, Script 책 13장에서 `ChimeraMenuPreset`에 더한 값과 똑같이 씁니다. 이름이 열거형 값과 다르면 엔진이 메뉴를 찾지 못해 오류를 냅니다. 항목 줄의 오른쪽 클릭 메뉴 **Rename**을 고르면 이름을 바꾸는 **Rename object** 창이 뜹니다.
+4. **Layout**에 메뉴 레이아웃을, **Class**에 메뉴 클래스 이름을 넣고 저장합니다.
+
+## Notifications.conf: 알림 항목
+
+화면 한쪽에 잠깐 떴다 사라지는 알림의 목록은 기본 게임의 `Configs/Notifications/Notifications.conf`에 있습니다. 최상위 클래스는 `SCR_NotificationConfig`이고, 맨 위에 **Notification Display Color**, **Sticky Notifications**, **Notification Display Data** 세 배열이 있습니다. 알림 하나는 **Notification Display Data** 배열의 항목 하나입니다.
+
+항목 오른쪽 열에는 `SCR_NotificationPlayer`, `SCR_NotificationDisplayData`처럼 그 알림의 클래스가 보입니다. 어떤 클래스를 쓸지는 Script 책 13장에서 다룹니다. 항목을 펼치면 다음 칸이 있습니다(<FigRef id="ch09-notification-entry" />).
+
+| 칸 | 기본 게임 항목 `GROUPS_PLAYER_IS_NOT_LEADER`의 값 |
+|---|---|
+| **Notification Key** | `GROUPS_PLAYER_IS_NOT_LEADER`(펼침 목록) |
+| **Priority Notification** | 체크 해제 |
+| **Add Friendly Indicator** | 체크 해제 |
+| **Info** | `SCR_UINotificationInfo` 객체 |
+| **Info** 안의 **Name** | `#AR-Notification_GROUPS_PLAYER_IS_NOT_LEADER` |
+| **Info** 안의 다른 칸 | **Description**, **Icon**, **Icon Set Name**, **Notification Color**, **Editor Set Position Data** |
+
+**Name**은 알림에 표시할 문장입니다. 기본 게임 항목의 **Name**에는 문장 대신 `#`로 시작하는 로컬라이즈 키가 들어 있고, 키에 맞는 문장은 문자열 테이블에서 찾습니다(10장). 위키(Notification Creation)에 따르면 **Notification Color**는 알림의 색(`NEUTRAL` 등)이고, **Editor Set Position Data**는 Game Master 편집기에서만 쓰는 위치 설정입니다.
+
+<Figure src="ch09/notification-entry.png" alt="Notifications.conf의 알림 항목" id="ch09-notification-entry">Notifications.conf의 알림 항목</Figure>
+
+### 알림 항목 더하기
+
+덮어쓴 `Notifications.conf`에 알림 항목을 하나 더하는 순서는 다음과 같습니다.
+
+<TryIt title="알림 항목 더하기">
+
+1. 앞 절처럼 기본 게임 `Notifications.conf`를 `GuideDemo`에 덮어쓰고, 덮어쓴 파일을 두 번 클릭해 엽니다.
+2. **Notification Display Data** 줄의 **+** 버튼을 누릅니다. 위에 검색 칸이 있는 클래스 목록이 열리면 `SCR_NotificationDisplayData`를 고릅니다.
+3. 배열 맨 아래에 새 항목이 생깁니다. 항목 제목과 **Notification Key**는 `UNKNOWN`이고, **Info** 칸에는 **set class** 버튼이 있습니다.
+4. **Info**의 **set class** 버튼을 누르면 `SCR_ColoredTextNotificationUIInfo`, `SCR_SplitNotificationUIInfo`, `SCR_UINotificationInfo` 세 클래스가 보입니다(<FigRef id="ch09-info-class-list" />). `SCR_UINotificationInfo`를 고릅니다.
+5. **Info** 아래에 **Name**, **Description**, **Icon** 같은 빈 칸이 생깁니다(<FigRef id="ch09-new-notification" />).
+6. 이어서 **Notification Key**를 Script 책 13장에서 `ENotification`에 더한 값으로 고르고, **Name**에 표시할 문장이나 로컬라이즈 키를 넣은 뒤 저장합니다. 컴파일한 값도 **Notification Key** 펼침 목록에 나오며, 목록 위의 검색 칸에 값 이름을 넣으면 쉽게 찾을 수 있습니다.
+
+</TryIt>
+
+위키(Notification Creation)에 따르면 세 **Info** 클래스는 각각 기본 알림(`SCR_UINotificationInfo`), 글자에 색을 넣을 수 있는 알림(`SCR_ColoredTextNotificationUIInfo`), 아이콘 왼쪽과 오른쪽에 글을 나눠 보이는 알림(`SCR_SplitNotificationUIInfo`)입니다. `SCR_UINotificationInfo`를 고른 새 항목의 **Notification Color**는 `NEUTRAL`, **Editor Set Position Data**는 `NEVER_AUTO_SET_POSITION`으로 채워져 있습니다.
+
+<Figure src="ch09/info-class-list.png" alt="Info의 set class로 고르는 세 클래스" id="ch09-info-class-list">Info의 set class로 고르는 세 클래스</Figure>
+
+<Figure src="ch09/new-notification.png" alt="Info를 채운 새 알림 항목" id="ch09-new-notification">Info를 채운 새 알림 항목</Figure>
+
+## 정리
+
+<Summary>
+
+- 설정 파일은 Resource Browser의 **Create** 버튼에서 **Config file**을 고르고, **Choose Name** 창에 이름을, **Choose a class** 창에서 최상위 클래스를 골라 만듭니다. 클래스 목록에는 최상위 설정 클래스만 나옵니다.
+- 설정 파일은 두 번 클릭하면 메인 창 탭으로 열립니다. 위키는 이 탭을 Config Editor라고 부릅니다.
+- 설정 파일 탭의 머리 줄에는 검색 칸, `class:`, `parent:`가 있고, 오른쪽 창에는 **Resource Variants**가 있습니다.
+- 그 파일이 값을 정한 칸은 이름이 굵게 보이고 오른쪽에 되돌리기 화살표가 붙습니다.
+- 배열 칸은 **+** 버튼으로 항목을 더하고, 빈 객체 칸은 **set class** 버튼으로 클래스를 골라 채웁니다.
+- 바꾼 탭에는 `*`가 붙고, 저장하지 않고 닫으면 **Save File Before Close** 창이 뜹니다.
+- 기본 게임 설정 파일은 덮어써서 고칩니다. 덮어쓴 파일의 `parent:` 칸에는 원본 파일 이름이 흐리게 보입니다.
+- `chimeraMenus.conf`의 메뉴 항목에는 **Layout**, **Action Context**, **Class**, **Menu Items**, **Preload Count**, **Persistent**가 있고, `Notifications.conf`의 알림 항목에는 **Notification Key**와 **Info**, 그 안의 **Name**이 있습니다.
+
+</Summary>
+
+**더 읽을거리**
+
+- [Create a Config Class](https://community.bistudio.com/wiki/Arma_Reforger:Create_a_Config_Class)
+- [Resource Manager: Config Editor](https://community.bistudio.com/wiki/Arma_Reforger:Resource_Manager:_Config_Editor)
+- [Data Modding Basics](https://community.bistudio.com/wiki/Arma_Reforger:Data_Modding_Basics)
+- [Layout Creation](https://community.bistudio.com/wiki/Arma_Reforger:Layout_Creation)
+- [Notification Creation](https://community.bistudio.com/wiki/Arma_Reforger:Notification_Creation)
